@@ -1,0 +1,151 @@
+<?php
+
+namespace App\Http\Controllers\Api;
+
+use App\Http\Controllers\Controller;
+use App\Http\Requests\GenerateCodigoQrRequest;
+use App\Models\CodigoQr;
+use App\Models\User;
+use Carbon\Carbon;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\DB;
+
+class CodigoQrController extends Controller
+{
+    /**
+     * Genera un QR temporal (24h).
+     * En BD se guarda sha256(token) en `codigos_qr.codigo` (hash) y se retorna el token plano para convertirlo a QR.
+     *
+     * @OA\Post(
+     *   path="/api/qrs",
+     *   tags={"QR"},
+     *   summary="Generar QR temporal (24h)",
+     *   security={{"sanctum":{}}},
+     *   @OA\RequestBody(required=true, @OA\JsonContent(
+     *     required={"user_id"},
+     *     @OA\Property(property="user_id", type="integer", example=1),
+     *     @OA\Property(
+     *       property="puertas",
+     *       type="array",
+     *       nullable=true,
+     *       description="Obligatorio si el usuario destino es visitante. Opcional para el resto (se usará el cargo).",
+     *       @OA\Items(type="integer"),
+     *       example={1,2}
+     *     ),
+     *     @OA\Property(property="hora_inicio", type="string", nullable=true, example="08:00"),
+     *     @OA\Property(property="hora_fin", type="string", nullable=true, example="18:00"),
+     *     @OA\Property(property="dias_semana", type="string", nullable=true, example="1,2,3,4,5"),
+     *     @OA\Property(property="fecha_inicio", type="string", format="date", nullable=true, example=null),
+     *     @OA\Property(property="fecha_fin", type="string", format="date", nullable=true, example=null)
+     *   )),
+     *   @OA\Response(response=201, description="Creado"),
+     *   @OA\Response(response=401, description="No autenticado"),
+     *   @OA\Response(response=403, description="No autorizado"),
+     *   @OA\Response(response=422, description="Validación fallida")
+     * )
+     */
+    public function store(GenerateCodigoQrRequest $request): JsonResponse
+    {
+        $actor = $request->user();
+        $data = $request->validated();
+
+        /** @var User $targetUser */
+        $targetUser = User::query()->with('role')->findOrFail($data['user_id']);
+
+        $actorRole = $actor?->role?->name;
+        $targetRole = $targetUser->role?->name;
+
+        // Reglas mínimas por rol del actor:
+        // - super_usuario: puede generar para cualquiera
+        // - operador: solo para visitantes
+        // - rrhh: no para visitantes
+        // - funcionario: solo para sí mismo
+        if ($actorRole !== 'super_usuario') {
+            if ($actorRole === 'operador' && $targetRole !== 'visitante') {
+                return response()->json(['message' => 'Operador solo puede generar QR para visitantes.'], 403);
+            }
+            if ($actorRole === 'rrhh' && $targetRole === 'visitante') {
+                return response()->json(['message' => 'RRHH no puede generar QR para visitantes.'], 403);
+            }
+            if ($actorRole === 'funcionario' && $actor?->id !== $targetUser->id) {
+                return response()->json(['message' => 'Funcionario solo puede generar su propio QR.'], 403);
+            }
+        }
+
+        $puertas = $data['puertas'] ?? [];
+        $hasPuertas = is_array($puertas) && count($puertas) > 0;
+
+        // Regla: visitantes deben traer puertas explícitas (sus accesos van “embebidos” en el QR)
+        if ($targetRole === 'visitante' && !$hasPuertas) {
+            return response()->json([
+                'message' => 'Para visitantes debes seleccionar al menos una puerta.',
+                'errors' => ['puertas' => ['Para visitantes debes seleccionar al menos una puerta.']],
+            ], 422);
+        }
+
+        // Regla: para no visitantes, si no envían puertas, el usuario debe tener cargo (se validará por cargo->puerta)
+        if ($targetRole !== 'visitante' && !$hasPuertas && !$targetUser->cargo_id) {
+            return response()->json([
+                'message' => 'El usuario no tiene cargo asignado. Asigna un cargo o envía puertas explícitas.',
+                'errors' => ['cargo_id' => ['El usuario no tiene cargo asignado.']],
+            ], 422);
+        }
+
+        $now = Carbon::now();
+        $expiresAt = $now->copy()->addHours(24);
+
+        // Token opaco (para QR) + hash (para BD)
+        $plainToken = bin2hex(random_bytes(32)); // 64 chars
+        $tokenHash = hash('sha256', $plainToken);
+
+        $qr = null;
+
+        DB::transaction(function () use (&$qr, $targetUser, $actor, $tokenHash, $now, $expiresAt, $data) {
+            $qr = CodigoQr::query()->create([
+                'user_id' => $targetUser->id,
+                'codigo' => $tokenHash, // hash sha256
+                'fecha_generacion' => $now,
+                'fecha_expiracion' => $expiresAt,
+                'usado' => false,
+                'activo' => true,
+                // extras (ya existen en la migración)
+                'generado_por' => $actor?->id,
+                'tipo' => 'temporal',
+                'uso_actual' => 'pendiente',
+                'intentos_fallidos' => 0,
+            ]);
+
+            // Si envían puertas explícitas, se guardan reglas QR->puerta (sino se evalúa por cargo en verificación)
+            $puertas = $data['puertas'] ?? [];
+            if (is_array($puertas) && count($puertas) > 0) {
+                $pivot = [
+                    'hora_inicio' => $data['hora_inicio'] ?? null,
+                    'hora_fin' => $data['hora_fin'] ?? null,
+                    'dias_semana' => $data['dias_semana'] ?? '1,2,3,4,5,6,7',
+                    'fecha_inicio' => $data['fecha_inicio'] ?? null,
+                    'fecha_fin' => $data['fecha_fin'] ?? null,
+                    'activo' => true,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ];
+
+                foreach ($puertas as $puertaId) {
+                    DB::table('codigo_qr_puerta_acceso')->updateOrInsert(
+                        ['codigo_qr_id' => $qr->id, 'puerta_id' => $puertaId],
+                        $pivot
+                    );
+                }
+            }
+        });
+
+        return response()->json([
+            'message' => 'QR temporal creado (24h).',
+            'data' => [
+                'id' => $qr->id,
+                'user_id' => $qr->user_id,
+                'expires_at' => $expiresAt->toIso8601String(),
+                'token' => $plainToken, // este es el valor a convertir a QR
+            ],
+        ], 201);
+    }
+}

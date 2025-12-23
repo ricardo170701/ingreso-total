@@ -24,9 +24,9 @@ class AccessController extends Controller
      *   @OA\Parameter(
      *     name="X-DEVICE-KEY",
      *     in="header",
-     *     required=false,
+     *     required=true,
      *     @OA\Schema(type="string"),
-     *     description="Opcional: llave del lector (si ACCESS_DEVICE_KEY está configurada en .env)"
+     *     description="Obligatorio: llave del dispositivo lector (debe coincidir con ACCESS_DEVICE_KEY en .env)"
      *   ),
      *   @OA\RequestBody(required=true, @OA\JsonContent(
      *     required={"token","codigo_fisico"},
@@ -53,13 +53,15 @@ class AccessController extends Controller
      */
     public function verify(Request $request): JsonResponse
     {
-        // Seguridad opcional por dispositivo lector
+        // Seguridad obligatoria por dispositivo lector (fail-closed)
         $requiredKey = env('ACCESS_DEVICE_KEY');
-        if ($requiredKey) {
-            $provided = $request->header('X-DEVICE-KEY');
-            if (!$provided || !hash_equals($requiredKey, $provided)) {
-                return response()->json(['message' => 'Dispositivo no autorizado.'], 403);
-            }
+        if (!$requiredKey) {
+            return response()->json(['message' => 'ACCESS_DEVICE_KEY no configurada en el servidor.'], 500);
+        }
+
+        $provided = $request->header('X-DEVICE-KEY');
+        if (!$provided || !hash_equals($requiredKey, $provided)) {
+            return response()->json(['message' => 'Dispositivo no autorizado.'], 403);
         }
 
         $data = $request->validate([

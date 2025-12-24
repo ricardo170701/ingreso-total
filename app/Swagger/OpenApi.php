@@ -10,8 +10,8 @@ namespace App\Swagger;
  * )
  *
  * @OA\Server(
- *     url="http://127.0.0.1:8001",
- *     description="Servidor local"
+ *     url="/",
+ *     description="Servidor actual (mismo host/puerto donde está abierto Swagger UI)"
  * )
  *
  * @OA\SecurityScheme(

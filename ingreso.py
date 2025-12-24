@@ -24,12 +24,14 @@ if os.environ.get("DISPLAY", "") == "":
 # Ejemplo (Raspberry salida):
 #   export TIPO_EVENTO="salida"
 #   export DISPOSITIVO_ID="P1-ENT-RPI-SALIDA"
-API_BASE = os.getenv("API_BASE", "http://127.0.0.1:8001")
-CODIGO_FISICO = os.getenv("CODIGO_FISICO", "P1-ENT")
+API_BASE = os.getenv(
+    "API_BASE", "https://l4decybayq.sharedwithexpose.com/api/documentation"
+)
+CODIGO_FISICO = os.getenv("CODIGO_FISICO", "P2-ENT")
 TIPO_EVENTO = os.getenv("TIPO_EVENTO", "entrada")  # "entrada" o "salida"
-DISPOSITIVO_ID = os.getenv("DISPOSITIVO_ID", "RPI-UNKNOWN")
+DISPOSITIVO_ID = os.getenv("DISPOSITIVO_ID", "P1-ENT-RPI-ENTRADA")
 DEVICE_KEY = os.getenv(
-    "DEVICE_KEY", ""
+    "DEVICE_KEY", "1234abcd"
 )  # opcional si activaste ACCESS_DEVICE_KEY en el backend
 
 # Relés / pines GPIO (BOARD)

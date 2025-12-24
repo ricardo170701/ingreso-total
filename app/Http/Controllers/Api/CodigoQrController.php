@@ -15,6 +15,7 @@ class CodigoQrController extends Controller
     /**
      * Genera un QR temporal (24h).
      * En BD se guarda sha256(token) en `codigos_qr.codigo` (hash) y se retorna el token plano para convertirlo a QR.
+     * Nota: el token retornado es corto (10 caracteres) para facilitar lectura en dispositivos.
      *
      * @OA\Post(
      *   path="/api/qrs",
@@ -95,8 +96,12 @@ class CodigoQrController extends Controller
         $expiresAt = $now->copy()->addHours(24);
 
         // Token opaco (para QR) + hash (para BD)
-        $plainToken = bin2hex(random_bytes(32)); // 64 chars
-        $tokenHash = hash('sha256', $plainToken);
+        // Token corto (10 chars), evitando caracteres confusos para lectores (0/O, 1/I/L).
+        // Se guarda sha256(token) en BD para no exponer el hash directamente.
+        do {
+            $plainToken = $this->makeShortToken(10);
+            $tokenHash = hash('sha256', $plainToken);
+        } while (CodigoQr::query()->where('codigo', $tokenHash)->exists());
 
         $qr = null;
 
@@ -138,6 +143,11 @@ class CodigoQrController extends Controller
             }
         });
 
+        if (!$qr) {
+            return response()->json(['message' => 'No se pudo crear el QR.'], 500);
+        }
+
+        /** @var CodigoQr $qr */
         return response()->json([
             'message' => 'QR temporal creado (24h).',
             'data' => [
@@ -147,5 +157,18 @@ class CodigoQrController extends Controller
                 'token' => $plainToken, // este es el valor a convertir a QR
             ],
         ], 201);
+    }
+
+    private function makeShortToken(int $len = 10): string
+    {
+        // Crockford-like base32 sin caracteres ambiguos: 2-9 y letras sin I, L, O.
+        $alphabet = '23456789ABCDEFGHJKMNPQRSTUVWXYZ';
+        $max = strlen($alphabet) - 1;
+
+        $out = '';
+        for ($i = 0; $i < $len; $i++) {
+            $out .= $alphabet[random_int(0, $max)];
+        }
+        return $out;
     }
 }

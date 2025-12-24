@@ -3,13 +3,16 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\User;
+use App\Services\AuthService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
 
 class AuthController extends Controller
 {
+    public function __construct(
+        private AuthService $authService
+    ) {}
+
     /**
      * @OA\Post(
      *     path="/api/auth/login",
@@ -52,30 +55,32 @@ class AuthController extends Controller
             'device_name' => ['nullable', 'string', 'max:100'],
         ]);
 
-        /** @var User|null $user */
-        $user = User::query()->where('email', $data['email'])->first();
+        try {
+            $user = $this->authService->validateCredentials($data['email'], $data['password']);
 
-        if (!$user || !Hash::check($data['password'], $user->password)) {
-            return response()->json(['message' => 'Credenciales inválidas.'], 422);
+            if (!$user) {
+                return response()->json(['message' => 'Credenciales inválidas.'], 422);
+            }
+
+            $tokenName = $data['device_name'] ?? 'api';
+            $token = $user->createToken($tokenName)->plainTextToken;
+
+            return response()->json([
+                'token_type' => 'Bearer',
+                'token' => $token,
+                'user' => [
+                    'id' => $user->id,
+                    'email' => $user->email,
+                    'role_id' => $user->role_id,
+                    'cargo_id' => $user->cargo_id,
+                ],
+            ]);
+        } catch (\Exception $e) {
+            if ($e->getMessage() === 'Usuario inactivo.') {
+                return response()->json(['message' => 'Usuario inactivo.'], 403);
+            }
+            throw $e;
         }
-
-        if (isset($user->activo) && $user->activo === false) {
-            return response()->json(['message' => 'Usuario inactivo.'], 403);
-        }
-
-        $tokenName = $data['device_name'] ?? 'api';
-        $token = $user->createToken($tokenName)->plainTextToken;
-
-        return response()->json([
-            'token_type' => 'Bearer',
-            'token' => $token,
-            'user' => [
-                'id' => $user->id,
-                'email' => $user->email,
-                'role_id' => $user->role_id,
-                'cargo_id' => $user->cargo_id,
-            ],
-        ]);
     }
 
     /**

@@ -12,7 +12,7 @@ class StoreUserRequest extends FormRequest
     public function authorize(): bool
     {
         // La autorización fina (por rol) se valida en el controller por ahora.
-        // Aquí solo exigimos que el usuario esté autenticado (auth:sanctum en la ruta).
+        // Aquí solo exigimos que el usuario esté autenticado (web o sanctum).
         return (bool) $this->user();
     }
 

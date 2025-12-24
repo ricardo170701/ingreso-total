@@ -4,12 +4,13 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\View\View;
+use Inertia\Inertia;
+use Inertia\Response;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
 
 class QrToolController extends Controller
 {
-    public function index(Request $request): View
+    public function index(Request $request): Response
     {
         $codigo = (string) $request->query('codigo', '');
         $codigo = trim($codigo);
@@ -23,7 +24,7 @@ class QrToolController extends Controller
                 ->generate($codigo);
         }
 
-        return view('qr-tool', [
+        return Inertia::render('QrTool', [
             'codigo' => $codigo,
             'svg' => $svg,
         ]);

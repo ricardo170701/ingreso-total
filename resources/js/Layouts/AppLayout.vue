@@ -109,6 +109,15 @@
             <div
                 class="shrink-0 p-4 border-t border-slate-800 bg-slate-900"
             >
+                <!-- SOS -->
+                <Link
+                    href="/soporte"
+                    class="w-full inline-flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-red-600 text-white font-semibold hover:bg-red-500 transition-colors"
+                >
+                    <span class="text-lg leading-none">🆘</span>
+                    <span>SOS</span>
+                </Link>
+
                 <div class="flex items-center gap-3">
                     <div
                         class="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center text-white text-sm font-semibold"

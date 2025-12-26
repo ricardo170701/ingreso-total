@@ -39,7 +39,7 @@ class UpdateUserRequest extends FormRequest
             'username' => ['nullable', 'string', 'max:50', Rule::unique('users', 'username')->ignore($userId)],
             'nombre' => ['nullable', 'string', 'max:100'],
             'apellido' => ['nullable', 'string', 'max:100'],
-            'departamento' => ['nullable', 'string', 'max:100'],
+            'departamento_id' => ['nullable', 'integer', 'exists:departamentos,id'],
             'foto_perfil' => ['nullable', 'string'],
 
             'activo' => ['nullable', 'boolean'],

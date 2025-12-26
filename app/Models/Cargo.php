@@ -45,4 +45,24 @@ class Cargo extends Model
             ])
             ->withTimestamps();
     }
+
+    /**
+     * Relación: Un cargo tiene muchos permisos del sistema
+     */
+    public function permissions(): BelongsToMany
+    {
+        return $this->belongsToMany(Permission::class, 'cargo_permission')
+            ->withTimestamps();
+    }
+
+    /**
+     * Verificar si el cargo tiene un permiso específico
+     */
+    public function hasPermission(string $permissionName): bool
+    {
+        return $this->permissions()
+            ->where('name', $permissionName)
+            ->where('activo', true)
+            ->exists();
+    }
 }

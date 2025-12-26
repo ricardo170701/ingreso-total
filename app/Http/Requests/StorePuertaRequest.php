@@ -23,6 +23,17 @@ class StorePuertaRequest extends FormRequest
     {
         return [
             'zona_id' => ['nullable', 'integer', 'exists:zonas,id'],
+            'piso_id' => ['nullable', 'integer', 'exists:pisos,id'],
+            'tipo_puerta_id' => ['nullable', 'integer', 'exists:tipo_puertas,id'],
+            'material_id' => ['nullable', 'integer', 'exists:materials,id'],
+            'ip_entrada' => ['nullable', 'ip'],
+            'ip_salida' => ['nullable', 'ip'],
+            'imagen' => ['nullable', 'image', 'mimes:jpeg,jpg,png,gif', 'max:2048'], // Max 2MB
+            'tiempo_apertura' => ['nullable', 'integer', 'min:1', 'max:300'], // Entre 1 y 300 segundos
+            'alto' => ['nullable', 'numeric', 'min:0', 'max:1000'], // En centímetros
+            'largo' => ['nullable', 'numeric', 'min:0', 'max:1000'], // En centímetros
+            'ancho' => ['nullable', 'numeric', 'min:0', 'max:1000'], // En centímetros
+            'peso' => ['nullable', 'numeric', 'min:0', 'max:10000'], // En kilogramos
             'nombre' => ['required', 'string', 'max:255'],
             'ubicacion' => ['nullable', 'string', 'max:255'],
             'descripcion' => ['nullable', 'string'],

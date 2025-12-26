@@ -69,10 +69,21 @@ class CargosController extends Controller
             ->orderBy('nombre')
             ->get();
 
+        // Cargar permisos del sistema
+        $cargo->load('permissions');
+        $permissions = \App\Models\Permission::query()
+            ->where('activo', true)
+            ->orderBy('group')
+            ->orderBy('name')
+            ->get();
+        $permissionsGrouped = $permissions->groupBy('group')->toArray();
+
         return Inertia::render('Cargos/Edit', [
             'cargo' => $cargo,
             'puertasAsignadas' => $puertasAsignadas,
             'todasLasPuertas' => $todasLasPuertas,
+            'permissions' => $permissions,
+            'permissionsGrouped' => $permissionsGrouped,
         ]);
     }
 
@@ -137,5 +148,22 @@ class CargosController extends Controller
         return redirect()
             ->route('cargos.edit', $cargo)
             ->with('message', 'Permiso de puerta revocado.');
+    }
+
+    /**
+     * Actualizar permisos del sistema de un cargo
+     */
+    public function updatePermissions(Request $request, Cargo $cargo)
+    {
+        $request->validate([
+            'permissions' => ['required', 'array'],
+            'permissions.*' => ['integer', 'exists:permissions,id'],
+        ]);
+
+        $cargo->permissions()->sync($request->input('permissions', []));
+
+        return redirect()
+            ->route('cargos.edit', $cargo)
+            ->with('message', 'Permisos del sistema actualizados exitosamente.');
     }
 }

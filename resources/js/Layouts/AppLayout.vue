@@ -2,17 +2,17 @@
     <div class="min-h-screen bg-slate-50">
         <!-- Sidebar -->
         <aside
-            class="fixed left-0 top-0 h-full w-64 bg-slate-900 border-r border-slate-800 z-30"
+            class="fixed left-0 top-0 h-screen w-64 bg-slate-900 border-r border-slate-800 z-30 flex flex-col"
         >
             <!-- Logo -->
-            <div class="h-16 flex items-center px-6 border-b border-slate-800">
+            <div class="h-16 flex items-center px-6 border-b border-slate-800 shrink-0">
                 <h1 class="text-xl font-bold text-white">Escaner Total</h1>
             </div>
 
             <!-- Navigation -->
-            <nav class="mt-6 px-3">
+            <nav class="flex-1 overflow-y-auto mt-6 px-3 pb-4">
                 <ul class="space-y-1">
-                    <li v-for="item in menuItems" :key="item.name">
+                    <li v-for="item in filteredMenuItems" :key="item.name">
                         <Link
                             v-if="item.href !== '#'"
                             :href="item.href"
@@ -40,11 +40,74 @@
                         </a>
                     </li>
                 </ul>
+
+                <!-- Sección de Permisos -->
+                <div class="mt-6 pt-4 border-t border-slate-800">
+                    <button
+                        @click="showPermissions = !showPermissions"
+                        class="w-full flex items-center justify-between px-3 py-2 text-sm font-medium text-slate-400 hover:text-white transition-colors"
+                    >
+                        <span class="flex items-center gap-2">
+                            <span>🔑</span>
+                            <span>Mis Permisos</span>
+                        </span>
+                        <span class="text-xs">
+                            {{ showPermissions ? "▼" : "▶" }}
+                        </span>
+                    </button>
+
+                    <div
+                        v-if="showPermissions"
+                        class="mt-2 space-y-2 px-3 pb-2"
+                    >
+                        <!-- Permisos activos -->
+                        <div v-if="userPermissions.length > 0">
+                            <p class="text-xs text-slate-500 mb-2">
+                                Permisos activos ({{ userPermissions.length }}):
+                            </p>
+                            <div class="space-y-1">
+                                <div
+                                    v-for="permission in userPermissions"
+                                    :key="permission"
+                                    class="flex items-center gap-2 text-xs text-slate-400"
+                                >
+                                    <span class="w-1.5 h-1.5 rounded-full bg-green-500"></span>
+                                    <span>{{ formatPermissionName(permission) }}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Botones visibles -->
+                        <div class="mt-3 pt-3 border-t border-slate-800">
+                            <p class="text-xs text-slate-500 mb-2">
+                                Botones visibles ({{ filteredMenuItems.length }}):
+                            </p>
+                            <div class="space-y-1">
+                                <div
+                                    v-for="item in filteredMenuItems"
+                                    :key="item.name"
+                                    class="flex items-center gap-2 text-xs text-slate-400"
+                                >
+                                    <span class="text-sm">{{ item.icon }}</span>
+                                    <span>{{ item.label }}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Sin permisos -->
+                        <div
+                            v-if="userPermissions.length === 0"
+                            class="text-xs text-slate-500 italic"
+                        >
+                            No tienes permisos asignados
+                        </div>
+                    </div>
+                </div>
             </nav>
 
             <!-- User Section -->
             <div
-                class="absolute bottom-0 left-0 right-0 p-4 border-t border-slate-800"
+                class="shrink-0 p-4 border-t border-slate-800 bg-slate-900"
             >
                 <div class="flex items-center gap-3">
                     <div
@@ -92,10 +155,11 @@
 </template>
 
 <script setup>
-import { computed } from "vue";
+import { computed, ref } from "vue";
 import { usePage, router, Link } from "@inertiajs/vue3";
 
 const page = usePage();
+const showPermissions = ref(false);
 
 const user = computed(() => page.props.auth?.user || page.props.user);
 const pageTitle = computed(() => {
@@ -120,38 +184,116 @@ const menuItems = [
         label: "Dashboard",
         href: "/dashboard",
         icon: "📊",
+        permission: "view_dashboard",
     },
     {
         name: "users",
         label: "Usuarios",
         href: "/usuarios",
         icon: "👥",
+        permission: "view_users",
     },
     {
         name: "puertas",
         label: "Puertas",
         href: "/puertas",
         icon: "🚪",
+        permission: "view_puertas",
     },
     {
         name: "cargos",
         label: "Permisos",
         href: "/cargos",
         icon: "🔐",
+        permission: "view_cargos",
     },
     {
         name: "ingreso",
         label: "Ingreso",
         href: "/ingreso",
         icon: "📱",
+        permission: "view_ingreso",
+    },
+    {
+        name: "mantenimientos",
+        label: "Mantenimientos",
+        href: "/mantenimientos",
+        icon: "🔧",
+        permission: "view_mantenimientos",
+    },
+
+    {
+        name: "departamentos",
+        label: "Departamentos",
+        href: "/departamentos",
+        icon: "🏢",
+        permission: "view_users", // Mismo permiso que usuarios
+    },
+    {
+        name: "reportes",
+        label: "Reportes",
+        href: "/reportes",
+        icon: "📊",
+        permission: "view_users", // Mismo permiso que usuarios
+    },{
+        name: "soporte",
+        label: "Soporte",
+        href: "/soporte",
+        icon: "❓",
+        permission: null, // Accesible para todos los usuarios autenticados
     },
 ];
 
+// Filtrar items del menú según permisos del usuario
+const userPermissions = computed(() => page.props.auth?.user?.permissions || []);
+const filteredMenuItems = computed(() => {
+    return menuItems.filter((item) => {
+        // Si no tiene permiso definido, siempre se muestra
+        if (!item.permission) {
+            return true;
+        }
+        // Verificar si el usuario tiene el permiso
+        return userPermissions.value.includes(item.permission);
+    });
+});
+
 const isActive = (href) => {
-    return page.url === href || page.url.startsWith(href + "/");
+    if (!page.url) return false;
+    // Normalizar las rutas para comparación
+    const currentUrl = page.url.split('?')[0]; // Remover query params
+    const normalizedHref = href.split('?')[0];
+
+    if (currentUrl === normalizedHref) return true;
+    if (normalizedHref !== '/dashboard' && currentUrl.startsWith(normalizedHref + '/')) return true;
+    return false;
 };
 
 const logout = () => {
     router.post(route("logout"));
+};
+
+const formatPermissionName = (permission) => {
+    const names = {
+        view_dashboard: "Ver Dashboard",
+        view_users: "Ver Usuarios",
+        create_users: "Crear Usuarios",
+        edit_users: "Editar Usuarios",
+        delete_users: "Eliminar Usuarios",
+        view_puertas: "Ver Puertas",
+        create_puertas: "Crear Puertas",
+        edit_puertas: "Editar Puertas",
+        delete_puertas: "Eliminar Puertas",
+        view_cargos: "Ver Permisos/Cargos",
+        create_cargos: "Crear Permisos/Cargos",
+        edit_cargos: "Editar Permisos/Cargos",
+        delete_cargos: "Eliminar Permisos/Cargos",
+        view_ingreso: "Ver Ingreso/QR",
+        create_ingreso: "Generar Códigos QR",
+        view_mantenimientos: "Ver Mantenimientos",
+        create_mantenimientos: "Crear Mantenimientos",
+        edit_mantenimientos: "Editar Mantenimientos",
+        delete_mantenimientos: "Eliminar Mantenimientos",
+    };
+    return names[permission] || permission;
 };
 </script>

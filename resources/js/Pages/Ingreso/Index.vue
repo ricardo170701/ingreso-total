@@ -32,10 +32,11 @@
                     <FormField label="Usuario" :error="form.errors.user_id">
                         <select
                             v-model="form.user_id"
-                            class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                            :disabled="!puedeCrearParaOtros && usuarios.length === 1"
+                            class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent disabled:bg-slate-100 disabled:cursor-not-allowed"
                             required
                         >
-                            <option :value="null">Selecciona un usuario</option>
+                            <option v-if="puedeCrearParaOtros" :value="null">Selecciona un usuario</option>
                             <option
                                 v-for="u in usuarios"
                                 :key="u.id"
@@ -48,6 +49,12 @@
                                 >
                             </option>
                         </select>
+                        <p
+                            v-if="!puedeCrearParaOtros"
+                            class="mt-1 text-xs text-slate-500"
+                        >
+                            Solo puedes generar QR para ti mismo. Si necesitas generar QR para otros usuarios, solicita el permiso correspondiente.
+                        </p>
                     </FormField>
 
                     <!-- Mostrar selector de puertas si el usuario seleccionado es visitante -->
@@ -271,14 +278,18 @@
 <script setup>
 import AppLayout from "@/Layouts/AppLayout.vue";
 import FormField from "@/Components/FormField.vue";
-import { computed, ref } from "vue";
-import { useForm, router } from "@inertiajs/vue3";
+import { computed, ref, onMounted } from "vue";
+import { useForm, router, usePage } from "@inertiajs/vue3";
 
+const page = usePage();
 const props = defineProps({
     usuarios: Array,
     puertas: Array,
     qrGenerado: Object,
+    puedeCrearParaOtros: Boolean,
 });
+
+const currentUser = computed(() => page.props.auth?.user || page.props.user);
 
 const form = useForm({
     user_id: null,
@@ -288,6 +299,13 @@ const form = useForm({
     dias_semana: "1,2,3,4,5,6,7",
     fecha_inicio: null,
     fecha_fin: null,
+});
+
+// Si no puede crear para otros, pre-seleccionar el usuario actual
+onMounted(() => {
+    if (!props.puedeCrearParaOtros && currentUser.value && props.usuarios.length === 1) {
+        form.user_id = props.usuarios[0].id;
+    }
 });
 
 const enviandoCorreo = ref(false);

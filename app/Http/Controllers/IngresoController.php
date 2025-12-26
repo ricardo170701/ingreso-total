@@ -23,14 +23,24 @@ class IngresoController extends Controller
      */
     public function index(Request $request): Response
     {
-        // Obtener usuarios activos para el selector
-        $usuarios = User::query()
-            ->where('activo', true)
-            ->with(['role', 'cargo'])
-            ->orderBy('name')
-            ->get();
+        $actor = $request->user();
 
-        // Obtener puertas activas para el selector (si se necesita)
+        // Si no tiene permiso para crear QR de otros, solo mostrar el usuario actual
+        $puedeCrearParaOtros = $actor && $actor->hasPermission('create_ingreso_otros');
+
+        if ($puedeCrearParaOtros) {
+            // Obtener todos los usuarios activos
+            $usuarios = User::query()
+                ->where('activo', true)
+                ->with(['role', 'cargo'])
+                ->orderBy('name')
+                ->get();
+        } else {
+            // Solo mostrar el usuario actual
+            $usuarios = collect([$actor])->filter();
+        }
+
+        // Obtener puertas activas para el selector
         $puertas = Puerta::query()
             ->where('activo', true)
             ->with('zona')
@@ -40,6 +50,7 @@ class IngresoController extends Controller
         return Inertia::render('Ingreso/Index', [
             'usuarios' => $usuarios,
             'puertas' => $puertas,
+            'puedeCrearParaOtros' => $puedeCrearParaOtros,
         ]);
     }
 
@@ -54,19 +65,24 @@ class IngresoController extends Controller
         /** @var User $targetUser */
         $targetUser = User::query()->with('role')->findOrFail($data['user_id']);
 
+        // Validar permiso para crear QR de otros usuarios
+        $puedeCrearParaOtros = $actor && $actor->hasPermission('create_ingreso_otros');
+
+        // Si no tiene permiso para crear para otros, solo puede crear para sí mismo
+        if (!$puedeCrearParaOtros && $actor && $actor->id !== $targetUser->id) {
+            return back()->withErrors(['user_id' => 'No tienes permiso para generar QR para otros usuarios. Solo puedes generar tu propio QR.']);
+        }
+
         $actorRole = $actor?->role?->name;
         $targetRole = $targetUser->role?->name;
 
-        // Validar permisos según rol
-        if ($actorRole !== 'super_usuario') {
+        // Validar permisos según rol (solo si tiene permiso para crear para otros)
+        if ($puedeCrearParaOtros && $actorRole !== 'super_usuario') {
             if ($actorRole === 'operador' && $targetRole !== 'visitante') {
                 return back()->withErrors(['user_id' => 'Operador solo puede generar QR para visitantes.']);
             }
             if ($actorRole === 'rrhh' && $targetRole === 'visitante') {
                 return back()->withErrors(['user_id' => 'RRHH no puede generar QR para visitantes.']);
-            }
-            if ($actorRole === 'funcionario' && $actor?->id !== $targetUser->id) {
-                return back()->withErrors(['user_id' => 'Funcionario solo puede generar su propio QR.']);
             }
         }
 
@@ -145,11 +161,17 @@ class IngresoController extends Controller
         $qrSvg = strval($qrSvg);
 
         // Obtener usuarios y puertas para el formulario
-        $usuarios = User::query()
-            ->where('activo', true)
-            ->with(['role', 'cargo'])
-            ->orderBy('name')
-            ->get();
+        $puedeCrearParaOtros = $actor && $actor->hasPermission('create_ingreso_otros');
+
+        if ($puedeCrearParaOtros) {
+            $usuarios = User::query()
+                ->where('activo', true)
+                ->with(['role', 'cargo'])
+                ->orderBy('name')
+                ->get();
+        } else {
+            $usuarios = collect([$actor])->filter();
+        }
 
         $puertas = Puerta::query()
             ->where('activo', true)
@@ -160,6 +182,7 @@ class IngresoController extends Controller
         return Inertia::render('Ingreso/Index', [
             'usuarios' => $usuarios,
             'puertas' => $puertas,
+            'puedeCrearParaOtros' => $puedeCrearParaOtros,
             'qrGenerado' => [
                 'id' => $qr->id,
                 'user_id' => $qr->user_id,

@@ -47,6 +47,150 @@
                         </FormField>
                     </div>
 
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <FormField label="Piso" :error="form.errors.piso_id">
+                            <select
+                                v-model="form.piso_id"
+                                class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                            >
+                                <option :value="null">- Sin piso -</option>
+                                <option
+                                    v-for="p in pisos"
+                                    :key="p.id"
+                                    :value="p.id"
+                                >
+                                    {{ p.nombre }}
+                                </option>
+                            </select>
+                        </FormField>
+                        <FormField label="Tipo" :error="form.errors.tipo_puerta_id">
+                            <select
+                                v-model="form.tipo_puerta_id"
+                                class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                            >
+                                <option :value="null">- Sin tipo -</option>
+                                <option
+                                    v-for="t in tiposPuerta"
+                                    :key="t.id"
+                                    :value="t.id"
+                                >
+                                    {{ t.nombre }}
+                                </option>
+                            </select>
+                        </FormField>
+                        <FormField label="Material" :error="form.errors.material_id">
+                            <select
+                                v-model="form.material_id"
+                                class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                            >
+                                <option :value="null">- Sin material -</option>
+                                <option
+                                    v-for="m in materiales"
+                                    :key="m.id"
+                                    :value="m.id"
+                                >
+                                    {{ m.nombre }}
+                                </option>
+                            </select>
+                        </FormField>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <FormField
+                            label="Tiempo de Apertura (seg)"
+                            :error="form.errors.tiempo_apertura"
+                        >
+                            <input
+                                v-model.number="form.tiempo_apertura"
+                                type="number"
+                                min="1"
+                                max="300"
+                                class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                placeholder="Ej: 5"
+                            />
+                        </FormField>
+                        <FormField label="Alto (cm)" :error="form.errors.alto">
+                            <input
+                                v-model.number="form.alto"
+                                type="number"
+                                min="0"
+                                step="0.01"
+                                class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                placeholder="Ej: 200"
+                            />
+                        </FormField>
+                        <FormField label="Largo (cm)" :error="form.errors.largo">
+                            <input
+                                v-model.number="form.largo"
+                                type="number"
+                                min="0"
+                                step="0.01"
+                                class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                placeholder="Ej: 100"
+                            />
+                        </FormField>
+                        <FormField label="Ancho (cm)" :error="form.errors.ancho">
+                            <input
+                                v-model.number="form.ancho"
+                                type="number"
+                                min="0"
+                                step="0.01"
+                                class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                placeholder="Ej: 5"
+                            />
+                        </FormField>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <FormField label="Peso (kg)" :error="form.errors.peso">
+                            <input
+                                v-model.number="form.peso"
+                                type="number"
+                                min="0"
+                                step="0.01"
+                                class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                placeholder="Ej: 50"
+                            />
+                        </FormField>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <FormField
+                            label="IP Entrada (Raspberry)"
+                            :error="form.errors.ip_entrada"
+                        >
+                            <input
+                                v-model="form.ip_entrada"
+                                type="text"
+                                class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                placeholder="Ej: 192.168.1.100"
+                            />
+                        </FormField>
+                        <FormField
+                            label="IP Salida (Raspberry)"
+                            :error="form.errors.ip_salida"
+                        >
+                            <input
+                                v-model="form.ip_salida"
+                                type="text"
+                                class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                placeholder="Ej: 192.168.1.101"
+                            />
+                        </FormField>
+                    </div>
+
+                    <FormField label="Imagen" :error="form.errors.imagen">
+                        <input
+                            @input="form.imagen = $event.target.files[0]"
+                            type="file"
+                            accept="image/jpeg,image/jpg,image/png,image/gif"
+                            class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                        />
+                        <p class="mt-1 text-xs text-slate-500">
+                            Formatos: JPEG, JPG, PNG, GIF (máx. 2MB)
+                        </p>
+                    </FormField>
+
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <FormField
                             label="Código Físico"
@@ -127,11 +271,25 @@ import { Link, useForm } from "@inertiajs/vue3";
 
 const props = defineProps({
     zonas: Array,
+    pisos: Array,
+    tiposPuerta: Array,
+    materiales: Array,
 });
 
 const form = useForm({
     nombre: "",
     zona_id: null,
+    piso_id: null,
+    tipo_puerta_id: null,
+    material_id: null,
+    ip_entrada: "",
+    ip_salida: "",
+    imagen: null,
+    tiempo_apertura: 5,
+    alto: null,
+    largo: null,
+    ancho: null,
+    peso: null,
     codigo_fisico: "",
     ubicacion: "",
     descripcion: "",
@@ -140,6 +298,8 @@ const form = useForm({
 });
 
 const submit = () => {
-    form.post(route("puertas.store"));
+    form.post(route("puertas.store"), {
+        forceFormData: true, // Necesario para subir archivos
+    });
 };
 </script>

@@ -78,14 +78,22 @@
                         </FormField>
                         <FormField
                             label="Departamento"
-                            :error="form.errors.departamento"
+                            :error="form.errors.departamento_id"
                         >
-                            <input
-                                v-model="form.departamento"
-                                type="text"
+                            <select
+                                v-model="form.departamento_id"
                                 class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                                placeholder="Seguridad"
-                            />
+                            >
+                                <option :value="null">Sin departamento</option>
+                                <option
+                                    v-for="dept in departamentos"
+                                    :key="dept.id"
+                                    :value="dept.id"
+                                >
+                                    {{ dept.nombre }}
+                                    <span v-if="dept.piso"> - {{ dept.piso.nombre }}</span>
+                                </option>
+                            </select>
                         </FormField>
                     </div>
 
@@ -181,6 +189,7 @@ import FormField from "@/Components/FormField.vue";
 const props = defineProps({
     roles: Array,
     cargos: Array,
+    departamentos: Array,
 });
 
 const form = useForm({
@@ -191,7 +200,7 @@ const form = useForm({
     username: "",
     nombre: "",
     apellido: "",
-    departamento: "",
+    departamento_id: null,
     fecha_expiracion: null,
     activo: true,
     es_discapacitado: false,

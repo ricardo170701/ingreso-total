@@ -38,7 +38,7 @@ class StoreUserRequest extends FormRequest
             'username' => ['nullable', 'string', 'max:50', 'unique:users,username'],
             'nombre' => ['nullable', 'string', 'max:100'],
             'apellido' => ['nullable', 'string', 'max:100'],
-            'departamento' => ['nullable', 'string', 'max:100'],
+            'departamento_id' => ['nullable', 'integer', 'exists:departamentos,id'],
             'foto_perfil' => ['nullable', 'string'],
 
             'activo' => ['nullable', 'boolean'],

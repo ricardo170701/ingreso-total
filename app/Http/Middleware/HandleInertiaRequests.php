@@ -38,15 +38,33 @@ class HandleInertiaRequests extends Middleware
         return [
             ...parent::share($request),
             'auth' => [
-                'user' => $request->user() ? [
-                    'id' => $request->user()->id,
-                    'name' => $request->user()->name,
-                    'email' => $request->user()->email,
-                    'role' => $request->user()->role ? [
-                        'id' => $request->user()->role->id,
-                        'name' => $request->user()->role->name,
-                    ] : null,
-                ] : null,
+                'user' => $request->user() ? (function ($user) {
+                    // Cargar relaciones necesarias para obtener permisos
+                    if (!$user->relationLoaded('role')) {
+                        $user->load('role');
+                    }
+                    if (!$user->relationLoaded('cargo')) {
+                        $user->load('cargo');
+                    }
+                    if ($user->cargo && !$user->cargo->relationLoaded('permissions')) {
+                        $user->cargo->load('permissions');
+                    }
+
+                    return [
+                        'id' => $user->id,
+                        'name' => $user->name,
+                        'email' => $user->email,
+                        'role' => $user->role ? [
+                            'id' => $user->role->id,
+                            'name' => $user->role->name,
+                        ] : null,
+                        'cargo' => $user->cargo ? [
+                            'id' => $user->cargo->id,
+                            'name' => $user->cargo->name,
+                        ] : null,
+                        'permissions' => $user->permissions ?? [],
+                    ];
+                })($request->user()) : null,
             ],
             'flash' => [
                 'success' => session('success'),

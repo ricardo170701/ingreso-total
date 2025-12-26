@@ -3,6 +3,8 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Models\Departamento;
+use App\Models\Permission;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -25,11 +27,10 @@ class User extends Authenticatable
         'role_id',
         'cargo_id',
         'es_discapacitado',
-        // Datos de perfil (según lo conversado)
         'username',
         'nombre',
         'apellido',
-        'departamento',
+        'departamento_id',
         'foto_perfil',
         'activo',
         'fecha_expiracion',
@@ -73,6 +74,14 @@ class User extends Authenticatable
     public function cargo()
     {
         return $this->belongsTo(Cargo::class);
+    }
+
+    /**
+     * Relación: Un usuario pertenece a un departamento
+     */
+    public function departamento()
+    {
+        return $this->belongsTo(Departamento::class);
     }
 
     /**
@@ -165,5 +174,56 @@ class User extends Authenticatable
         }
 
         return $this->cargo->puertas()->whereKey($puertaModel->getKey())->exists();
+    }
+
+    /**
+     * Verificar si el usuario tiene un permiso específico
+     */
+    public function hasPermission(string $permissionName): bool
+    {
+        // Super usuario tiene todos los permisos
+        if ($this->role && $this->role->name === 'super_usuario') {
+            return true;
+        }
+
+        // Los permisos vienen del cargo
+        if (!$this->cargo) {
+            return false;
+        }
+
+        return $this->cargo->hasPermission($permissionName);
+    }
+
+    /**
+     * Obtener todos los permisos del usuario a través de su cargo
+     */
+    public function getPermissionsAttribute(): array
+    {
+        // Super usuario tiene todos los permisos
+        if ($this->role && $this->role->name === 'super_usuario') {
+            return Permission::query()
+                ->where('activo', true)
+                ->pluck('name')
+                ->toArray();
+        }
+
+        // Los permisos vienen del cargo
+        if (!$this->relationLoaded('cargo')) {
+            $this->load('cargo');
+        }
+
+        if (!$this->cargo) {
+            return [];
+        }
+
+        // Cargar permisos del cargo si no están cargados
+        if (!$this->cargo->relationLoaded('permissions')) {
+            $this->cargo->load('permissions');
+        }
+
+        return $this->cargo->permissions
+            ->where('activo', true)
+            ->pluck('name')
+            ->toArray();
     }
 }

@@ -38,6 +38,7 @@
                                 <th class="px-4 py-3 font-semibold">Email</th>
                                 <th class="px-4 py-3 font-semibold">Rol</th>
                                 <th class="px-4 py-3 font-semibold">Cargo</th>
+                                <th class="px-4 py-3 font-semibold">Departamento</th>
                                 <th class="px-4 py-3 font-semibold">Activo</th>
                                 <th class="px-4 py-3 font-semibold text-right">
                                     Acciones
@@ -60,6 +61,9 @@
                                 </td>
                                 <td class="px-4 py-3">
                                     {{ u.cargo?.name || "-" }}
+                                </td>
+                                <td class="px-4 py-3">
+                                    {{ u.departamento?.nombre || "-" }}
                                 </td>
                                 <td class="px-4 py-3">
                                     <span
@@ -95,7 +99,7 @@
                             <tr v-if="users.data.length === 0">
                                 <td
                                     class="px-4 py-10 text-center text-slate-500"
-                                    colspan="7"
+                                    colspan="8"
                                 >
                                     No hay usuarios.
                                 </td>

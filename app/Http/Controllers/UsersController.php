@@ -16,7 +16,7 @@ class UsersController extends Controller
     public function index(): Response
     {
         $users = User::query()
-            ->with(['role', 'cargo'])
+            ->with(['role', 'cargo', 'departamento.piso'])
             ->orderByDesc('id')
             ->paginate(10)
             ->through(fn(User $u) => [
@@ -31,6 +31,7 @@ class UsersController extends Controller
                 'fecha_expiracion' => $u->fecha_expiracion?->format('Y-m-d'),
                 'role' => $u->role ? ['id' => $u->role->id, 'name' => $u->role->name] : null,
                 'cargo' => $u->cargo ? ['id' => $u->cargo->id, 'name' => $u->cargo->name] : null,
+                'departamento' => $u->departamento ? ['id' => $u->departamento->id, 'nombre' => $u->departamento->nombre] : null,
             ]);
 
         return Inertia::render('Users/Index', [
@@ -43,6 +44,11 @@ class UsersController extends Controller
         return Inertia::render('Users/Create', [
             'roles' => Role::query()->orderBy('name')->get(['id', 'name']),
             'cargos' => Cargo::query()->orderBy('name')->get(['id', 'name']),
+            'departamentos' => \App\Models\Departamento::query()
+                ->where('activo', true)
+                ->with('piso')
+                ->orderBy('nombre')
+                ->get(),
         ]);
     }
 
@@ -73,7 +79,7 @@ class UsersController extends Controller
 
     public function edit(User $user): Response
     {
-        $user->load(['role', 'cargo']);
+        $user->load(['role', 'cargo', 'departamento.piso']);
 
         return Inertia::render('Users/Edit', [
             'user' => [
@@ -83,7 +89,7 @@ class UsersController extends Controller
                 'username' => $user->username,
                 'nombre' => $user->nombre,
                 'apellido' => $user->apellido,
-                'departamento' => $user->departamento,
+                'departamento_id' => $user->departamento_id,
                 'foto_perfil' => $user->foto_perfil,
                 'activo' => (bool) ($user->activo ?? true),
                 'es_discapacitado' => (bool) ($user->es_discapacitado ?? false),
@@ -93,6 +99,11 @@ class UsersController extends Controller
             ],
             'roles' => Role::query()->orderBy('name')->get(['id', 'name']),
             'cargos' => Cargo::query()->orderBy('name')->get(['id', 'name']),
+            'departamentos' => \App\Models\Departamento::query()
+                ->where('activo', true)
+                ->with('piso')
+                ->orderBy('nombre')
+                ->get(),
         ]);
     }
 

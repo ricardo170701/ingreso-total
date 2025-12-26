@@ -74,13 +74,22 @@
                         </FormField>
                         <FormField
                             label="Departamento"
-                            :error="form.errors.departamento"
+                            :error="form.errors.departamento_id"
                         >
-                            <input
-                                v-model="form.departamento"
-                                type="text"
+                            <select
+                                v-model="form.departamento_id"
                                 class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                            />
+                            >
+                                <option :value="null">Sin departamento</option>
+                                <option
+                                    v-for="dept in departamentos"
+                                    :key="dept.id"
+                                    :value="dept.id"
+                                >
+                                    {{ dept.nombre }}
+                                    <span v-if="dept.piso"> - {{ dept.piso.nombre }}</span>
+                                </option>
+                            </select>
                         </FormField>
                     </div>
 
@@ -184,6 +193,7 @@ const props = defineProps({
     user: Object,
     roles: Array,
     cargos: Array,
+    departamentos: Array,
 });
 
 const form = useForm({
@@ -194,7 +204,7 @@ const form = useForm({
     username: props.user.username || "",
     nombre: props.user.nombre || "",
     apellido: props.user.apellido || "",
-    departamento: props.user.departamento || "",
+    departamento_id: props.user.departamento_id || null,
     fecha_expiracion: props.user.fecha_expiracion || null,
     activo: !!props.user.activo,
     es_discapacitado: !!props.user.es_discapacitado,

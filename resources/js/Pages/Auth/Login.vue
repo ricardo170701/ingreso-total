@@ -16,24 +16,24 @@
                         />
                     </div>
                 </div>
-                
+
                 <!-- Título principal -->
                 <h1 class="text-3xl font-bold text-white mb-2 tracking-tight">
                     Gobernación del Meta
                 </h1>
-                
+
                 <!-- Separador decorativo -->
                 <div class="flex items-center justify-center mb-2">
                     <div class="h-px w-12 bg-white/30"></div>
                     <div class="mx-2 w-1.5 h-1.5 rounded-full bg-white/40"></div>
                     <div class="h-px w-12 bg-white/30"></div>
                 </div>
-                
+
                 <!-- Subtítulo del sistema -->
                 <p class="text-white/95 text-lg font-medium mb-1">
                     Sistema de Control de Accesos
                 </p>
-                
+
                 <!-- Frase institucional -->
                 <p class="text-white/85 italic text-sm font-light">
                     Por un futuro para todos los colombianos
@@ -90,7 +90,7 @@
                         <input
                             id="password"
                             v-model="form.password"
-                            type="password"
+                            :type="showPassword ? 'text' : 'password'"
                             required
                             autocomplete="current-password"
                             class="w-full px-3 py-2.5 rounded-lg border border-gray-300 bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#008c3a] focus:border-transparent transition-all text-sm"
@@ -104,19 +104,19 @@
                         </div>
                     </div>
 
-                    <!-- Remember Me -->
+                    <!-- Ver Contraseña -->
                     <div class="mb-4 flex items-center">
                         <input
-                            id="remember"
-                            v-model="form.remember"
+                            id="showPassword"
+                            v-model="showPassword"
                             type="checkbox"
                             class="w-4 h-4 rounded border-gray-300 bg-white text-[#008c3a] focus:ring-[#008c3a] focus:ring-2"
                         />
                         <label
-                            for="remember"
+                            for="showPassword"
                             class="ml-2 text-sm text-gray-700"
                         >
-                            Recordarme
+                            Ver contraseña
                         </label>
                     </div>
 
@@ -135,14 +135,7 @@
                 </form>
 
                 <!-- Demo Credentials Hint -->
-                <div class="mt-4 pt-4 border-t border-gray-200">
-                    <p class="text-xs text-gray-600 text-center">
-                        Credenciales de prueba:
-                        <br />
-                        <code class="text-[#008c3a] font-semibold">admin@local.test</code> /
-                        <code class="text-[#008c3a] font-semibold">demo12345</code>
-                    </p>
-                </div>
+
             </div>
 
             <!-- Footer -->
@@ -159,11 +152,14 @@
 </template>
 
 <script setup>
+import { ref } from "vue";
 import { useForm } from "@inertiajs/vue3";
 
 defineOptions({
     layout: null, // Sin layout para login
 });
+
+const showPassword = ref(false);
 
 const form = useForm({
     email: "",

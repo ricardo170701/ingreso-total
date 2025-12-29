@@ -30,11 +30,14 @@ class User extends Authenticatable
         'username',
         'nombre',
         'apellido',
+        'n_identidad',
         'departamento_id',
         'foto_perfil',
         'activo',
         'fecha_expiracion',
         'creado_por',
+        'created_by',
+        'updated_by',
     ];
 
     /**
@@ -109,11 +112,35 @@ class User extends Authenticatable
     }
 
     /**
+     * Auditoría (nuevo): usuario que creó este usuario (created_by)
+     */
+    public function createdBy()
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
+
+    /**
+     * Auditoría (nuevo): usuario que editó por última vez este usuario (updated_by)
+     */
+    public function updatedBy()
+    {
+        return $this->belongsTo(User::class, 'updated_by');
+    }
+
+    /**
      * Relación: usuarios creados por este usuario
      */
     public function usuariosCreados()
     {
         return $this->hasMany(User::class, 'creado_por');
+    }
+
+    /**
+     * Documentos asociados al usuario (ej: contratos PDF)
+     */
+    public function documentos()
+    {
+        return $this->hasMany(UserDocumento::class)->latest();
     }
 
     /**
@@ -155,6 +182,7 @@ class User extends Authenticatable
 
     /**
      * Verificar si el usuario tiene acceso a una puerta específica
+     * Ahora verifica por piso: si el usuario tiene permiso al piso de la puerta, tiene acceso
      */
     public function tieneAccesoAPuerta(Puerta|int $puerta): bool
     {
@@ -162,7 +190,7 @@ class User extends Authenticatable
             return false;
         }
 
-        $puertaModel = $puerta instanceof Puerta ? $puerta : Puerta::query()->find($puerta);
+        $puertaModel = $puerta instanceof Puerta ? $puerta : Puerta::query()->with('piso')->find($puerta);
 
         if (!$puertaModel) {
             return false;
@@ -173,7 +201,13 @@ class User extends Authenticatable
             return false;
         }
 
-        return $this->cargo->puertas()->whereKey($puertaModel->getKey())->exists();
+        // Si la puerta no tiene piso asignado, no tiene acceso
+        if (!$puertaModel->piso_id) {
+            return false;
+        }
+
+        // Verificar si el cargo tiene permiso al piso de la puerta
+        return $this->cargo->pisos()->whereKey($puertaModel->piso_id)->exists();
     }
 
     /**
@@ -181,12 +215,7 @@ class User extends Authenticatable
      */
     public function hasPermission(string $permissionName): bool
     {
-        // Super usuario tiene todos los permisos
-        if ($this->role && $this->role->name === 'super_usuario') {
-            return true;
-        }
-
-        // Los permisos vienen del cargo
+        // Los permisos vienen del cargo (roles solo representan tipo de usuario: funcionario/visitante)
         if (!$this->cargo) {
             return false;
         }
@@ -199,15 +228,7 @@ class User extends Authenticatable
      */
     public function getPermissionsAttribute(): array
     {
-        // Super usuario tiene todos los permisos
-        if ($this->role && $this->role->name === 'super_usuario') {
-            return Permission::query()
-                ->where('activo', true)
-                ->pluck('name')
-                ->toArray();
-        }
-
-        // Los permisos vienen del cargo
+        // Los permisos vienen del cargo (roles solo representan tipo de usuario: funcionario/visitante)
         if (!$this->relationLoaded('cargo')) {
             $this->load('cargo');
         }

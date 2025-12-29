@@ -1,62 +1,60 @@
-# Ingreso Total (Escáner Total) — API de Control de Accesos con QR (Laravel)
+# Ingreso Total (Escáner Total) — Control de accesos con QR (Laravel + Inertia)
 
-Sistema para **generación de QR temporales** y **validación de accesos** por puertas/zonas en un edificio, con:
+Sistema para **generación de códigos QR** y **validación de accesos** por **puertas** en un edificio.
 
--   **Roles** (permisos del sistema): `super_usuario`, `operador`, `rrhh`, `funcionario`, `visitante`
--   **Cargos** (permisos físicos): acceso a puertas por tabla pivote `cargo_puerta_acceso`
--   **Puertas especiales**: puertas que requieren discapacidad (`requiere_discapacidad`)
--   **QR temporal (24h)**: token opaco, almacenado como **hash sha256** en BD
--   **Entrada/Salida**: no permite una nueva **entrada** hasta que exista una **salida**
--   **Auditoría**: registros en `accesos_registrados` con `dispositivo_id` (Raspberry/lector)
+## Características principales (estado actual)
+
+-   **Roles (bandera)**: solo `funcionario` y `visitante`.
+-   **Permisos**: se gestionan por **Cargos** (no por rol).
+-   **Visitante (restricción web)**: solo puede acceder a **Ingreso** (ver su QR) y **Soporte**.
+-   **QR**:
+    -   Expiración: **15 días**
+    -   Se puede mostrar el **QR activo** (almacenando token cifrado en BD con `token_encrypted`)
+    -   Si un usuario con permiso genera un nuevo QR, el anterior se desactiva.
+-   **Puertas**:
+    -   Listado con acciones rápidas (Ver / Abrir / Reiniciar) con permisos.
+    -   “Hoja de vida” por puerta (detalle + acciones + mantenimientos).
+-   **UPS** (módulo nuevo):
+    -   CRUD de UPS con foto
+    -   Mantenimientos con fotos + PDFs + ZIP + auditoría
 -   **Swagger UI**: documentación OpenAPI en `/api/documentation`
+
+> Nota: El “módulo” de **Mantenimientos** fue **deprecado en UI** (se quitó del menú), pero el backend/rutas se mantienen porque se usan desde Puertas y reportes.
 
 ---
 
-## Versiones actuales
+## Versiones (referencia)
 
-### Backend
-
--   **PHP**: `^8.1` (requerido por `composer.json`)
--   **Laravel Framework**: `v10.50.0` (según `composer.lock`)
--   **Laravel Sanctum**: `v3.3.3` (según `composer.lock`)
--   **L5 Swagger**: `8.6.0` (según `composer.lock`)
--   **swagger-php**: `4.11.1` (según `composer.lock`)
--   **Doctrine DBAL**: `3.10.4` (según `composer.lock`)
-
-### Frontend tooling
-
--   **Vite**: `^5.0.0` (según `package.json`)
--   **laravel-vite-plugin**: `^1.0.0`
--   **axios**: `^1.6.4`
+-   **PHP**: 8.1+
+-   **Laravel**: 10.x
+-   **Frontend**: Inertia + Vue + Vite
 
 ---
 
 ## Requisitos
 
-### Para desarrollo
+### Desarrollo
 
 -   PHP 8.1+
 -   Composer 2.x
 -   MySQL/MariaDB
--   (Opcional) Node.js 18+ para assets con Vite
+-   Node.js 18+ (recomendado para assets Vite)
 
-### Para producción (servidor)
+### Producción
 
--   Nginx o Apache
--   PHP-FPM 8.1+ con extensiones recomendadas:
-    -   `openssl`, `pdo_mysql`, `mbstring`, `tokenizer`, `json`, `curl`, `fileinfo`, `ctype`
--   MySQL/MariaDB
+-   Nginx/Apache + PHP-FPM 8.1+
+-   Extensiones recomendadas: `openssl`, `pdo_mysql`, `mbstring`, `tokenizer`, `json`, `curl`, `fileinfo`, `ctype`
+-   Para ZIP (mantenimientos UPS): extensión `zip` (`ZipArchive`) recomendada
 
 ---
 
 ## Instalación (desarrollo)
 
-1. Clonar e instalar dependencias:
+1. Instalar dependencias:
 
 ```bash
-git clone https://github.com/ricardo170701/ingreso-total.git
-cd ingreso-total
 composer install
+npm install
 ```
 
 2. Configurar entorno:
@@ -66,7 +64,7 @@ copy .env.example .env
 php artisan key:generate
 ```
 
-3. Configura la BD en `.env`:
+3. Configurar base de datos en `.env` (ejemplo):
 
 ```env
 DB_CONNECTION=mysql
@@ -77,20 +75,27 @@ DB_USERNAME=root
 DB_PASSWORD=TU_PASSWORD
 ```
 
-4. Migrar y seedear:
+4. Migraciones + seed:
 
 ```bash
 php artisan migrate
 php artisan db:seed
 ```
 
-5. Levantar servidor:
+5. Archivos públicos (fotos/PDFs):
+
+```bash
+php artisan storage:link
+```
+
+6. Levantar servidores:
 
 ```bash
 php artisan serve --host=127.0.0.1 --port=8001
+npm run dev
 ```
 
-6. Swagger UI:
+Swagger UI:
 
 -   `http://127.0.0.1:8001/api/documentation`
 
@@ -98,133 +103,126 @@ php artisan serve --host=127.0.0.1 --port=8001
 
 ## Seeders (datos iniciales)
 
-El seeder crea:
+-   Crea permisos (`PermissionSeeder`) y estructura base (pisos/puertas, etc. según seeders).
+-   Roles vigentes: **`funcionario`** y **`visitante`**.
+-   El usuario admin queda como `funcionario` y normalmente se le asigna un cargo con todos los permisos (según `AccessControlSeeder`).
 
--   Roles base
--   Cargos demo
--   Zonas/Puertas demo
--   Usuarios demo (y super usuario)
-
-### Super usuario inicial (por defecto)
-
--   Email: `admin@local.test`
--   Password: `admin12345`
-
-Puedes personalizarlo en `.env`:
+Variables opcionales (si aplica en tu seeder):
 
 ```env
-SEED_ADMIN_EMAIL=tuadmin@tudominio.com
-SEED_ADMIN_PASSWORD=TuClaveSegura123
+SEED_ADMIN_EMAIL=admin@local.test
+SEED_ADMIN_PASSWORD=admin12345
 ```
 
 ---
 
-## Instalación en servidor (producción)
+## Autorización (modelo mental)
 
-### 1) Subir código
-
-Clona el repo en tu servidor (ejemplo: `/var/www/ingreso-total`):
-
-```bash
-git clone https://github.com/ricardo170701/ingreso-total.git
-cd ingreso-total
-composer install --no-dev --optimize-autoloader
-```
-
-### 2) Configurar `.env`
-
-Crea/edita `.env` con:
-
--   `APP_ENV=production`
--   `APP_DEBUG=false`
--   `APP_URL=https://tudominio.com`
--   credenciales de BD
-
-Luego:
-
-```bash
-php artisan key:generate
-```
-
-### 3) Permisos de carpetas
-
-Asegura permisos de escritura:
-
--   `storage/`
--   `bootstrap/cache/`
-
-(En Linux, normalmente con el usuario del servidor web, ej. `www-data`).
-
-### 4) Migraciones y seed (solo la primera vez)
-
-```bash
-php artisan migrate --force
-php artisan db:seed --force
-```
-
-### 5) Optimización
-
-```bash
-php artisan config:cache
-php artisan route:cache
-php artisan view:cache
-```
-
-### 6) Nginx (ejemplo)
-
-Root debe apuntar a `public/`.
-
-### 7) Swagger en producción
-
-Swagger queda en:
-
--   `/api/documentation`
-
-Si quieres restringirlo, puedes configurar middleware en `config/l5-swagger.php`.
+-   **Rol**: solo define si el usuario es `funcionario` o `visitante`.
+-   **Cargo**: define **todos los permisos** del sistema.
+-   **Visitante**: aunque tenga cargo, en web queda restringido a:
+    -   `/ingreso` (ver su QR)
+    -   `/soporte`
 
 ---
 
-## Uso rápido de la API
+## Uso (web)
 
-### Obtener token (login)
+-   **Dashboard**: indicadores + puertas (acciones rápidas con permisos).
+-   **Puertas**:
+    -   Index: Ver/Abrir/Reiniciar
+    -   Show (hoja de vida): detalle + acciones + mantenimientos
+-   **Ingreso**: QR personal (visitantes solo visualizan)
+-   **UPS**: inventario + mantenimientos + adjuntos + ZIP
 
-`POST /api/auth/login`
+---
 
-Body:
+## API (resumen)
+
+> La referencia completa está en Swagger: `/api/documentation`.
+
+### Autenticación (Sanctum)
+
+-   **Login**: `POST /api/auth/login`
+-   **Logout** (revoca token actual): `POST /api/auth/logout` (requiere Bearer)
+
+Ejemplo:
+
+```bash
+curl -X POST "http://127.0.0.1:8001/api/auth/login" ^
+  -H "Content-Type: application/json" ^
+  -d "{\"email\":\"admin@local.test\",\"password\":\"admin12345\",\"device_name\":\"swagger\"}"
+```
+
+Respuesta:
 
 ```json
 {
-    "email": "admin@local.test",
-    "password": "admin12345",
-    "device_name": "swagger"
+    "token_type": "Bearer",
+    "token": "1|xxxx",
+    "user": {
+        "id": 1,
+        "email": "admin@local.test",
+        "role_id": 1,
+        "cargo_id": 1
+    }
 }
 ```
 
-Respuesta: `token` tipo Bearer.
+### Generar QR (15 días)
 
-### Crear usuario
+-   **Endpoint**: `POST /api/qrs` (requiere Bearer)
+-   **Body mínimo**:
+    -   `user_id` (obligatorio)
+-   **Reglas importantes**:
+    -   Si el usuario destino es **visitante**, se debe enviar `pisos` (se expanden a puertas activas).
+    -   Si generas para **otro usuario** y es **visitante**, se debe enviar `departamento_id` (departamento destino).
+    -   Si no se envían `puertas`/`pisos`, el acceso se evaluará por **cargo** (para no visitantes).
 
-`POST /api/users` (requiere Bearer token)
+Ejemplo (visitante con pisos):
 
-### Generar QR temporal (24h)
+```bash
+curl -X POST "http://127.0.0.1:8001/api/qrs" ^
+  -H "Authorization: Bearer 1|xxxx" ^
+  -H "Content-Type: application/json" ^
+  -d "{\"user_id\":10,\"pisos\":[1,2],\"departamento_id\":3}"
+```
 
-`POST /api/qrs` (requiere Bearer token)
+La respuesta incluye el `token` (valor a convertir a QR). En BD se guarda hash + `token_encrypted` para poder renderizar el QR activo.
 
--   Para **visitante**, `puertas` es obligatorio.
--   Para otros roles, `puertas` es opcional y el acceso se valida por **cargo**.
+### Validación de acceso (lector/Raspberry)
 
-### Verificar acceso desde lector/Raspberry
+-   **Endpoint**: `POST /api/access/verify`
+-   **Seguridad**: requiere header `X-DEVICE-KEY` y que `ACCESS_DEVICE_KEY` esté configurada en `.env` (fail-closed).
+-   **Body**:
+    -   `token` (valor leído del QR)
+    -   `codigo_fisico` (identificador físico de la puerta/lector)
+    -   `tipo_evento` (opcional): `entrada` / `salida` (por defecto `entrada`)
+    -   `dispositivo_id` (opcional)
 
-`POST /api/access/verify` (endpoint para el lector)
+Ejemplo:
 
-Body:
+```bash
+curl -X POST "http://127.0.0.1:8001/api/access/verify" ^
+  -H "Content-Type: application/json" ^
+  -H "X-DEVICE-KEY: TU_LLAVE" ^
+  -d "{\"token\":\"TOKEN_QR\",\"codigo_fisico\":\"P1-ENT\",\"tipo_evento\":\"entrada\",\"dispositivo_id\":\"P1-ENT-RPI\"}"
+```
+
+Respuesta típica:
 
 ```json
 {
-    "token": "TOKEN_LEIDO_DEL_QR",
-    "codigo_fisico": "P1-ENT",
-    "tipo_evento": "entrada",
-    "dispositivo_id": "P1-ENT-RPI-ENTRADA"
+    "permitido": true,
+    "message": "Acceso permitido.",
+    "data": {
+        "user_id": 10,
+        "puerta_id": 3,
+        "codigo_qr_id": 99,
+        "tipo_evento": "entrada",
+        "dispositivo_id": "P1-ENT-RPI",
+        "fecha": "2025-12-28T12:34:56+00:00"
+    }
 }
 ```
 
@@ -232,33 +230,19 @@ Body:
 
 ## Raspberry / lector (script `ingreso.py`)
 
-El script `ingreso.py` llama a la API de verificación y abre relés si el backend responde `permitido=true`.
+El script `ingreso.py` llama a la API de verificación y activa relés si el backend responde `permitido=true`.
 
-Variables de entorno recomendadas por Raspberry:
+Variables típicas:
 
--   `API_BASE`: URL del backend (ej. `http://IP_SERVIDOR:8001`)
--   `CODIGO_FISICO`: puerta (ej. `P1-ENT`)
--   `TIPO_EVENTO`: `entrada` o `salida`
--   `DISPOSITIVO_ID`: identificador único del dispositivo
--   `DEVICE_KEY` (opcional): si activas seguridad por llave
--   `OPEN_SECONDS` (opcional): segundos que activa el relé (default 5)
-
----
-
-## Seguridad opcional del endpoint del lector
-
-Si defines en `.env`:
-
-```env
-ACCESS_DEVICE_KEY=TU_LLAVE
-```
-
-El lector debe enviar header:
-
--   `X-DEVICE-KEY: TU_LLAVE`
+-   `API_BASE`
+-   `CODIGO_FISICO`
+-   `TIPO_EVENTO` (`entrada` / `salida`)
+-   `DISPOSITIVO_ID`
+-   `ACCESS_DEVICE_KEY` (si habilitas seguridad por llave)
 
 ---
 
 ## Notas
 
--   No se sube `vendor/`, `node_modules/`, `.env` ni `storage/logs|framework|api-docs` al repositorio.
+-   No se sube `vendor/`, `node_modules/` ni `.env`.
+-   Documentación interna de módulos: `MODULOS_SISTEMA.md`.

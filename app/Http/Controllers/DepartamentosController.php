@@ -15,6 +15,8 @@ class DepartamentosController extends Controller
      */
     public function index(Request $request): Response
     {
+        $this->authorize('viewAny', Departamento::class);
+
         $perPage = (int) ($request->query('per_page', 15));
         $perPage = max(1, min(100, $perPage));
 
@@ -34,6 +36,8 @@ class DepartamentosController extends Controller
      */
     public function create(): Response
     {
+        $this->authorize('create', Departamento::class);
+
         $pisos = Piso::query()
             ->where('activo', true)
             ->orderBy('orden')
@@ -49,6 +53,8 @@ class DepartamentosController extends Controller
      */
     public function store(Request $request)
     {
+        $this->authorize('create', Departamento::class);
+
         $data = $request->validate([
             'nombre' => ['required', 'string', 'max:100'],
             'piso_id' => ['nullable', 'integer', 'exists:pisos,id'],
@@ -80,6 +86,8 @@ class DepartamentosController extends Controller
      */
     public function edit(Departamento $departamento): Response
     {
+        $this->authorize('update', $departamento);
+
         $pisos = Piso::query()
             ->where('activo', true)
             ->orderBy('orden')
@@ -96,6 +104,8 @@ class DepartamentosController extends Controller
      */
     public function update(Request $request, Departamento $departamento)
     {
+        $this->authorize('update', $departamento);
+
         $data = $request->validate([
             'nombre' => ['required', 'string', 'max:100'],
             'piso_id' => ['nullable', 'integer', 'exists:pisos,id'],

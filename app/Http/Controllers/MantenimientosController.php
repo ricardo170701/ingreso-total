@@ -4,14 +4,14 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreMantenimientoRequest;
 use App\Http\Requests\UpdateMantenimientoRequest;
-use App\Models\Defecto;
 use App\Models\Mantenimiento;
-use App\Models\MantenimientoImagen;
+use App\Models\MantenimientoDocumento;
 use App\Models\Puerta;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class MantenimientosController extends Controller
 {
@@ -20,23 +20,42 @@ class MantenimientosController extends Controller
      */
     public function index(Request $request): Response
     {
+        $this->authorize('viewAny', Mantenimiento::class);
+
         $perPage = (int) ($request->query('per_page', 15));
         $perPage = max(1, min(100, $perPage));
         $puertaId = $request->query('puerta_id');
+        $tipo = $request->query('tipo'); // 'realizado' o 'programado'
 
         $query = Mantenimiento::query()
-            ->with(['puerta.piso', 'usuario', 'defectos', 'imagenes']);
+            ->with(['puerta.piso', 'documentos', 'creadoPor', 'editadoPor']);
 
         // Filtrar por puerta si se proporciona
         if ($puertaId) {
             $query->where('puerta_id', $puertaId);
         }
 
+        // Filtrar por tipo/estado si se proporciona
+        if ($tipo && in_array($tipo, ['realizado', 'programado'])) {
+            $query->where('tipo', $tipo);
+        }
+
         $mantenimientos = $query->orderBy('fecha_mantenimiento', 'desc')->paginate($perPage);
+
+        // Obtener todas las puertas para el filtro
+        $puertas = Puerta::query()
+            ->where('activo', true)
+            ->with('piso')
+            ->orderBy('nombre')
+            ->get();
 
         return Inertia::render('Mantenimientos/Index', [
             'mantenimientos' => $mantenimientos,
-            'puertaFiltrada' => $puertaId ? (int) $puertaId : null,
+            'puertas' => $puertas,
+            'filtros' => [
+                'puerta_id' => $puertaId ? (int) $puertaId : null,
+                'tipo' => $tipo,
+            ],
         ]);
     }
 
@@ -45,17 +64,17 @@ class MantenimientosController extends Controller
      */
     public function create(Request $request): Response
     {
+        $this->authorize('create', Mantenimiento::class);
+
         $puertas = Puerta::query()
             ->where('activo', true)
             ->with('piso')
             ->orderBy('nombre')
             ->get();
-        $defectos = Defecto::query()->where('activo', true)->orderBy('nombre')->get();
         $puertaId = $request->query('puerta_id');
 
         return Inertia::render('Mantenimientos/Create', [
             'puertas' => $puertas,
-            'defectos' => $defectos,
             'puertaSeleccionada' => $puertaId ? (int) $puertaId : null,
         ]);
     }
@@ -65,34 +84,31 @@ class MantenimientosController extends Controller
      */
     public function store(StoreMantenimientoRequest $request)
     {
+        $this->authorize('create', Mantenimiento::class);
+
         $data = $request->validated();
 
         // Crear el mantenimiento
         $mantenimiento = Mantenimiento::create([
             'puerta_id' => $data['puerta_id'],
-            'usuario_id' => $request->user()->id,
             'fecha_mantenimiento' => $data['fecha_mantenimiento'],
+            'fecha_fin_programada' => ($data['tipo'] ?? 'realizado') === 'programado'
+                ? ($data['fecha_fin_programada'] ?? null)
+                : null,
             'tipo' => $data['tipo'] ?? 'realizado',
-            'fecha_fin_programada' => $data['fecha_fin_programada'] ?? null,
-            'otros_defectos' => $data['otros_defectos'] ?? null,
-            'observaciones' => $data['observaciones'] ?? null,
+            'falla' => $data['falla'] ?? null,
+            'created_by' => $request->user()->id,
         ]);
 
-        // Asociar defectos con sus niveles de gravedad
-        $defectosConNivel = [];
-        foreach ($data['defectos'] as $defecto) {
-            $defectosConNivel[$defecto['id']] = ['nivel_gravedad' => $defecto['nivel_gravedad']];
-        }
-        $mantenimiento->defectos()->attach($defectosConNivel);
-
-        // Guardar imágenes
-        if ($request->hasFile('imagenes')) {
+        // Guardar documentos (PDFs)
+        if ($request->hasFile('documentos')) {
             $orden = 0;
-            foreach ($request->file('imagenes') as $imagen) {
-                $ruta = $imagen->store('mantenimientos', 'public');
-                MantenimientoImagen::create([
+            foreach ($request->file('documentos') as $documento) {
+                $ruta = $documento->store('mantenimientos/documentos', 'public');
+                MantenimientoDocumento::create([
                     'mantenimiento_id' => $mantenimiento->id,
-                    'ruta_imagen' => $ruta,
+                    'ruta_documento' => $ruta,
+                    'nombre_original' => $documento->getClientOriginalName(),
                     'orden' => $orden++,
                 ]);
             }
@@ -108,7 +124,9 @@ class MantenimientosController extends Controller
      */
     public function show(Mantenimiento $mantenimiento): Response
     {
-        $mantenimiento->load(['puerta.piso', 'usuario', 'defectos', 'imagenes']);
+        $this->authorize('view', $mantenimiento);
+
+        $mantenimiento->load(['puerta.piso', 'documentos', 'creadoPor', 'editadoPor']);
 
         return Inertia::render('Mantenimientos/Show', [
             'mantenimiento' => $mantenimiento,
@@ -120,18 +138,18 @@ class MantenimientosController extends Controller
      */
     public function edit(Mantenimiento $mantenimiento): Response
     {
-        $mantenimiento->load(['puerta.piso', 'usuario', 'defectos', 'imagenes']);
+        $this->authorize('update', $mantenimiento);
+
+        $mantenimiento->load(['puerta.piso', 'documentos', 'creadoPor', 'editadoPor']);
         $puertas = Puerta::query()
             ->where('activo', true)
             ->with('piso')
             ->orderBy('nombre')
             ->get();
-        $defectos = Defecto::query()->where('activo', true)->orderBy('nombre')->get();
 
         return Inertia::render('Mantenimientos/Edit', [
             'mantenimiento' => $mantenimiento,
             'puertas' => $puertas,
-            'defectos' => $defectos,
         ]);
     }
 
@@ -140,47 +158,56 @@ class MantenimientosController extends Controller
      */
     public function update(UpdateMantenimientoRequest $request, Mantenimiento $mantenimiento)
     {
+        $this->authorize('update', $mantenimiento);
+
         $data = $request->validated();
 
         // Actualizar datos básicos
         $mantenimiento->update([
             'puerta_id' => $data['puerta_id'] ?? $mantenimiento->puerta_id,
             'fecha_mantenimiento' => $data['fecha_mantenimiento'] ?? $mantenimiento->fecha_mantenimiento,
+            'fecha_fin_programada' => ($data['tipo'] ?? $mantenimiento->tipo) === 'programado'
+                ? ($data['fecha_fin_programada'] ?? $mantenimiento->fecha_fin_programada)
+                : null,
             'tipo' => $data['tipo'] ?? $mantenimiento->tipo,
-            'fecha_fin_programada' => $data['fecha_fin_programada'] ?? $mantenimiento->fecha_fin_programada,
-            'otros_defectos' => $data['otros_defectos'] ?? $mantenimiento->otros_defectos,
-            'observaciones' => $data['observaciones'] ?? $mantenimiento->observaciones,
+            'falla' => $data['falla'] ?? $mantenimiento->falla,
+            'updated_by' => $request->user()->id,
         ]);
 
-        // Actualizar defectos si se proporcionan
-        if (isset($data['defectos'])) {
-            $defectosConNivel = [];
-            foreach ($data['defectos'] as $defecto) {
-                $defectosConNivel[$defecto['id']] = ['nivel_gravedad' => $defecto['nivel_gravedad']];
+        // Eliminar documentos solicitados
+        if (isset($data['documentos_eliminar']) && is_array($data['documentos_eliminar'])) {
+            foreach ($data['documentos_eliminar'] as $documentoId) {
+                $documento = MantenimientoDocumento::find($documentoId);
+                if ($documento && $documento->mantenimiento_id === $mantenimiento->id) {
+                    if (Storage::disk('public')->exists($documento->ruta_documento)) {
+                        Storage::disk('public')->delete($documento->ruta_documento);
+                    }
+                    $documento->delete();
+                }
             }
-            $mantenimiento->defectos()->sync($defectosConNivel);
         }
 
-        // Agregar nuevas imágenes si se proporcionan
-        if ($request->hasFile('imagenes')) {
-            $ultimoOrden = $mantenimiento->imagenes()->max('orden') ?? -1;
-            $orden = $ultimoOrden + 1;
+        // Agregar nuevos documentos si se proporcionan
+        if ($request->hasFile('documentos')) {
+            $totalDocumentos = $mantenimiento->documentos()->count();
+            $nuevosDocumentos = count($request->file('documentos'));
 
-            // Verificar que no exceda 10 imágenes en total
-            $totalImagenes = $mantenimiento->imagenes()->count();
-            $nuevasImagenes = count($request->file('imagenes'));
-
-            if ($totalImagenes + $nuevasImagenes > 10) {
+            // Verificar que no exceda 5 documentos en total
+            if ($totalDocumentos + $nuevosDocumentos > 5) {
                 return back()->withErrors([
-                    'imagenes' => 'No se pueden agregar más de 10 imágenes en total.',
+                    'documentos' => 'No se pueden agregar más de 5 documentos en total.',
                 ]);
             }
 
-            foreach ($request->file('imagenes') as $imagen) {
-                $ruta = $imagen->store('mantenimientos', 'public');
-                MantenimientoImagen::create([
+            $ultimoOrden = $mantenimiento->documentos()->max('orden') ?? -1;
+            $orden = $ultimoOrden + 1;
+
+            foreach ($request->file('documentos') as $documento) {
+                $ruta = $documento->store('mantenimientos/documentos', 'public');
+                MantenimientoDocumento::create([
                     'mantenimiento_id' => $mantenimiento->id,
-                    'ruta_imagen' => $ruta,
+                    'ruta_documento' => $ruta,
+                    'nombre_original' => $documento->getClientOriginalName(),
                     'orden' => $orden++,
                 ]);
             }
@@ -196,10 +223,12 @@ class MantenimientosController extends Controller
      */
     public function destroy(Mantenimiento $mantenimiento)
     {
-        // Eliminar imágenes asociadas
-        foreach ($mantenimiento->imagenes as $imagen) {
-            if (Storage::disk('public')->exists($imagen->ruta_imagen)) {
-                Storage::disk('public')->delete($imagen->ruta_imagen);
+        $this->authorize('delete', $mantenimiento);
+
+        // Eliminar documentos asociados
+        foreach ($mantenimiento->documentos as $documento) {
+            if (Storage::disk('public')->exists($documento->ruta_documento)) {
+                Storage::disk('public')->delete($documento->ruta_documento);
             }
         }
 
@@ -211,16 +240,47 @@ class MantenimientosController extends Controller
     }
 
     /**
-     * Eliminar una imagen específica
+     * Marcar mantenimiento programado como completado
      */
-    public function eliminarImagen(MantenimientoImagen $imagen)
+    public function marcarCompletado(Request $request, Mantenimiento $mantenimiento)
     {
-        if (Storage::disk('public')->exists($imagen->ruta_imagen)) {
-            Storage::disk('public')->delete($imagen->ruta_imagen);
+        $this->authorize('update', $mantenimiento);
+
+        if ($mantenimiento->tipo !== 'programado') {
+            return back()->withErrors([
+                'tipo' => 'Solo se pueden completar mantenimientos programados.',
+            ]);
         }
 
-        $imagen->delete();
+        $mantenimiento->update([
+            'tipo' => 'realizado',
+            'updated_by' => $request->user()->id,
+        ]);
 
-        return back()->with('message', 'Imagen eliminada exitosamente.');
+        return redirect()
+            ->route('mantenimientos.index')
+            ->with('message', 'Mantenimiento marcado como completado exitosamente.');
+    }
+
+    /**
+     * Descargar PDF del mantenimiento
+     */
+    public function downloadPdf(Mantenimiento $mantenimiento)
+    {
+        $this->authorize('downloadPdf', $mantenimiento);
+
+        // Cargar todas las relaciones necesarias
+        $mantenimiento->load(['puerta.piso', 'documentos', 'creadoPor', 'editadoPor']);
+
+        // Generar PDF
+        $pdf = Pdf::loadView('mantenimientos.pdf', [
+            'mantenimiento' => $mantenimiento,
+        ]);
+
+        // Nombre del archivo
+        $filename = 'mantenimiento_' . $mantenimiento->id . '_' . date('Y-m-d') . '.pdf';
+
+        // Retornar descarga
+        return $pdf->download($filename);
     }
 }

@@ -5,7 +5,6 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Mantenimiento extends Model
@@ -14,12 +13,12 @@ class Mantenimiento extends Model
 
     protected $fillable = [
         'puerta_id',
-        'usuario_id',
-        'otros_defectos',
-        'observaciones',
         'fecha_mantenimiento',
-        'tipo',
         'fecha_fin_programada',
+        'tipo',
+        'falla',
+        'created_by',
+        'updated_by',
     ];
 
     protected $casts = [
@@ -36,28 +35,26 @@ class Mantenimiento extends Model
     }
 
     /**
-     * Relación: Un mantenimiento pertenece a un usuario
+     * Relación: Un mantenimiento tiene muchos documentos (PDFs)
      */
-    public function usuario(): BelongsTo
+    public function documentos(): HasMany
     {
-        return $this->belongsTo(User::class, 'usuario_id');
+        return $this->hasMany(MantenimientoDocumento::class)->orderBy('orden');
     }
 
     /**
-     * Relación: Un mantenimiento puede tener muchos defectos
+     * Relación: Usuario que creó el mantenimiento
      */
-    public function defectos(): BelongsToMany
+    public function creadoPor(): BelongsTo
     {
-        return $this->belongsToMany(Defecto::class, 'mantenimiento_defecto')
-            ->withPivot('nivel_gravedad')
-            ->withTimestamps();
+        return $this->belongsTo(User::class, 'created_by');
     }
 
     /**
-     * Relación: Un mantenimiento tiene muchas imágenes
+     * Relación: Usuario que editó por última vez el mantenimiento
      */
-    public function imagenes(): HasMany
+    public function editadoPor(): BelongsTo
     {
-        return $this->hasMany(MantenimientoImagen::class)->orderBy('orden');
+        return $this->belongsTo(User::class, 'updated_by');
     }
 }

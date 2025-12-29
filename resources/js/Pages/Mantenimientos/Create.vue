@@ -66,135 +66,72 @@
                         </FormField>
                         <FormField
                             v-if="form.tipo === 'programado'"
-                            label="Fecha de Fin Programada"
+                            label="Fecha límite (Programado)"
                             :error="form.errors.fecha_fin_programada"
                         >
                             <input
                                 v-model="form.fecha_fin_programada"
                                 type="date"
-                                :min="form.fecha_mantenimiento"
                                 class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                required
                             />
                             <p class="mt-1 text-xs text-slate-500">
-                                Indique hasta cuándo estará la puerta en mantenimiento
+                                Fecha máxima para completar el mantenimiento (si se pasa, la puerta se marca como vencida).
                             </p>
                         </FormField>
                     </div>
 
                     <FormField
-                        label="Estado de los Defectos"
-                        :error="form.errors.defectos"
+                        label="Falla"
+                        :error="form.errors.falla"
                     >
-                        <div class="space-y-3">
-                            <div
-                                v-for="defecto in defectos"
-                                :key="defecto.id"
-                                class="flex items-center gap-4 p-3 bg-slate-50 rounded-lg"
-                            >
-                                <label
-                                    :for="`defecto-${defecto.id}`"
-                                    class="flex-1 text-sm font-medium text-slate-700 min-w-[200px]"
-                                >
-                                    {{ defecto.nombre }}
-                                </label>
-                                <select
-                                    :id="`defecto-${defecto.id}`"
-                                    v-model="form.defectos[defecto.id]"
-                                    class="flex-1 px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm"
-                                    required
-                                >
-                                    <option value="0">Sin defecto</option>
-                                    <option value="1">Defecto ligero</option>
-                                    <option value="2">Defecto grave</option>
-                                    <option value="3">Defecto muy grave</option>
-                                </select>
-                                <span
-                                    :class="[
-                                        'px-2 py-1 rounded text-xs font-medium',
-                                        form.defectos[defecto.id] == 0
-                                            ? 'bg-green-100 text-green-700'
-                                            : form.defectos[defecto.id] == 1
-                                            ? 'bg-yellow-100 text-yellow-700'
-                                            : form.defectos[defecto.id] == 2
-                                            ? 'bg-orange-100 text-orange-700'
-                                            : 'bg-red-100 text-red-700',
-                                    ]"
-                                >
-                                    {{
-                                        form.defectos[defecto.id] == 0
-                                            ? "Sin defecto"
-                                            : form.defectos[defecto.id] == 1
-                                            ? "Ligero"
-                                            : form.defectos[defecto.id] == 2
-                                            ? "Grave"
-                                            : "Muy grave"
-                                    }}
-                                </span>
-                            </div>
-                        </div>
-                        <p class="mt-2 text-xs text-slate-500">
-                            Seleccione el nivel de gravedad para cada defecto
+                        <textarea
+                            v-model="form.falla"
+                            rows="4"
+                            class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                            placeholder="Describa la falla encontrada..."
+                        />
+                        <p class="mt-1 text-xs text-slate-500">
+                            Descripción de la falla o problema detectado
                         </p>
                     </FormField>
 
                     <FormField
-                        label="Otros Defectos"
-                        :error="form.errors.otros_defectos"
-                    >
-                        <textarea
-                            v-model="form.otros_defectos"
-                            rows="3"
-                            class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                            placeholder="Describa otros defectos encontrados..."
-                        />
-                    </FormField>
-
-                    <FormField
-                        label="Observaciones"
-                        :error="form.errors.observaciones"
-                    >
-                        <textarea
-                            v-model="form.observaciones"
-                            rows="3"
-                            class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                            placeholder="Observaciones adicionales sobre el mantenimiento..."
-                        />
-                    </FormField>
-
-                    <FormField
-                        label="Imágenes de Evidencia (máx. 10)"
-                        :error="form.errors.imagenes"
+                        label="Documentos PDF (máx. 5)"
+                        :error="form.errors.documentos"
                     >
                         <input
-                            @input="handleImages"
+                            @input="handleDocuments"
                             type="file"
                             multiple
-                            accept="image/jpeg,image/jpg,image/png,image/gif"
+                            accept=".pdf,application/pdf"
                             class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
                         />
                         <p class="mt-1 text-xs text-slate-500">
-                            Puede seleccionar hasta 10 imágenes. Formatos: JPEG, JPG, PNG, GIF (máx. 2MB cada una)
+                            Puede seleccionar hasta 5 documentos PDF. Tamaño máximo: 10MB cada uno
                         </p>
                         <div
-                            v-if="imagenesPreview.length > 0"
-                            class="mt-4 grid grid-cols-2 md:grid-cols-5 gap-2"
+                            v-if="documentosPreview.length > 0"
+                            class="mt-4 space-y-2"
                         >
                             <div
-                                v-for="(preview, index) in imagenesPreview"
+                                v-for="(doc, index) in documentosPreview"
                                 :key="index"
-                                class="relative"
+                                class="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-200"
                             >
-                                <img
-                                    :src="preview"
-                                    :alt="`Preview ${index + 1}`"
-                                    class="w-full h-24 object-cover rounded border border-slate-200"
-                                />
+                                <div class="flex items-center gap-2">
+                                    <svg class="w-5 h-5 text-red-600" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clip-rule="evenodd" />
+                                    </svg>
+                                    <span class="text-sm font-medium text-slate-700">{{ doc.name }}</span>
+                                    <span class="text-xs text-slate-500">({{ formatFileSize(doc.size) }})</span>
+                                </div>
                                 <button
                                     type="button"
-                                    @click="removeImage(index)"
-                                    class="absolute top-1 right-1 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center text-xs hover:bg-red-600"
+                                    @click="removeDocument(index)"
+                                    class="text-red-600 hover:text-red-700 text-sm font-medium"
                                 >
-                                    ×
+                                    Eliminar
                                 </button>
                             </div>
                         </div>
@@ -216,77 +153,88 @@
 </template>
 
 <script setup>
-import { ref } from "vue";
+import { ref, watch } from "vue";
 import AppLayout from "@/Layouts/AppLayout.vue";
 import FormField from "@/Components/FormField.vue";
 import { Link, useForm } from "@inertiajs/vue3";
 
 const props = defineProps({
     puertas: Array,
-    defectos: Array,
     puertaSeleccionada: Number,
 });
 
-const imagenesPreview = ref([]);
-const imagenesFiles = ref([]);
-
-// Inicializar defectos con nivel 0 (sin defecto) por defecto
-const defectosIniciales = {};
-props.defectos.forEach((defecto) => {
-    defectosIniciales[defecto.id] = 0; // 0 = sin defecto por defecto
-});
+const documentosPreview = ref([]);
+const documentosFiles = ref([]);
 
 const form = useForm({
     puerta_id: props.puertaSeleccionada || null,
     fecha_mantenimiento: new Date().toISOString().split("T")[0],
-    tipo: "realizado",
     fecha_fin_programada: null,
-    defectos: defectosIniciales, // Objeto con defecto_id: nivel_gravedad
-    otros_defectos: "",
-    observaciones: "",
-    imagenes: [],
+    tipo: "realizado",
+    falla: "",
+    documentos: [],
 });
 
-const handleImages = (event) => {
+// UX: si cambia a programado y no hay fecha límite, usar la misma fecha de mantenimiento como base
+watch(
+    () => form.tipo,
+    (tipo) => {
+        if (tipo === "programado") {
+            if (!form.fecha_fin_programada) {
+                form.fecha_fin_programada = form.fecha_mantenimiento;
+            }
+        } else {
+            form.fecha_fin_programada = null;
+        }
+    },
+    { immediate: true }
+);
+
+const handleDocuments = (event) => {
     const files = Array.from(event.target.files);
-    if (files.length > 10) {
-        alert("Solo se pueden seleccionar hasta 10 imágenes");
+
+    // Validar cantidad máxima (5)
+    if (documentosFiles.value.length + files.length > 5) {
+        alert("Solo se pueden seleccionar hasta 5 documentos PDF en total");
         return;
     }
 
-    imagenesFiles.value = files;
-    imagenesPreview.value = [];
+    // Validar que sean PDFs
+    const invalidFiles = files.filter(file => file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf'));
+    if (invalidFiles.length > 0) {
+        alert("Todos los archivos deben ser PDFs");
+        return;
+    }
 
+    // Agregar a la lista
     files.forEach((file) => {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            imagenesPreview.value.push(e.target.result);
-        };
-        reader.readAsDataURL(file);
+        documentosFiles.value.push(file);
+        documentosPreview.value.push({
+            name: file.name,
+            size: file.size,
+        });
     });
 
-    form.imagenes = files;
+    form.documentos = documentosFiles.value;
 };
 
-const removeImage = (index) => {
-    imagenesPreview.value.splice(index, 1);
-    imagenesFiles.value.splice(index, 1);
-    form.imagenes = imagenesFiles.value;
+const removeDocument = (index) => {
+    documentosPreview.value.splice(index, 1);
+    documentosFiles.value.splice(index, 1);
+    form.documentos = documentosFiles.value;
+};
+
+const formatFileSize = (bytes) => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
 };
 
 const submit = () => {
-    // Convertir el objeto de defectos a array con id y nivel_gravedad
-    const defectosArray = Object.keys(form.defectos).map((defectoId) => ({
-        id: parseInt(defectoId),
-        nivel_gravedad: parseInt(form.defectos[defectoId]),
-    }));
-
-    form.transform((data) => ({
-        ...data,
-        defectos: defectosArray,
-    })).post(route("mantenimientos.store"), {
+    form.post(route("mantenimientos.store"), {
         forceFormData: true,
     });
 };
 </script>
-

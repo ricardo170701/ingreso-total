@@ -23,11 +23,9 @@ class UpdateRoleRequest extends FormRequest
      */
     public function rules(): array
     {
-        $roleParam = $this->route('role');
-        $roleId = $roleParam instanceof Role ? $roleParam->id : $roleParam;
-
         return [
-            'name' => ['sometimes', 'required', 'string', 'max:50', Rule::unique('roles', 'name')->ignore($roleId)],
+            // No se permite renombrar roles: son banderas fijas
+            'name' => ['prohibited'],
             'description' => ['nullable', 'string', 'max:255'],
         ];
     }

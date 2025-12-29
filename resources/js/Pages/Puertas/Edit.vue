@@ -108,6 +108,22 @@
                                 placeholder="Ej: 5"
                             />
                         </FormField>
+                        <FormField
+                            label="Tiempo Discapacitados (seg)"
+                            :error="form.errors.tiempo_discapacitados"
+                        >
+                            <input
+                                v-model.number="form.tiempo_discapacitados"
+                                type="number"
+                                min="1"
+                                max="600"
+                                class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                placeholder="Ej: 10"
+                            />
+                            <p class="mt-1 text-xs text-slate-500">
+                                Tiempo adicional para personas discapacitadas
+                            </p>
+                        </FormField>
                         <FormField label="Alto (cm)" :error="form.errors.alto">
                             <input
                                 v-model.number="form.alto"
@@ -281,6 +297,7 @@
 import AppLayout from "@/Layouts/AppLayout.vue";
 import FormField from "@/Components/FormField.vue";
 import { Link, router, useForm } from "@inertiajs/vue3";
+import { submitUploadForm } from "@/Support/inertiaUploads";
 
 const props = defineProps({
     puerta: Object,
@@ -300,6 +317,7 @@ const form = useForm({
     ip_salida: props.puerta.ip_salida || "",
     imagen: null,
     tiempo_apertura: props.puerta.tiempo_apertura || 5,
+    tiempo_discapacitados: props.puerta.tiempo_discapacitados ?? null,
     alto: props.puerta.alto ?? null,
     largo: props.puerta.largo ?? null,
     ancho: props.puerta.ancho ?? null,
@@ -312,19 +330,7 @@ const form = useForm({
 });
 
 const submit = () => {
-    // Si hay una imagen nueva, necesitamos usar FormData
-    if (form.imagen instanceof File) {
-        // Agregar _method al form para que Laravel lo reconozca como PUT
-        form.transform((data) => ({
-            ...data,
-            _method: 'PUT',
-        })).post(route("puertas.update", { puerta: props.puerta.id }), {
-            forceFormData: true,
-        });
-    } else {
-        // Si no hay imagen nueva, usar PUT normal
-        form.put(route("puertas.update", { puerta: props.puerta.id }));
-    }
+    submitUploadForm(form, route("puertas.update", { puerta: props.puerta.id }), "put");
 };
 
 const destroy = () => {

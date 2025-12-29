@@ -24,8 +24,15 @@ class ReportesController extends Controller
      */
     public function index(Request $request): Response
     {
+        if (!$request->user()->hasPermission('view_reportes')) {
+            abort(403, 'No tienes permiso para ver reportes.');
+        }
+
         // Obtener datos para los filtros
-        $roles = Role::query()->orderBy('name')->get(['id', 'name']);
+        $roles = Role::query()
+            ->whereIn('name', ['funcionario', 'visitante'])
+            ->orderBy('name')
+            ->get(['id', 'name']);
         $cargos = Cargo::query()->orderBy('name')->get(['id', 'name']);
         $departamentos = Departamento::query()
             ->where('activo', true)
@@ -69,6 +76,10 @@ class ReportesController extends Controller
      */
     public function exportarUsuarios(Request $request): StreamedResponse
     {
+        if (!$request->user()->hasPermission('view_reportes') || !$request->user()->hasPermission('view_users')) {
+            abort(403, 'No tienes permiso para exportar reportes de usuarios.');
+        }
+
         $filtros = $request->only([
             'role_id',
             'cargo_id',
@@ -145,6 +156,10 @@ class ReportesController extends Controller
      */
     public function exportarAccesos(Request $request): StreamedResponse
     {
+        if (!$request->user()->hasPermission('view_reportes')) {
+            abort(403, 'No tienes permiso para exportar reportes.');
+        }
+
         $filtros = $request->only([
             'fecha_desde',
             'fecha_hasta',
@@ -226,6 +241,10 @@ class ReportesController extends Controller
      */
     public function exportarMantenimientos(Request $request): StreamedResponse
     {
+        if (!$request->user()->hasPermission('view_reportes') || !$request->user()->hasPermission('view_mantenimientos')) {
+            abort(403, 'No tienes permiso para exportar reportes de mantenimientos.');
+        }
+
         $filtros = $request->only([
             'fecha_desde',
             'fecha_hasta',
@@ -305,6 +324,10 @@ class ReportesController extends Controller
      */
     public function exportarPuertas(Request $request): StreamedResponse
     {
+        if (!$request->user()->hasPermission('view_reportes') || !$request->user()->hasPermission('view_puertas')) {
+            abort(403, 'No tienes permiso para exportar reportes de puertas.');
+        }
+
         $filtros = $request->only([
             'piso_id',
             'tipo_puerta_id',

@@ -26,6 +26,10 @@ class ZonaController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
+        if (!$request->user() || !$request->user()->hasPermission('view_zonas')) {
+            return response()->json(['message' => 'No autorizado.'], 403);
+        }
+
         $perPage = (int) ($request->query('per_page', 15));
         $perPage = max(1, min(100, $perPage));
 
@@ -38,7 +42,7 @@ class ZonaController extends Controller
      * @OA\Post(
      *   path="/api/zonas",
      *   tags={"Zonas"},
-     *   summary="Crear zona (solo super_usuario)",
+     *   summary="Crear zona (requiere permiso create_zonas)",
      *   security={{"sanctum":{}}},
      *   @OA\RequestBody(required=true, @OA\JsonContent(
      *     required={"nombre","codigo"},
@@ -57,7 +61,7 @@ class ZonaController extends Controller
      */
     public function store(StoreZonaRequest $request): JsonResponse
     {
-        if (($request->user()?->role?->name ?? null) !== 'super_usuario') {
+        if (!$request->user() || !$request->user()->hasPermission('create_zonas')) {
             return response()->json(['message' => 'No autorizado.'], 403);
         }
 
@@ -81,6 +85,10 @@ class ZonaController extends Controller
      */
     public function show(Zona $zona): JsonResponse
     {
+        if (!request()->user() || !request()->user()->hasPermission('view_zonas')) {
+            return response()->json(['message' => 'No autorizado.'], 403);
+        }
+
         return response()->json(['data' => $zona]);
     }
 
@@ -90,7 +98,7 @@ class ZonaController extends Controller
      * @OA\Put(
      *   path="/api/zonas/{id}",
      *   tags={"Zonas"},
-     *   summary="Actualizar zona (solo super_usuario)",
+     *   summary="Actualizar zona (requiere permiso edit_zonas)",
      *   security={{"sanctum":{}}},
      *   @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
      *   @OA\RequestBody(required=true, @OA\JsonContent(
@@ -109,7 +117,7 @@ class ZonaController extends Controller
      */
     public function update(UpdateZonaRequest $request, Zona $zona): JsonResponse
     {
-        if (($request->user()?->role?->name ?? null) !== 'super_usuario') {
+        if (!$request->user() || !$request->user()->hasPermission('edit_zonas')) {
             return response()->json(['message' => 'No autorizado.'], 403);
         }
 
@@ -125,7 +133,7 @@ class ZonaController extends Controller
      * @OA\Delete(
      *   path="/api/zonas/{id}",
      *   tags={"Zonas"},
-     *   summary="Eliminar zona (solo super_usuario)",
+     *   summary="Eliminar zona (requiere permiso delete_zonas)",
      *   security={{"sanctum":{}}},
      *   @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
      *   @OA\Response(response=200, description="OK"),
@@ -135,7 +143,7 @@ class ZonaController extends Controller
      */
     public function destroy(Request $request, Zona $zona): JsonResponse
     {
-        if (($request->user()?->role?->name ?? null) !== 'super_usuario') {
+        if (!$request->user() || !$request->user()->hasPermission('delete_zonas')) {
             return response()->json(['message' => 'No autorizado.'], 403);
         }
 

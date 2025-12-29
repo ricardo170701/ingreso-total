@@ -1,0 +1,87 @@
+##
+# Laravel 10 + Apache + MySQL
+# Build completo dentro de Docker (NO requiere npm/node en la PC host)
+#
+# Incluye:
+# - vendor_build (PHP 8.1 CLI + extensiones) -> composer install (sin scripts)
+# - node_build (Node 22) -> vite build (crea public/build/manifest.json)
+# - app (PHP 8.1 Apache) -> copia vendor + public/build + package discover
+##
+
+FROM php:8.1-cli-bookworm AS vendor_build
+
+# Extensiones necesarias para composer install (incluye gd)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    git unzip \
+    libpng-dev libjpeg62-turbo-dev libfreetype6-dev \
+    libonig-dev libxml2-dev libzip-dev \
+    && docker-php-ext-configure gd --with-freetype --with-jpeg \
+    && docker-php-ext-install -j$(nproc) pdo_mysql mbstring zip gd bcmath \
+    && rm -rf /var/lib/apt/lists/*
+
+# Composer binario
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+
+WORKDIR /app
+COPY composer.json composer.lock ./
+
+# IMPORTANTE: sin scripts porque en este stage NO existe `artisan`
+RUN composer install --no-dev --prefer-dist --no-interaction --no-progress --optimize-autoloader --no-scripts
+
+
+FROM node:22-alpine AS node_build
+WORKDIR /app
+
+COPY package.json package-lock.json ./
+RUN npm ci
+
+# Para resolver import ../../vendor/tightenco/ziggy desde resources/js/app.js
+COPY --from=vendor_build /app/vendor/tightenco/ziggy ./vendor/tightenco/ziggy
+
+COPY vite.config.js postcss.config.js ./
+COPY resources ./resources
+COPY public ./public
+
+RUN npm run build
+
+
+FROM php:8.1-apache-bookworm AS app
+
+# Extensiones PHP requeridas por Laravel + MySQL client
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    default-mysql-client \
+    libpng-dev libjpeg62-turbo-dev libfreetype6-dev \
+    libonig-dev libxml2-dev libzip-dev \
+    && docker-php-ext-configure gd --with-freetype --with-jpeg \
+    && docker-php-ext-install -j$(nproc) pdo_mysql mbstring zip gd bcmath \
+    && a2enmod rewrite headers \
+    && rm -rf /var/lib/apt/lists/*
+
+# DocumentRoot -> /public
+ENV APACHE_DOCUMENT_ROOT=/var/www/html/public
+RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-available/000-default.conf \
+    && sed -ri -e 's!/var/www/!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/apache2.conf /etc/apache2/conf-available/*.conf
+
+WORKDIR /var/www/html
+COPY . .
+
+# Copiar vendor y build Vite desde stages
+COPY --from=vendor_build /app/vendor ./vendor
+COPY --from=node_build /app/public/build ./public/build
+
+# Carpetas y permisos Laravel (evita errores de logs/cache)
+RUN mkdir -p bootstrap/cache storage/framework/cache/data storage/framework/sessions storage/framework/views storage/logs \
+    && chown -R www-data:www-data storage bootstrap/cache \
+    && chmod -R 775 storage bootstrap/cache
+
+# Ejecutar package discovery ya con artisan presente
+RUN php artisan package:discover --ansi
+
+COPY docker/entrypoint.sh /usr/local/bin/entrypoint
+RUN chmod +x /usr/local/bin/entrypoint
+
+EXPOSE 80
+ENTRYPOINT ["entrypoint"]
+CMD ["apache2-foreground"]
+
+

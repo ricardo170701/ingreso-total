@@ -1,0 +1,409 @@
+<template>
+    <AppLayout>
+        <div class="max-w-5xl mx-auto space-y-4">
+            <div class="flex items-center justify-between flex-wrap gap-2">
+                <div>
+                    <h1 class="text-xl font-semibold text-slate-900">
+                        {{ ups.codigo }} - {{ ups.nombre }}
+                    </h1>
+                    <p class="text-sm text-slate-600">
+                        {{ ups.piso?.nombre || "Sin piso" }} · {{ ups.activo ? "Activo" : "Inactivo" }}
+                    </p>
+                </div>
+                <div class="flex gap-2 flex-wrap">
+                    <Link
+                        :href="route('ups.index')"
+                        class="px-3 py-2 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-700"
+                    >
+                        Volver
+                    </Link>
+                    <Link
+                        v-if="hasPermission('edit_ups')"
+                        :href="route('ups.edit', { ups: ups.id })"
+                        class="px-3 py-2 rounded-lg bg-slate-900 text-white hover:bg-slate-800 font-medium"
+                    >
+                        Editar
+                    </Link>
+                </div>
+            </div>
+
+            <div
+                v-if="$page.props.flash?.message"
+                class="p-4 rounded-lg bg-green-50 border border-green-200 text-green-800"
+            >
+                {{ $page.props.flash.message }}
+            </div>
+
+            <!-- Detalles -->
+            <div class="bg-white border border-slate-200 rounded-xl p-6 space-y-4">
+                <div v-if="ups.foto" class="flex justify-center">
+                    <div class="w-full max-w-2xl aspect-video bg-slate-100 rounded-2xl border border-slate-200 overflow-hidden">
+                        <img
+                            :src="storageUrl(ups.foto)"
+                            alt="Foto UPS"
+                            loading="lazy"
+                            decoding="async"
+                            class="w-full h-full object-cover object-center"
+                        />
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="text-sm font-medium text-slate-500">Ubicación</label>
+                        <p class="text-sm text-slate-900">{{ ups.ubicacion || "-" }}</p>
+                    </div>
+                    <div>
+                        <label class="text-sm font-medium text-slate-500">Serial</label>
+                        <p class="text-sm text-slate-900">{{ ups.serial || "-" }}</p>
+                    </div>
+                    <div>
+                        <label class="text-sm font-medium text-slate-500">Marca / Modelo</label>
+                        <p class="text-sm text-slate-900">
+                            {{ ups.marca || "-" }}{{ ups.modelo ? ` / ${ups.modelo}` : "" }}
+                        </p>
+                    </div>
+                    <div>
+                        <label class="text-sm font-medium text-slate-500">Potencia</label>
+                        <p class="text-sm text-slate-900">
+                            {{ ups.potencia_va ? `${ups.potencia_va} VA` : "-" }}
+                            <span class="text-slate-500">·</span>
+                            {{ ups.potencia_w ? `${ups.potencia_w} W` : "-" }}
+                        </p>
+                    </div>
+                </div>
+
+                <div v-if="ups.observaciones" class="pt-4 border-t border-slate-200">
+                    <label class="text-sm font-medium text-slate-500">Observaciones</label>
+                    <p class="text-sm text-slate-700 whitespace-pre-wrap mt-1">
+                        {{ ups.observaciones }}
+                    </p>
+                </div>
+            </div>
+
+            <!-- Bitácora -->
+            <div class="bg-white border border-slate-200 rounded-xl p-6 space-y-4">
+                <div class="flex items-center justify-between flex-wrap gap-2">
+                    <div>
+                        <h2 class="text-lg font-semibold text-slate-900">Bitácora</h2>
+                        <p class="text-sm text-slate-600">
+                            Registro de estados del UPS mediante análisis de imágenes del panel frontal.
+                        </p>
+                    </div>
+                    <Link
+                        :href="route('ups.vitacora.index', { ups: ups.id })"
+                        class="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 font-medium text-sm"
+                    >
+                        Ver Bitácora
+                    </Link>
+                </div>
+            </div>
+
+            <!-- Mantenimientos -->
+            <div class="bg-white border border-slate-200 rounded-xl p-6 space-y-4">
+                <div class="flex items-center justify-between flex-wrap gap-2">
+                    <div>
+                        <h2 class="text-lg font-semibold text-slate-900">Mantenimientos</h2>
+                        <p class="text-sm text-slate-600">
+                            Historial de mantenimientos de esta UPS.
+                        </p>
+                    </div>
+                </div>
+
+                <form
+                    v-if="hasPermission('create_ups_mantenimientos')"
+                    @submit.prevent="crearMantenimiento"
+                    class="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-3"
+                >
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        <FormField label="Fecha" :error="mForm.errors.fecha_mantenimiento">
+                            <input
+                                v-model="mForm.fecha_mantenimiento"
+                                type="date"
+                                class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                            />
+                        </FormField>
+                        <FormField label="Tipo" :error="mForm.errors.tipo">
+                            <select
+                                v-model="mForm.tipo"
+                                class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                            >
+                                <option value="realizado">Realizado</option>
+                                <option value="programado">Programado</option>
+                            </select>
+                        </FormField>
+                        <FormField
+                            v-if="mForm.tipo === 'programado'"
+                            label="Fecha límite"
+                            :error="mForm.errors.fecha_fin_programada"
+                        >
+                            <input
+                                v-model="mForm.fecha_fin_programada"
+                                type="date"
+                                class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                            />
+                        </FormField>
+                    </div>
+                    <FormField label="Descripción" :error="mForm.errors.descripcion">
+                        <textarea
+                            v-model="mForm.descripcion"
+                            rows="3"
+                            class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                            placeholder="Detalle del mantenimiento..."
+                        />
+                    </FormField>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <FormField label="Fotos (opcional)" :error="mForm.errors.fotos">
+                            <input
+                                type="file"
+                                accept="image/*"
+                                multiple
+                                @change="onFotosChange"
+                                class="block w-full text-sm text-slate-700 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-slate-900 file:text-white hover:file:bg-slate-800"
+                            />
+                            <p class="mt-1 text-xs text-slate-500">
+                                Existentes: 0 · Seleccionadas: {{ fotosSeleccionadasCount }}/{{ MAX_FOTOS }} · Restantes: {{ fotosRestantes }}
+                            </p>
+                        </FormField>
+                        <FormField label="PDFs (opcional)" :error="mForm.errors.documentos">
+                            <input
+                                type="file"
+                                accept="application/pdf"
+                                multiple
+                                @change="onDocumentosChange"
+                                class="block w-full text-sm text-slate-700 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-slate-900 file:text-white hover:file:bg-slate-800"
+                            />
+                            <p class="mt-1 text-xs text-slate-500">
+                                Existentes: 0 · Seleccionados: {{ docsSeleccionadosCount }}/{{ MAX_PDFS }} · Restantes: {{ docsRestantes }}
+                            </p>
+                        </FormField>
+                    </div>
+
+                    <div class="flex justify-end">
+                        <button
+                            type="submit"
+                            :disabled="mForm.processing"
+                            class="px-4 py-2 rounded-lg bg-slate-900 text-white hover:bg-slate-800 font-medium disabled:opacity-50"
+                        >
+                            {{ mForm.processing ? "Guardando..." : "Registrar mantenimiento" }}
+                        </button>
+                    </div>
+                </form>
+
+                <div class="overflow-x-auto">
+                    <table class="min-w-full text-sm">
+                        <thead class="bg-slate-50 border border-slate-200">
+                            <tr>
+                                <th class="px-4 py-3 text-left font-semibold text-slate-700">Fecha</th>
+                                <th class="px-4 py-3 text-left font-semibold text-slate-700">Tipo</th>
+                                <th class="px-4 py-3 text-left font-semibold text-slate-700">Fecha límite</th>
+                                <th class="px-4 py-3 text-left font-semibold text-slate-700">Descripción</th>
+                                <th class="px-4 py-3 text-right font-semibold text-slate-700">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr
+                                v-for="m in ups.mantenimientos"
+                                :key="m.id"
+                                class="border-b border-slate-100"
+                            >
+                                <td class="px-4 py-3 text-slate-900">
+                                    {{ formatDate(m.fecha_mantenimiento) }}
+                                </td>
+                                <td class="px-4 py-3">
+                                    <span
+                                        :class="[
+                                            'px-2 py-1 rounded text-xs font-semibold',
+                                            m.tipo === 'realizado'
+                                                ? 'bg-green-100 text-green-700'
+                                                : 'bg-yellow-100 text-yellow-700',
+                                        ]"
+                                    >
+                                        {{ m.tipo === "realizado" ? "Realizado" : "Programado" }}
+                                    </span>
+                                </td>
+                                <td class="px-4 py-3 text-slate-700">
+                                    {{ m.tipo === 'programado' ? (m.fecha_fin_programada ? formatDate(m.fecha_fin_programada) : '-') : '-' }}
+                                </td>
+                                <td class="px-4 py-3 text-slate-700 whitespace-pre-wrap">
+                                    {{ m.descripcion || "-" }}
+                                    <div class="mt-2 text-xs text-slate-500 space-y-0.5">
+                                        <p>
+                                            <span class="font-medium">Creado:</span>
+                                            {{ m.creado_por?.name || m.creado_por?.email || "N/A" }}
+                                            · {{ m.created_at ? new Date(m.created_at).toLocaleString("es-ES") : "-" }}
+                                        </p>
+                                        <p>
+                                            <span class="font-medium">Editado:</span>
+                                            {{ m.editado_por?.name || m.editado_por?.email || "N/A" }}
+                                            · {{ m.updated_at ? new Date(m.updated_at).toLocaleString("es-ES") : "-" }}
+                                        </p>
+                                    </div>
+                                    <div v-if="(m.imagenes?.length || 0) > 0" class="mt-2 flex flex-wrap gap-2">
+                                        <a
+                                            v-for="img in m.imagenes"
+                                            :key="img.id"
+                                            :href="storageUrl(img.ruta_imagen)"
+                                            target="_blank"
+                                            class="block"
+                                            title="Ver imagen"
+                                        >
+                                            <span class="block w-16 aspect-square rounded-lg border border-slate-200 overflow-hidden bg-slate-100">
+                                                <img
+                                                    :src="storageUrl(img.ruta_imagen)"
+                                                    class="w-full h-full object-cover object-center"
+                                                    alt="Foto mantenimiento"
+                                                    loading="lazy"
+                                                    decoding="async"
+                                                />
+                                            </span>
+                                        </a>
+                                    </div>
+                                    <div v-if="(m.documentos?.length || 0) > 0" class="mt-2 space-y-1">
+                                        <a
+                                            v-for="doc in m.documentos"
+                                            :key="doc.id"
+                                            :href="storageUrl(doc.ruta_documento)"
+                                            target="_blank"
+                                            class="text-sm text-blue-700 hover:underline inline-flex items-center gap-2"
+                                        >
+                                            <span>📄</span>
+                                            <span>{{ doc.nombre_original || "Documento PDF" }}</span>
+                                        </a>
+                                    </div>
+                                </td>
+                                <td class="px-4 py-3">
+                                    <div class="flex justify-end gap-2 flex-wrap">
+                                        <form
+                                            v-if="m.tipo === 'programado' && hasPermission('edit_ups_mantenimientos')"
+                                            @submit.prevent="completarMantenimiento(m.id)"
+                                            class="inline"
+                                        >
+                                            <button
+                                                type="submit"
+                                                class="px-3 py-1.5 rounded-md border border-green-200 bg-green-50 hover:bg-green-100 text-green-700 text-sm font-medium"
+                                            >
+                                                ✅ Completar
+                                            </button>
+                                        </form>
+                                        <a
+                                            v-if="(m.imagenes?.length || 0) + (m.documentos?.length || 0) > 0"
+                                            :href="route('ups.mantenimientos.zip', { ups: ups.id, mantenimiento: m.id })"
+                                            class="px-3 py-1.5 rounded-md border border-slate-200 hover:bg-white text-slate-700 text-sm font-medium"
+                                        >
+                                            ZIP
+                                        </a>
+                                        <Link
+                                            v-if="hasPermission('edit_ups_mantenimientos')"
+                                            :href="route('ups.mantenimientos.edit', { ups: ups.id, mantenimiento: m.id })"
+                                            class="px-3 py-1.5 rounded-md border border-slate-200 hover:bg-white text-slate-700 text-sm font-medium"
+                                        >
+                                            Editar
+                                        </Link>
+                                        <button
+                                            v-if="hasPermission('delete_ups_mantenimientos')"
+                                            type="button"
+                                            @click="eliminarMantenimiento(m.id)"
+                                            class="px-3 py-1.5 rounded-md border border-red-200 bg-red-50 hover:bg-red-100 text-red-700 text-sm font-medium"
+                                        >
+                                            Eliminar
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr v-if="!ups.mantenimientos || ups.mantenimientos.length === 0">
+                                <td colspan="5" class="px-4 py-6 text-center text-slate-500">
+                                    No hay mantenimientos registrados.
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </AppLayout>
+</template>
+
+<script setup>
+import AppLayout from "@/Layouts/AppLayout.vue";
+import FormField from "@/Components/FormField.vue";
+import { Link, router, useForm, usePage } from "@inertiajs/vue3";
+import { computed } from "vue";
+
+const props = defineProps({
+    ups: Object,
+});
+
+const page = usePage();
+const userPermissions = computed(() => page.props.auth?.user?.permissions || []);
+const hasPermission = (permission) => userPermissions.value.includes(permission);
+
+const storageUrl = (path) => {
+    if (!path) return "";
+    if (String(path).startsWith("http")) return path;
+    return `/storage/${path}`;
+};
+
+const MAX_FOTOS = 6;
+const MAX_PDFS = 5;
+
+const mForm = useForm({
+    fecha_mantenimiento: "",
+    tipo: "realizado",
+    fecha_fin_programada: "",
+    descripcion: "",
+    fotos: [],
+    documentos: [],
+});
+
+const onFotosChange = (e) => {
+    const files = Array.from(e.target?.files || []);
+    mForm.fotos = files.slice(0, MAX_FOTOS);
+};
+
+const onDocumentosChange = (e) => {
+    const files = Array.from(e.target?.files || []);
+    mForm.documentos = files.slice(0, MAX_PDFS);
+};
+
+const fotosSeleccionadasCount = computed(() => (mForm.fotos || []).length);
+const docsSeleccionadosCount = computed(() => (mForm.documentos || []).length);
+const fotosRestantes = computed(() => Math.max(0, MAX_FOTOS - fotosSeleccionadasCount.value));
+const docsRestantes = computed(() => Math.max(0, MAX_PDFS - docsSeleccionadosCount.value));
+
+const crearMantenimiento = () => {
+    mForm.post(route("ups.mantenimientos.store", { ups: props.ups.id }), {
+        forceFormData: true,
+        preserveScroll: true,
+        onSuccess: () => {
+            mForm.reset("fecha_mantenimiento", "tipo", "fecha_fin_programada", "descripcion", "fotos", "documentos");
+            mForm.tipo = "realizado";
+        },
+    });
+};
+
+const completarMantenimiento = (mantenimientoId) => {
+    if (!confirm("¿Marcar este mantenimiento como completado?")) return;
+    router.post(route("ups.mantenimientos.completar", { ups: props.ups.id, mantenimiento: mantenimientoId }), {
+        preserveScroll: true,
+    });
+};
+
+const eliminarMantenimiento = (id) => {
+    if (!confirm("¿Seguro que deseas eliminar este mantenimiento?")) return;
+    router.delete(route("ups.mantenimientos.destroy", { ups: props.ups.id, mantenimiento: id }), {
+        preserveScroll: true,
+    });
+};
+
+const formatDate = (dateStr) => {
+    if (!dateStr) return "-";
+    return new Date(dateStr).toLocaleDateString("es-ES", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+    });
+};
+</script>
+
+

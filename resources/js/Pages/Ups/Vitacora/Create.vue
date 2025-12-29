@@ -1,0 +1,610 @@
+<template>
+    <AppLayout>
+        <div class="max-w-4xl mx-auto space-y-4">
+            <div class="flex items-center justify-between flex-wrap gap-2">
+                <div>
+                    <h1 class="text-xl font-semibold text-slate-900">
+                        Nueva Bitácora - {{ ups.codigo }} - {{ ups.nombre }}
+                    </h1>
+                    <p class="text-sm text-slate-600">
+                        Sube una imagen del panel frontal del UPS para analizar
+                        su estado automáticamente.
+                    </p>
+                </div>
+                <Link
+                    :href="route('ups.vitacora.index', { ups: ups.id })"
+                    class="px-3 py-2 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-700"
+                >
+                    Volver
+                </Link>
+            </div>
+
+            <div
+                v-if="$page.props.flash?.message"
+                class="p-4 rounded-lg bg-green-50 border border-green-200 text-green-800"
+            >
+                {{ $page.props.flash.message }}
+            </div>
+
+            <!-- Formulario de carga -->
+            <div
+                class="bg-white border border-slate-200 rounded-xl p-6 space-y-4"
+            >
+                <div>
+                    <label
+                        class="block text-sm font-medium text-slate-700 mb-2"
+                    >
+                        Imágenes del Panel Frontal (hasta 5)
+                    </label>
+                    <input
+                        ref="fileInput"
+                        type="file"
+                        accept="image/jpeg,image/jpg,image/png"
+                        multiple
+                        @change="handleFileSelect"
+                        class="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-slate-900 file:text-white hover:file:bg-slate-800"
+                    />
+                    <p class="mt-1 text-xs text-slate-500">
+                        Formatos: JPEG, JPG, PNG. Tamaño máximo: 10MB por imagen. Puedes seleccionar hasta 5 imágenes.
+                    </p>
+                </div>
+
+                <!-- Vista previa de imágenes seleccionadas -->
+                <div v-if="selectedFiles.length > 0" class="mt-4">
+                    <p class="text-sm font-medium text-slate-700 mb-2">
+                        Imágenes seleccionadas ({{ selectedFiles.length }}/5):
+                    </p>
+                    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+                        <div
+                            v-for="(file, index) in selectedFiles"
+                            :key="index"
+                            class="relative group"
+                        >
+                            <div class="aspect-square bg-slate-100 rounded-lg border-2 border-slate-200 overflow-hidden">
+                                <img
+                                    :src="previewImages[index]"
+                                    :alt="file.name"
+                                    class="w-full h-full object-cover"
+                                />
+                            </div>
+                            <button
+                                @click="removeImage(index)"
+                                class="absolute -top-2 -right-2 bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-700 transition-colors shadow-lg"
+                                title="Eliminar imagen"
+                            >
+                                ×
+                            </button>
+                            <p class="mt-1 text-xs text-slate-600 truncate" :title="file.name">
+                                {{ file.name }}
+                            </p>
+                            <p class="text-xs text-slate-500">
+                                {{ formatFileSize(file.size) }}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <button
+                    v-if="selectedFiles.length > 0 && !analyzing && !previewData"
+                    @click="analyzeImage"
+                    :disabled="analyzing"
+                    class="w-full px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
+                >
+                    {{ analyzing ? `Analizando ${analyzingProgress} de ${selectedFiles.length}...` : `Analizar ${selectedFiles.length} Imagen${selectedFiles.length > 1 ? 'es' : ''}` }}
+                </button>
+
+                <div
+                    v-if="analyzing"
+                    class="flex items-center justify-center gap-2 text-blue-600"
+                >
+                    <span class="animate-spin">⏳</span>
+                    <span>Analizando imagen con IA...</span>
+                </div>
+
+                <div
+                    v-if="error"
+                    class="p-4 rounded-lg bg-red-50 border border-red-200 text-red-800"
+                >
+                    <p class="mb-2">{{ error }}</p>
+                    <p v-if="previewData" class="text-sm text-red-700 mt-2">
+                        💡 Puedes ingresar los datos manualmente en el formulario de abajo.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Vista previa de datos extraídos -->
+            <div
+                v-if="previewData"
+                class="bg-white border border-slate-200 rounded-xl p-6 space-y-4"
+            >
+                <h2 class="text-lg font-semibold text-slate-900">
+                    Vista Previa - Datos Extraídos
+                </h2>
+
+                <form @submit.prevent="guardarRegistro" class="space-y-4">
+                    <!-- Indicadores -->
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div
+                            class="p-4 rounded-lg border"
+                            :class="
+                                previewData.indicador_normal
+                                    ? 'bg-green-50 border-green-200'
+                                    : 'bg-slate-50 border-slate-200'
+                            "
+                        >
+                            <label class="flex items-center gap-2">
+                                <input
+                                    type="checkbox"
+                                    v-model="previewData.indicador_normal"
+                                    class="rounded"
+                                />
+                                <span class="font-medium">NORMAL</span>
+                            </label>
+                        </div>
+                        <div
+                            class="p-4 rounded-lg border"
+                            :class="
+                                previewData.indicador_battery
+                                    ? 'bg-yellow-50 border-yellow-200'
+                                    : 'bg-slate-50 border-slate-200'
+                            "
+                        >
+                            <label class="flex items-center gap-2">
+                                <input
+                                    type="checkbox"
+                                    v-model="previewData.indicador_battery"
+                                    class="rounded"
+                                />
+                                <span class="font-medium">BATTERY</span>
+                            </label>
+                        </div>
+                        <div
+                            class="p-4 rounded-lg border"
+                            :class="
+                                previewData.indicador_bypass
+                                    ? 'bg-yellow-50 border-yellow-200'
+                                    : 'bg-slate-50 border-slate-200'
+                            "
+                        >
+                            <label class="flex items-center gap-2">
+                                <input
+                                    type="checkbox"
+                                    v-model="previewData.indicador_bypass"
+                                    class="rounded"
+                                />
+                                <span class="font-medium">BYPASS</span>
+                            </label>
+                        </div>
+                        <div
+                            class="p-4 rounded-lg border"
+                            :class="
+                                previewData.indicador_fault
+                                    ? 'bg-red-50 border-red-200'
+                                    : 'bg-slate-50 border-slate-200'
+                            "
+                        >
+                            <label class="flex items-center gap-2">
+                                <input
+                                    type="checkbox"
+                                    v-model="previewData.indicador_fault"
+                                    class="rounded"
+                                />
+                                <span class="font-medium">FAULT</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Input -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label
+                                class="block text-sm font-medium text-slate-700 mb-1"
+                                >Input - Voltaje (V)</label
+                            >
+                            <input
+                                type="number"
+                                step="0.01"
+                                v-model="previewData.input_voltage"
+                                class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            />
+                        </div>
+                        <div>
+                            <label
+                                class="block text-sm font-medium text-slate-700 mb-1"
+                                >Input - Frecuencia (Hz)</label
+                            >
+                            <input
+                                type="number"
+                                step="0.01"
+                                v-model="previewData.input_frequency"
+                                class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            />
+                        </div>
+                    </div>
+
+                    <!-- Output -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                            <label
+                                class="block text-sm font-medium text-slate-700 mb-1"
+                                >Output - Voltaje (V)</label
+                            >
+                            <input
+                                type="number"
+                                step="0.01"
+                                v-model="previewData.output_voltage"
+                                class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            />
+                        </div>
+                        <div>
+                            <label
+                                class="block text-sm font-medium text-slate-700 mb-1"
+                                >Output - Frecuencia (Hz)</label
+                            >
+                            <input
+                                type="number"
+                                step="0.01"
+                                v-model="previewData.output_frequency"
+                                class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            />
+                        </div>
+                        <div>
+                            <label
+                                class="block text-sm font-medium text-slate-700 mb-1"
+                                >Output - Potencia (W)</label
+                            >
+                            <input
+                                type="number"
+                                step="0.01"
+                                v-model="previewData.output_power"
+                                class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            />
+                        </div>
+                    </div>
+
+                    <!-- Battery -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <div>
+                            <label
+                                class="block text-sm font-medium text-slate-700 mb-1"
+                                >Battery - Voltaje (V)</label
+                            >
+                            <input
+                                type="number"
+                                step="0.01"
+                                v-model="previewData.battery_voltage"
+                                class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            />
+                        </div>
+                        <div>
+                            <label
+                                class="block text-sm font-medium text-slate-700 mb-1"
+                                >Battery - Porcentaje (%)</label
+                            >
+                            <input
+                                type="number"
+                                step="1"
+                                min="0"
+                                max="100"
+                                v-model="previewData.battery_percentage"
+                                class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            />
+                        </div>
+                        <div>
+                            <label
+                                class="block text-sm font-medium text-slate-700 mb-1"
+                                >Battery - Tiempo Respaldo (Min)</label
+                            >
+                            <input
+                                type="number"
+                                step="1"
+                                min="0"
+                                v-model="previewData.battery_tiempo_respaldo"
+                                class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            />
+                        </div>
+                        <div>
+                            <label
+                                class="block text-sm font-medium text-slate-700 mb-1"
+                                >Battery - Tiempo Descarga (Min)</label
+                            >
+                            <input
+                                type="number"
+                                step="1"
+                                min="0"
+                                v-model="previewData.battery_tiempo_descarga"
+                                class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            />
+                        </div>
+                        <div>
+                            <label
+                                class="block text-sm font-medium text-slate-700 mb-1"
+                                >Battery - Estado</label
+                            >
+                            <select
+                                v-model="previewData.battery_estado"
+                                class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            >
+                                <option value="">Seleccionar...</option>
+                                <option value="charging">Charging</option>
+                                <option value="discharging">Discharging</option>
+                                <option value="standby">Standby</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label
+                                class="block text-sm font-medium text-slate-700 mb-1"
+                                >Temperatura (°C)</label
+                            >
+                            <input
+                                type="number"
+                                step="0.01"
+                                v-model="previewData.temperatura"
+                                class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            />
+                        </div>
+                    </div>
+
+                    <!-- Observaciones -->
+                    <div>
+                        <label
+                            class="block text-sm font-medium text-slate-700 mb-1"
+                            >Observaciones (opcional)</label
+                        >
+                        <textarea
+                            v-model="previewData.observaciones"
+                            rows="3"
+                            class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            placeholder="Agregar observaciones adicionales..."
+                        ></textarea>
+                    </div>
+
+                    <!-- Botones -->
+                    <div class="flex gap-2 pt-4">
+                        <button
+                            type="submit"
+                            :disabled="saving"
+                            class="flex-1 px-4 py-2 rounded-lg bg-green-600 text-white hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
+                        >
+                            {{ saving ? "Guardando..." : "Guardar Registro" }}
+                        </button>
+                        <button
+                            type="button"
+                            @click="resetForm"
+                            class="px-4 py-2 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-700"
+                        >
+                            Cancelar
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </AppLayout>
+</template>
+
+<script setup>
+import { ref } from "vue";
+import AppLayout from "@/Layouts/AppLayout.vue";
+import { Link, router, useForm } from "@inertiajs/vue3";
+import axios from "axios";
+
+const props = defineProps({
+    ups: Object,
+});
+
+const fileInput = ref(null);
+const selectedFiles = ref([]);
+const previewImages = ref([]);
+const previewData = ref(null);
+const analyzing = ref(false);
+const analyzingProgress = ref(0);
+const saving = ref(false);
+const error = ref(null);
+
+const handleFileSelect = (event) => {
+    const files = Array.from(event.target.files || []);
+    if (files.length === 0) return;
+
+    // Limitar a 5 imágenes
+    const filesToAdd = files.slice(0, 5 - selectedFiles.value.length);
+    if (filesToAdd.length === 0) {
+        error.value = 'Ya has seleccionado el máximo de 5 imágenes';
+        return;
+    }
+
+    selectedFiles.value = [...selectedFiles.value, ...filesToAdd];
+    error.value = null;
+    previewData.value = null;
+
+    // Crear preview local para cada imagen
+    filesToAdd.forEach((file) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            previewImages.value.push(e.target.result);
+        };
+        reader.readAsDataURL(file);
+    });
+};
+
+const removeImage = (index) => {
+    selectedFiles.value.splice(index, 1);
+    previewImages.value.splice(index, 1);
+    // No limpiar el input para permitir agregar más imágenes
+};
+
+const formatFileSize = (bytes) => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+};
+
+const analyzeImage = async () => {
+    if (selectedFiles.value.length === 0) return;
+
+    analyzing.value = true;
+    analyzingProgress.value = 0;
+    error.value = null;
+
+    try {
+        const formData = new FormData();
+        selectedFiles.value.forEach((file) => {
+            formData.append("imagenes[]", file);
+        });
+
+        const response = await axios.post(
+            route("ups.vitacora.analyze", { ups: props.ups.id }),
+            formData,
+            {
+                headers: {
+                    "Content-Type": "multipart/form-data",
+                },
+            }
+        );
+
+        if (response.data.success) {
+            previewData.value = response.data.preview;
+            // Actualizar preview images con las rutas del servidor si vienen del análisis
+            if (response.data.preview.imagenes && Array.isArray(response.data.preview.imagenes)) {
+                // Mantener las previews locales si las rutas del servidor están disponibles
+                const serverImages = response.data.preview.imagenes.map(img => `/storage/${img}`);
+                if (serverImages.length === previewImages.value.length) {
+                    previewImages.value = serverImages;
+                }
+            }
+        } else {
+            error.value =
+                response.data.message || "Error al analizar las imágenes";
+            // Si el error permite entrada manual, inicializar datos vacíos
+            if (response.data.allow_manual && selectedFiles.value.length > 0) {
+                previewData.value = {
+                    imagenes: previewImages.value,
+                    indicador_normal: false,
+                    indicador_battery: false,
+                    indicador_bypass: false,
+                    indicador_fault: false,
+                    input_voltage: null,
+                    input_frequency: null,
+                    output_voltage: null,
+                    output_frequency: null,
+                    output_power: null,
+                    battery_voltage: null,
+                    battery_percentage: null,
+                    battery_tiempo_respaldo: null,
+                    battery_tiempo_descarga: null,
+                    battery_estado: null,
+                    temperatura: null,
+                    observaciones: '',
+                };
+            }
+        }
+    } catch (err) {
+        error.value =
+            err.response?.data?.message ||
+            err.message ||
+            "Error al analizar las imágenes";
+        // Si el error permite entrada manual, inicializar datos vacíos
+        if (err.response?.data?.allow_manual && selectedFiles.value.length > 0) {
+            previewData.value = {
+                imagenes: previewImages.value,
+                indicador_normal: false,
+                indicador_battery: false,
+                indicador_bypass: false,
+                indicador_fault: false,
+                input_voltage: null,
+                input_frequency: null,
+                output_voltage: null,
+                output_frequency: null,
+                output_power: null,
+                battery_voltage: null,
+                battery_percentage: null,
+                battery_tiempo_respaldo: null,
+                battery_tiempo_descarga: null,
+                battery_estado: null,
+                temperatura: null,
+                observaciones: '',
+            };
+        }
+    } finally {
+        analyzing.value = false;
+        analyzingProgress.value = 0;
+    }
+};
+
+const guardarRegistro = async () => {
+    if (!previewData.value) return;
+
+    saving.value = true;
+    error.value = null;
+
+    try {
+        const formData = new FormData();
+
+        // Manejar múltiples imágenes
+        if (previewData.value.imagenes && Array.isArray(previewData.value.imagenes)) {
+            // Si son rutas del servidor (análisis exitoso)
+            previewData.value.imagenes.forEach((img) => {
+                if (typeof img === 'string' && !img.startsWith('blob:')) {
+                    formData.append('imagenes[]', img);
+                }
+            });
+        }
+
+        // Si hay archivos seleccionados y no se analizaron (entrada manual)
+        if (selectedFiles.value.length > 0) {
+            selectedFiles.value.forEach((file) => {
+                formData.append('imagenes_files[]', file);
+            });
+        }
+
+        // Agregar todos los demás datos
+        formData.append('indicador_normal', previewData.value.indicador_normal ? '1' : '0');
+        formData.append('indicador_battery', previewData.value.indicador_battery ? '1' : '0');
+        formData.append('indicador_bypass', previewData.value.indicador_bypass ? '1' : '0');
+        formData.append('indicador_fault', previewData.value.indicador_fault ? '1' : '0');
+        if (previewData.value.input_voltage !== null) formData.append('input_voltage', previewData.value.input_voltage);
+        if (previewData.value.input_frequency !== null) formData.append('input_frequency', previewData.value.input_frequency);
+        if (previewData.value.output_voltage !== null) formData.append('output_voltage', previewData.value.output_voltage);
+        if (previewData.value.output_frequency !== null) formData.append('output_frequency', previewData.value.output_frequency);
+        if (previewData.value.output_power !== null) formData.append('output_power', previewData.value.output_power);
+        if (previewData.value.battery_voltage !== null) formData.append('battery_voltage', previewData.value.battery_voltage);
+        if (previewData.value.battery_percentage !== null) formData.append('battery_percentage', previewData.value.battery_percentage);
+        if (previewData.value.battery_tiempo_respaldo !== null) formData.append('battery_tiempo_respaldo', previewData.value.battery_tiempo_respaldo);
+        if (previewData.value.battery_tiempo_descarga !== null) formData.append('battery_tiempo_descarga', previewData.value.battery_tiempo_descarga);
+        if (previewData.value.battery_estado) formData.append('battery_estado', previewData.value.battery_estado);
+        if (previewData.value.observaciones) formData.append('observaciones', previewData.value.observaciones);
+        if (previewData.value.datos_extraidos) formData.append('datos_extraidos', JSON.stringify(previewData.value.datos_extraidos));
+
+        await axios.post(
+            route("ups.vitacora.store", { ups: props.ups.id }),
+            formData,
+            {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                },
+            }
+        );
+
+        router.visit(route("ups.vitacora.index", { ups: props.ups.id }), {
+            method: "get",
+        });
+    } catch (err) {
+        error.value =
+            err.response?.data?.message ||
+            err.message ||
+            "Error al guardar el registro";
+        saving.value = false;
+    }
+};
+
+const resetForm = () => {
+    selectedFiles.value = [];
+    previewImages.value = [];
+    previewData.value = null;
+    error.value = null;
+    if (fileInput.value) {
+        fileInput.value.value = "";
+    }
+};
+</script>

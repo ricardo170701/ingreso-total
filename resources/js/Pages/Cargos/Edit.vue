@@ -86,71 +86,52 @@
                 </form>
             </div>
 
-            <!-- Agregar nueva puerta -->
+            <!-- Agregar Permiso de Piso -->
             <div class="bg-white border border-slate-200 rounded-xl p-6">
                 <h2 class="text-lg font-semibold text-slate-900 mb-4">
-                    Agregar Permiso de Puerta
+                    Agregar Permiso de Piso
                 </h2>
-                <form
-                    @submit.prevent="submitPuerta"
-                    class="grid grid-cols-1 gap-4"
-                >
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <FormField
-                            label="Puerta"
-                            :error="formPuerta.errors.puerta_id"
+                <p class="text-sm text-slate-600 mb-4">
+                    Asigna permisos de acceso físico por piso. Los usuarios con este cargo podrán acceder a todas las puertas del piso asignado según las reglas de horario y vigencia.
+                </p>
+                <form @submit.prevent="submitPiso">
+                    <FormField
+                        label="Piso"
+                        :error="formPiso.errors.piso_id"
+                    >
+                        <select
+                            v-model="formPiso.piso_id"
+                            class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                            required
                         >
-                            <select
-                                v-model="formPuerta.puerta_id"
-                                class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                                required
+                            <option value="">Selecciona un piso</option>
+                            <option
+                                v-for="piso in todosLosPisos"
+                                :key="piso.id"
+                                :value="piso.id"
                             >
-                                <option :value="null">
-                                    Selecciona una puerta
-                                </option>
-                                <option
-                                    v-for="p in todasLasPuertas"
-                                    :key="p.id"
-                                    :value="p.id"
-                                >
-                                    {{ p.nombre }}
-                                    <span v-if="p.zona">
-                                        - {{ p.zona.nombre }}</span
-                                    >
-                                </option>
-                            </select>
-                        </FormField>
-                        <div class="flex items-center gap-6 pt-7">
-                            <label class="inline-flex items-center gap-2">
-                                <input
-                                    v-model="formPuerta.activo"
-                                    type="checkbox"
-                                    class="h-4 w-4"
-                                />
-                                <span class="text-sm text-slate-700"
-                                    >Permiso activo</span
-                                >
-                            </label>
-                        </div>
-                    </div>
+                                {{ piso.nombre }}
+                            </option>
+                        </select>
+                    </FormField>
 
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                         <FormField
                             label="Hora Inicio (opcional)"
-                            :error="formPuerta.errors.hora_inicio"
+                            :error="formPiso.errors.hora_inicio"
                         >
                             <input
-                                v-model="formPuerta.hora_inicio"
+                                v-model="formPiso.hora_inicio"
                                 type="time"
                                 class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
                             />
                         </FormField>
                         <FormField
                             label="Hora Fin (opcional)"
-                            :error="formPuerta.errors.hora_fin"
+                            :error="formPiso.errors.hora_fin"
                         >
                             <input
-                                v-model="formPuerta.hora_fin"
+                                v-model="formPiso.hora_fin"
                                 type="time"
                                 class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
                             />
@@ -160,20 +141,20 @@
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <FormField
                             label="Fecha Inicio (opcional)"
-                            :error="formPuerta.errors.fecha_inicio"
+                            :error="formPiso.errors.fecha_inicio"
                         >
                             <input
-                                v-model="formPuerta.fecha_inicio"
+                                v-model="formPiso.fecha_inicio"
                                 type="date"
                                 class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
                             />
                         </FormField>
                         <FormField
                             label="Fecha Fin (opcional)"
-                            :error="formPuerta.errors.fecha_fin"
+                            :error="formPiso.errors.fecha_fin"
                         >
                             <input
-                                v-model="formPuerta.fecha_fin"
+                                v-model="formPiso.fecha_fin"
                                 type="date"
                                 class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
                             />
@@ -182,28 +163,27 @@
 
                     <FormField
                         label="Días de la Semana (opcional)"
-                        :error="formPuerta.errors.dias_semana"
+                        :error="formPiso.errors.dias_semana"
                     >
                         <input
-                            v-model="formPuerta.dias_semana"
+                            v-model="formPiso.dias_semana"
                             type="text"
                             class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
                             placeholder="Ej: 1,2,3,4,5 (1=Lunes, 7=Domingo)"
                         />
                         <p class="mt-1 text-xs text-slate-500">
-                            Deja vacío para todos los días. Formato: números
-                            separados por comas (1-7)
+                            Deja vacío para todos los días. Formato: números separados por comas (1-7)
                         </p>
                     </FormField>
 
                     <div class="flex items-center justify-end gap-2 pt-2">
                         <button
                             type="submit"
-                            :disabled="formPuerta.processing"
+                            :disabled="formPiso.processing"
                             class="px-4 py-2 rounded-lg bg-green-600 text-white hover:bg-green-700 disabled:opacity-50"
                         >
                             {{
-                                formPuerta.processing
+                                formPiso.processing
                                     ? "Agregando..."
                                     : "Agregar Permiso"
                             }}
@@ -212,33 +192,33 @@
                 </form>
             </div>
 
-            <!-- Lista de puertas asignadas -->
+            <!-- Lista de pisos asignados -->
             <div class="bg-white border border-slate-200 rounded-xl p-6">
                 <h2 class="text-lg font-semibold text-slate-900 mb-4">
-                    Puertas con Permiso ({{ puertasAsignadas.length }})
+                    Pisos con Permiso ({{ pisosAsignados.length }})
                 </h2>
 
                 <div
-                    v-if="puertasAsignadas.length === 0"
+                    v-if="pisosAsignados.length === 0"
                     class="text-center py-8 text-slate-500"
                 >
-                    No hay puertas asignadas a este cargo.
+                    No hay pisos asignados a este cargo.
                 </div>
 
                 <div v-else class="space-y-4">
                     <div
-                        v-for="puerta in puertasAsignadas"
-                        :key="puerta.id"
+                        v-for="piso in pisosAsignados"
+                        :key="piso.id"
                         class="border border-slate-200 rounded-lg p-4"
                     >
                         <div class="flex items-start justify-between">
                             <div class="flex-1">
                                 <div class="flex items-center gap-2 mb-2">
                                     <h3 class="font-semibold text-slate-900">
-                                        {{ puerta.nombre }}
+                                        {{ piso.nombre }}
                                     </h3>
                                     <span
-                                        v-if="puerta.pivot.activo"
+                                        v-if="piso.pivot.activo"
                                         class="px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-700"
                                     >
                                         Activo
@@ -251,55 +231,34 @@
                                     </span>
                                 </div>
                                 <div class="text-sm text-slate-600 space-y-1">
-                                    <p v-if="puerta.zona">
-                                        <span class="font-medium">Zona:</span>
-                                        {{ puerta.zona.nombre }}
-                                    </p>
                                     <p
                                         v-if="
-                                            puerta.pivot.hora_inicio ||
-                                            puerta.pivot.hora_fin
+                                            piso.pivot.hora_inicio ||
+                                            piso.pivot.hora_fin
                                         "
                                     >
-                                        <span class="font-medium"
-                                            >Horario:</span
-                                        >
-                                        {{
-                                            puerta.pivot.hora_inicio || "00:00"
-                                        }}
-                                        -
-                                        {{ puerta.pivot.hora_fin || "23:59" }}
+                                        <span class="font-medium">Horario:</span>
+                                        {{ piso.pivot.hora_inicio || "00:00" }} -
+                                        {{ piso.pivot.hora_fin || "23:59" }}
                                     </p>
-                                    <p v-if="puerta.pivot.dias_semana">
+                                    <p v-if="piso.pivot.dias_semana">
                                         <span class="font-medium">Días:</span>
-                                        {{
-                                            formatDiasSemana(
-                                                puerta.pivot.dias_semana
-                                            )
-                                        }}
+                                        {{ formatDiasSemana(piso.pivot.dias_semana) }}
                                     </p>
                                     <p
                                         v-if="
-                                            puerta.pivot.fecha_inicio ||
-                                            puerta.pivot.fecha_fin
+                                            piso.pivot.fecha_inicio ||
+                                            piso.pivot.fecha_fin
                                         "
                                     >
-                                        <span class="font-medium"
-                                            >Período:</span
-                                        >
-                                        {{
-                                            puerta.pivot.fecha_inicio ||
-                                            "Sin inicio"
-                                        }}
-                                        -
-                                        {{
-                                            puerta.pivot.fecha_fin || "Sin fin"
-                                        }}
+                                        <span class="font-medium">Período:</span>
+                                        {{ piso.pivot.fecha_inicio || "Sin inicio" }} -
+                                        {{ piso.pivot.fecha_fin || "Sin fin" }}
                                     </p>
                                 </div>
                             </div>
                             <button
-                                @click="revokePuerta(puerta.id)"
+                                @click="revokePiso(piso.id)"
                                 class="px-3 py-1.5 rounded-md border border-red-200 text-red-700 hover:bg-red-50 text-sm"
                             >
                                 Eliminar
@@ -410,8 +369,8 @@ import { ref, onMounted, computed } from "vue";
 
 const props = defineProps({
     cargo: Object,
-    puertasAsignadas: Array,
-    todasLasPuertas: Array,
+    pisosAsignados: Array,
+    todosLosPisos: Array,
     permissions: Array,
     permissionsGrouped: Object,
 });
@@ -422,8 +381,8 @@ const formCargo = useForm({
     activo: !!props.cargo.activo,
 });
 
-const formPuerta = useForm({
-    puerta_id: null,
+const formPiso = useForm({
+    piso_id: null,
     hora_inicio: null,
     hora_fin: null,
     dias_semana: "1,2,3,4,5,6,7",
@@ -436,20 +395,20 @@ const submitCargo = () => {
     formCargo.put(route("cargos.update", { cargo: props.cargo.id }));
 };
 
-const submitPuerta = () => {
-    formPuerta.post(route("cargos.puertas.store", { cargo: props.cargo.id }), {
+const submitPiso = () => {
+    formPiso.post(route("cargos.pisos.store", { cargo: props.cargo.id }), {
         onSuccess: () => {
-            formPuerta.reset();
+            formPiso.reset();
         },
     });
 };
 
-const revokePuerta = (puertaId) => {
-    if (!confirm("¿Eliminar este permiso de puerta?")) return;
+const revokePiso = (pisoId) => {
+    if (!confirm("¿Eliminar este permiso de piso?")) return;
     router.delete(
-        route("cargos.puertas.destroy", {
+        route("cargos.pisos.destroy", {
             cargo: props.cargo.id,
-            puerta: puertaId,
+            piso: pisoId,
         })
     );
 };

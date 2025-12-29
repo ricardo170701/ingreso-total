@@ -45,6 +45,11 @@ class AuthController extends Controller
             Auth::login($user, $request->boolean('remember'));
             $request->session()->regenerate();
 
+            // Visitantes: acceso limitado a Ingreso/Soporte
+            if (($user->role?->name ?? null) === 'visitante') {
+                return redirect()->route('ingreso.index');
+            }
+
             return redirect()->intended('/dashboard');
         } catch (\Exception $e) {
             if ($e->getMessage() === 'Usuario inactivo.') {

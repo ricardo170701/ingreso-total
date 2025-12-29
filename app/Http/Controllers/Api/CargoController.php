@@ -28,6 +28,10 @@ class CargoController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
+        if (!$request->user() || !$request->user()->hasPermission('view_cargos')) {
+            return response()->json(['message' => 'No autorizado.'], 403);
+        }
+
         $perPage = (int) ($request->query('per_page', 15));
         $perPage = max(1, min(100, $perPage));
 
@@ -40,7 +44,7 @@ class CargoController extends Controller
      * @OA\Post(
      *   path="/api/cargos",
      *   tags={"Cargos"},
-     *   summary="Crear cargo (solo super_usuario)",
+     *   summary="Crear cargo (requiere permiso create_cargos)",
      *   security={{"sanctum":{}}},
      *   @OA\RequestBody(required=true, @OA\JsonContent(
      *     required={"name"},
@@ -56,7 +60,7 @@ class CargoController extends Controller
      */
     public function store(StoreCargoRequest $request): JsonResponse
     {
-        if (($request->user()?->role?->name ?? null) !== 'super_usuario') {
+        if (!$request->user() || !$request->user()->hasPermission('create_cargos')) {
             return response()->json(['message' => 'No autorizado.'], 403);
         }
 
@@ -80,6 +84,10 @@ class CargoController extends Controller
      */
     public function show(Cargo $cargo): JsonResponse
     {
+        if (!request()->user() || !request()->user()->hasPermission('view_cargos')) {
+            return response()->json(['message' => 'No autorizado.'], 403);
+        }
+
         return response()->json(['data' => $cargo]);
     }
 
@@ -89,7 +97,7 @@ class CargoController extends Controller
      * @OA\Put(
      *   path="/api/cargos/{id}",
      *   tags={"Cargos"},
-     *   summary="Actualizar cargo (solo super_usuario)",
+     *   summary="Actualizar cargo (requiere permiso edit_cargos)",
      *   security={{"sanctum":{}}},
      *   @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
      *   @OA\RequestBody(required=true, @OA\JsonContent(
@@ -105,7 +113,7 @@ class CargoController extends Controller
      */
     public function update(UpdateCargoRequest $request, Cargo $cargo): JsonResponse
     {
-        if (($request->user()?->role?->name ?? null) !== 'super_usuario') {
+        if (!$request->user() || !$request->user()->hasPermission('edit_cargos')) {
             return response()->json(['message' => 'No autorizado.'], 403);
         }
 
@@ -121,7 +129,7 @@ class CargoController extends Controller
      * @OA\Delete(
      *   path="/api/cargos/{id}",
      *   tags={"Cargos"},
-     *   summary="Eliminar cargo (solo super_usuario)",
+     *   summary="Eliminar cargo (requiere permiso delete_cargos)",
      *   security={{"sanctum":{}}},
      *   @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
      *   @OA\Response(response=200, description="OK"),
@@ -131,7 +139,7 @@ class CargoController extends Controller
      */
     public function destroy(Request $request, Cargo $cargo): JsonResponse
     {
-        if (($request->user()?->role?->name ?? null) !== 'super_usuario') {
+        if (!$request->user() || !$request->user()->hasPermission('delete_cargos')) {
             return response()->json(['message' => 'No autorizado.'], 403);
         }
 
@@ -154,6 +162,10 @@ class CargoController extends Controller
      */
     public function puertas(Cargo $cargo): JsonResponse
     {
+        if (!request()->user() || !request()->user()->hasPermission('view_cargos')) {
+            return response()->json(['message' => 'No autorizado.'], 403);
+        }
+
         $puertas = $cargo->puertas()
             ->withPivot(['hora_inicio', 'hora_fin', 'dias_semana', 'fecha_inicio', 'fecha_fin', 'activo'])
             ->get();
@@ -169,7 +181,7 @@ class CargoController extends Controller
      * @OA\Post(
      *   path="/api/cargos/{id}/puertas",
      *   tags={"Cargos"},
-     *   summary="Asignar/actualizar permiso de puerta a cargo (solo super_usuario)",
+     *   summary="Asignar/actualizar permiso de puerta a cargo (requiere permiso edit_cargos)",
      *   security={{"sanctum":{}}},
      *   @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
      *   @OA\RequestBody(required=true, @OA\JsonContent(
@@ -190,7 +202,7 @@ class CargoController extends Controller
      */
     public function upsertPuerta(UpsertCargoPuertaAccesoRequest $request, Cargo $cargo): JsonResponse
     {
-        if (($request->user()?->role?->name ?? null) !== 'super_usuario') {
+        if (!$request->user() || !$request->user()->hasPermission('edit_cargos')) {
             return response()->json(['message' => 'No autorizado.'], 403);
         }
 
@@ -229,7 +241,7 @@ class CargoController extends Controller
      * @OA\Delete(
      *   path="/api/cargos/{id}/puertas/{puertaId}",
      *   tags={"Cargos"},
-     *   summary="Revocar permiso de puerta en cargo (solo super_usuario)",
+     *   summary="Revocar permiso de puerta en cargo (requiere permiso edit_cargos)",
      *   security={{"sanctum":{}}},
      *   @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
      *   @OA\Parameter(name="puertaId", in="path", required=true, @OA\Schema(type="integer")),
@@ -240,7 +252,7 @@ class CargoController extends Controller
      */
     public function revokePuerta(Request $request, Cargo $cargo, Puerta $puerta): JsonResponse
     {
-        if (($request->user()?->role?->name ?? null) !== 'super_usuario') {
+        if (!$request->user() || !$request->user()->hasPermission('edit_cargos')) {
             return response()->json(['message' => 'No autorizado.'], 403);
         }
 

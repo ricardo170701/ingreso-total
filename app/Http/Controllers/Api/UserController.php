@@ -25,6 +25,10 @@ class UserController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
+        if (!$request->user() || !$request->user()->hasPermission('view_users')) {
+            return response()->json(['message' => 'No autorizado.'], 403);
+        }
+
         $perPage = (int) ($request->query('per_page', 15));
         $perPage = max(1, min(100, $perPage));
 
@@ -49,12 +53,22 @@ class UserController extends Controller
      */
     public function show(User $user): JsonResponse
     {
+        $actor = request()->user();
+        if (!$actor) {
+            return response()->json(['message' => 'No autenticado.'], 401);
+        }
+
+        // Permite ver su propio usuario o si tiene permiso de ver usuarios
+        if ($actor->id !== $user->id && !$actor->hasPermission('view_users')) {
+            return response()->json(['message' => 'No autorizado.'], 403);
+        }
+
         return response()->json(['data' => $user->load(['role', 'cargo'])]);
     }
 
     /**
      * POST /api/users
-     * Crea un usuario (funcionario/visitante/operador/rrhh/etc.) según reglas del negocio.
+     * Crea un usuario (funcionario/visitante). La autorización depende de permisos del cargo.
      *
      * @OA\Post(
      *     path="/api/users",
@@ -108,27 +122,19 @@ class UserController extends Controller
         $actor = $request->user();
         $data = $request->validated();
 
+        if (!$actor || !$actor->hasPermission('create_users')) {
+            return response()->json(['message' => 'No autorizado.'], 403);
+        }
+
         // Resolver rol (por id o name)
         $roleId = $data['role_id'] ?? null;
         if (!$roleId && !empty($data['role_name'])) {
             $roleId = Role::query()->where('name', $data['role_name'])->value('id');
         }
 
-        // Reglas mínimas por rol del actor (permisología de la app)
-        // - super_usuario: puede crear cualquiera
-        // - rrhh: no puede crear visitantes
-        // - operador: solo crea visitantes
-        $actorRole = $actor?->role?->name;
-        $targetRole = $roleId ? Role::query()->whereKey($roleId)->value('name') : null;
-
-        if ($actorRole !== 'super_usuario') {
-            if ($actorRole === 'rrhh' && $targetRole === 'visitante') {
-                return response()->json(['message' => 'RRHH no puede crear visitantes.'], 403);
-            }
-            if ($actorRole === 'operador' && $targetRole !== 'visitante') {
-                return response()->json(['message' => 'Operador solo puede crear visitantes.'], 403);
-            }
-        }
+        // Visitante: no se registra cargo
+        $roleName = $roleId ? Role::query()->whereKey($roleId)->value('name') : null;
+        $cargoId = $roleName === 'visitante' ? null : ($data['cargo_id'] ?? null);
 
         // Campo name: si no viene, intentamos derivarlo de nombre/apellido
         $name = $data['name'] ?? trim(($data['nombre'] ?? '') . ' ' . ($data['apellido'] ?? ''));
@@ -141,7 +147,7 @@ class UserController extends Controller
             'password' => $data['password'], // se hashea por cast "hashed"
 
             'role_id' => $roleId,
-            'cargo_id' => $data['cargo_id'] ?? null,
+            'cargo_id' => $cargoId,
 
             'name' => $name,
             'username' => $data['username'] ?? null,
@@ -154,7 +160,9 @@ class UserController extends Controller
             'fecha_expiracion' => $data['fecha_expiracion'] ?? null,
             'es_discapacitado' => $data['es_discapacitado'] ?? false,
 
+            // Auditoría (legacy + nuevo)
             'creado_por' => $actor?->id,
+            'created_by' => $actor?->id,
         ]);
 
         return response()->json([
@@ -203,24 +211,25 @@ class UserController extends Controller
         $actor = $request->user();
         $data = $request->validated();
 
+        if (!$actor) {
+            return response()->json(['message' => 'No autenticado.'], 401);
+        }
+
+        // Permite editar su propio usuario o si tiene permiso de edición
+        if ($actor->id !== $user->id && !$actor->hasPermission('edit_users')) {
+            return response()->json(['message' => 'No autorizado.'], 403);
+        }
+
         // Resolver rol (por id o name)
         $roleId = $data['role_id'] ?? null;
         if (!$roleId && !empty($data['role_name'])) {
             $roleId = Role::query()->where('name', $data['role_name'])->value('id');
         }
 
-        $actorRole = $actor?->role?->name;
-        $targetRole = $roleId ? Role::query()->whereKey($roleId)->value('name') : ($user->role?->name);
-
-        // Reglas mínimas por rol del actor
-        if ($actorRole !== 'super_usuario') {
-            if ($actorRole === 'rrhh' && $targetRole === 'visitante') {
-                return response()->json(['message' => 'RRHH no puede modificar visitantes.'], 403);
-            }
-            if ($actorRole === 'operador' && $targetRole !== 'visitante') {
-                return response()->json(['message' => 'Operador solo puede modificar visitantes.'], 403);
-            }
-        }
+        // Visitante: no se registra cargo
+        $roleIdFinal = $roleId ?? $user->role_id;
+        $roleNameFinal = $roleIdFinal ? Role::query()->whereKey($roleIdFinal)->value('name') : null;
+        $cargoIdFinal = $roleNameFinal === 'visitante' ? null : ($data['cargo_id'] ?? $user->cargo_id);
 
         // Campo name: si viene vacío y hay nombre/apellido, lo derivamos
         if (array_key_exists('name', $data) && ($data['name'] === null || trim((string) $data['name']) === '')) {
@@ -231,7 +240,7 @@ class UserController extends Controller
             'email' => $data['email'] ?? $user->email,
             'password' => $data['password'] ?? null,
             'role_id' => $roleId ?? $user->role_id,
-            'cargo_id' => $data['cargo_id'] ?? $user->cargo_id,
+            'cargo_id' => $cargoIdFinal,
             'name' => $data['name'] ?? $user->name,
             'username' => $data['username'] ?? $user->username,
             'nombre' => $data['nombre'] ?? $user->nombre,
@@ -241,6 +250,7 @@ class UserController extends Controller
             'activo' => array_key_exists('activo', $data) ? ($data['activo'] ?? $user->activo) : $user->activo,
             'fecha_expiracion' => $data['fecha_expiracion'] ?? $user->fecha_expiracion,
             'es_discapacitado' => array_key_exists('es_discapacitado', $data) ? ($data['es_discapacitado'] ?? $user->es_discapacitado) : $user->es_discapacitado,
+            'updated_by' => $actor->id,
         ]);
 
         // Si no se envió password, evitamos sobreescribirlo con null
@@ -260,7 +270,7 @@ class UserController extends Controller
      * @OA\Delete(
      *     path="/api/users/{id}",
      *     tags={"Usuarios"},
-     *     summary="Eliminar usuario (solo super_usuario)",
+     *     summary="Eliminar usuario (requiere permiso delete_users)",
      *     security={{"sanctum":{}}},
      *     @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
      *     @OA\Response(response=200, description="OK"),
@@ -270,12 +280,13 @@ class UserController extends Controller
      */
     public function destroy(Request $request, User $user): JsonResponse
     {
-        if (($request->user()?->role?->name ?? null) !== 'super_usuario') {
+        $actor = $request->user();
+        if (!$actor || !$actor->hasPermission('delete_users')) {
             return response()->json(['message' => 'No autorizado.'], 403);
         }
 
-        // Evitar que un super usuario se elimine a sí mismo accidentalmente
-        if ($request->user()?->id === $user->id) {
+        // Evitar que se elimine a sí mismo accidentalmente
+        if ($actor->id === $user->id) {
             return response()->json(['message' => 'No puedes eliminar tu propio usuario.'], 422);
         }
 

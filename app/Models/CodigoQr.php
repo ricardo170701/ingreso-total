@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\Crypt;
 
 class CodigoQr extends Model
 {
@@ -16,7 +17,9 @@ class CodigoQr extends Model
 
     protected $fillable = [
         'user_id',
+        'departamento_id',
         'codigo',
+        'token_encrypted',
         'fecha_generacion',
         'fecha_expiracion',
         'usado',
@@ -43,6 +46,14 @@ class CodigoQr extends Model
     }
 
     /**
+     * Departamento destino (solo aplica típicamente para QRs de visitantes)
+     */
+    public function departamento(): BelongsTo
+    {
+        return $this->belongsTo(Departamento::class);
+    }
+
+    /**
      * Relación: Un código QR tiene muchos accesos
      */
     public function accesos(): HasMany
@@ -65,5 +76,56 @@ class CodigoQr extends Model
                 'activo',
             ])
             ->withTimestamps();
+    }
+    /**
+     * Verificar si el código QR está activo (no expirado y activo)
+     */
+    public function estaActivo(): bool
+    {
+        if (!$this->activo) {
+            return false;
+        }
+
+        $now = now();
+
+        // Si tiene fecha de expiración y ya expiró, no está activo
+        if ($this->fecha_expiracion && $this->fecha_expiracion->lt($now)) {
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Scope para obtener solo códigos QR activos
+     */
+    public function scopeActivos($query)
+    {
+        $now = now();
+        return $query->where('activo', true)
+            ->where(function ($q) use ($now) {
+                $q->whereNull('fecha_expiracion')
+                    ->orWhere('fecha_expiracion', '>', $now);
+            });
+    }
+    public function getTokenOriginalAttribute(): ?string
+    {
+        if (!$this->token_encrypted) {
+            return null;
+        }
+
+        try {
+            return Crypt::decryptString($this->token_encrypted);
+        } catch (\Exception $e) {
+            return null;
+        }
+    }
+
+    /**
+     * Establecer el token original (se encripta automáticamente)
+     */
+    public function setTokenOriginal(string $token): void
+    {
+        $this->token_encrypted = Crypt::encryptString($token);
     }
 }

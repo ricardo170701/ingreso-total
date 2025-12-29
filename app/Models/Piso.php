@@ -28,4 +28,21 @@ class Piso extends Model
     {
         return $this->hasMany(Puerta::class);
     }
+
+    /**
+     * Relación: Un piso pertenece a muchos cargos (muchos a muchos)
+     */
+    public function cargos(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
+    {
+        return $this->belongsToMany(\App\Models\Cargo::class, 'cargo_piso_acceso')
+            ->withPivot([
+                'hora_inicio',
+                'hora_fin',
+                'dias_semana',
+                'fecha_inicio',
+                'fecha_fin',
+                'activo',
+            ])
+            ->withTimestamps();
+    }
 }

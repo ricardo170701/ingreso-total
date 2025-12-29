@@ -22,6 +22,7 @@ class Puerta extends Model
         'ip_salida', // IP de la Raspberry Pi para salida
         'imagen', // Ruta de la imagen de la puerta
         'tiempo_apertura', // Tiempo en segundos que la puerta permanece abierta
+        'tiempo_discapacitados', // Tiempo en segundos que la puerta permanece abierta para personas discapacitadas
         'alto', // Altura en centímetros
         'largo', // Largo en centímetros
         'ancho', // Ancho en centímetros
@@ -40,6 +41,7 @@ class Puerta extends Model
         'activo' => 'boolean',
         'requiere_discapacidad' => 'boolean',
         'tiempo_apertura' => 'integer',
+        'tiempo_discapacitados' => 'integer',
         'alto' => 'decimal:2',
         'largo' => 'decimal:2',
         'ancho' => 'decimal:2',
@@ -141,22 +143,32 @@ class Puerta extends Model
 
         $hoy = now()->toDateString();
 
-        // Primero verificar si hay mantenimientos programados activos (fecha_fin >= hoy)
-        $mantenimientoProgramado = $this->mantenimientos
-            ->where('tipo', 'programado')
-            ->where('fecha_fin_programada', '>=', $hoy)
-            ->sortByDesc('fecha_fin_programada')
+        // Para "programado" usamos fecha_fin_programada como fecha límite (fallback: fecha_mantenimiento)
+        $programados = $this->mantenimientos->where('tipo', 'programado');
+
+        $mantenimientoProgramado = $programados
+            ->filter(function ($m) use ($hoy) {
+                $due = $m->fecha_fin_programada?->toDateString() ?? $m->fecha_mantenimiento?->toDateString();
+                return $due && $due >= $hoy;
+            })
+            ->sortByDesc(function ($m) {
+                return $m->fecha_fin_programada?->toDateString() ?? $m->fecha_mantenimiento?->toDateString() ?? '';
+            })
             ->first();
 
         if ($mantenimientoProgramado) {
             return 'programado';
         }
 
-        // Si no hay programados activos, verificar si hay vencidos (fecha_fin < hoy)
-        $mantenimientoVencido = $this->mantenimientos
-            ->where('tipo', 'programado')
-            ->where('fecha_fin_programada', '<', $hoy)
-            ->sortByDesc('fecha_fin_programada')
+        // Si no hay programados activos, verificar vencidos (fecha límite < hoy)
+        $mantenimientoVencido = $programados
+            ->filter(function ($m) use ($hoy) {
+                $due = $m->fecha_fin_programada?->toDateString() ?? $m->fecha_mantenimiento?->toDateString();
+                return $due && $due < $hoy;
+            })
+            ->sortByDesc(function ($m) {
+                return $m->fecha_fin_programada?->toDateString() ?? $m->fecha_mantenimiento?->toDateString() ?? '';
+            })
             ->first();
 
         if ($mantenimientoVencido) {
@@ -164,5 +176,88 @@ class Puerta extends Model
         }
 
         return null;
+    }
+
+    /**
+     * Verificar si la puerta está conectada (responde a conexión)
+     * Retorna: true si está conectada, false si no
+     * @deprecated Usar estaConectadaEntrada() o estaConectadaSalida() en su lugar
+     */
+    public function estaConectada(): bool
+    {
+        // Si no tiene IP configurada, no puede estar conectada
+        $ip = $this->ip_entrada ?? $this->ip_salida;
+        if (!$ip) {
+            return false;
+        }
+
+        // Intentar conexión TCP al puerto 8000 (puerto común para servicios en Raspberry Pi)
+        // Con un timeout corto de 2 segundos
+        $puerto = 8000;
+        $timeout = 2;
+
+        $conexion = @fsockopen($ip, $puerto, $errno, $errstr, $timeout);
+
+        if ($conexion) {
+            fclose($conexion);
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Verificar si la conexión de entrada está activa
+     * Retorna: true si está conectada, false si no, null si no tiene IP de entrada
+     */
+    public function estaConectadaEntrada(): ?bool
+    {
+        if (!$this->ip_entrada) {
+            return null;
+        }
+
+        $puerto = 8000;
+        $timeout = 2;
+
+        $conexion = @fsockopen($this->ip_entrada, $puerto, $errno, $errstr, $timeout);
+
+        if ($conexion) {
+            fclose($conexion);
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Verificar si la conexión de salida está activa
+     * Retorna: true si está conectada, false si no, null si no tiene IP de salida
+     */
+    public function estaConectadaSalida(): ?bool
+    {
+        if (!$this->ip_salida) {
+            return null;
+        }
+
+        $puerto = 8000;
+        $timeout = 2;
+
+        $conexion = @fsockopen($this->ip_salida, $puerto, $errno, $errstr, $timeout);
+
+        if ($conexion) {
+            fclose($conexion);
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Accessor para obtener el estado de conexión
+     * @deprecated Usar getConexionEntradaAttribute o getConexionSalidaAttribute
+     */
+    public function getEstaConectadaAttribute(): bool
+    {
+        return $this->estaConectada();
     }
 }

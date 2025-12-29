@@ -49,8 +49,6 @@ class DemoPermisosSeeder extends Seeder
             }
 
             // Usuarios demo (opcionales)
-            $this->upsertUser('operador@local.test', 'Operador Demo', 'operador', $cargoMedio->id, false);
-            $this->upsertUser('rrhh@local.test', 'RRHH Demo', 'rrhh', $cargoMedio->id, false);
             $this->upsertUser('funcionario@local.test', 'Funcionario Demo', 'funcionario', $cargoTrabajador->id, false);
             $this->upsertUser('visitante@local.test', 'Visitante Demo', 'visitante', $cargoTrabajador->id, false);
             $this->upsertUser('disca@local.test', 'Discapacitado Demo', 'funcionario', $cargoMedio->id, true);

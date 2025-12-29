@@ -109,6 +109,22 @@
                                 placeholder="Ej: 5"
                             />
                         </FormField>
+                        <FormField
+                            label="Tiempo Discapacitados (seg)"
+                            :error="form.errors.tiempo_discapacitados"
+                        >
+                            <input
+                                v-model.number="form.tiempo_discapacitados"
+                                type="number"
+                                min="1"
+                                max="600"
+                                class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                placeholder="Ej: 10"
+                            />
+                            <p class="mt-1 text-xs text-slate-500">
+                                Tiempo adicional para personas discapacitadas
+                            </p>
+                        </FormField>
                         <FormField label="Alto (cm)" :error="form.errors.alto">
                             <input
                                 v-model.number="form.alto"
@@ -286,6 +302,7 @@ const form = useForm({
     ip_salida: "",
     imagen: null,
     tiempo_apertura: 5,
+    tiempo_discapacitados: null,
     alto: null,
     largo: null,
     ancho: null,

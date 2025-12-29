@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StoreUserRequest extends FormRequest
 {
@@ -28,8 +29,12 @@ class StoreUserRequest extends FormRequest
             'password' => ['required', 'string', 'min:8', 'max:255'],
 
             // Aceptamos role por id o por name para facilidad
-            'role_id' => ['nullable', 'integer', 'exists:roles,id'],
-            'role_name' => ['nullable', 'string', 'max:50', 'exists:roles,name'],
+            'role_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('roles', 'id')->whereIn('name', ['funcionario', 'visitante']),
+            ],
+            'role_name' => ['nullable', 'string', 'max:50', Rule::in(['funcionario', 'visitante'])],
 
             'cargo_id' => ['nullable', 'integer', 'exists:cargos,id'],
 
@@ -38,8 +43,15 @@ class StoreUserRequest extends FormRequest
             'username' => ['nullable', 'string', 'max:50', 'unique:users,username'],
             'nombre' => ['nullable', 'string', 'max:100'],
             'apellido' => ['nullable', 'string', 'max:100'],
+            'n_identidad' => ['nullable', 'string', 'max:50', 'unique:users,n_identidad'],
             'departamento_id' => ['nullable', 'integer', 'exists:departamentos,id'],
             'foto_perfil' => ['nullable', 'string'],
+            'foto' => ['nullable', 'file', 'image', 'max:4096'],
+
+            // Documentos (contrato)
+            'contratos' => ['nullable', 'array', 'max:5'],
+            'contratos.*' => ['file', 'mimes:pdf', 'max:10240'], // 10MB c/u
+            'tipo_contrato' => ['nullable', 'string', Rule::in(['prestacion_servicios', 'contratista_externo'])],
 
             'activo' => ['nullable', 'boolean'],
             'fecha_expiracion' => ['nullable', 'date'],

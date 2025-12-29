@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StoreRoleRequest extends FormRequest
 {
@@ -22,7 +23,8 @@ class StoreRoleRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => ['required', 'string', 'max:50', 'unique:roles,name'],
+            // Roles fijos: funcionario | visitante
+            'name' => ['required', 'string', 'max:50', Rule::in(['funcionario', 'visitante']), 'unique:roles,name'],
             'description' => ['nullable', 'string', 'max:255'],
         ];
     }

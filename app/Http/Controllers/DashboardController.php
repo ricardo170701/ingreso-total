@@ -94,8 +94,73 @@ class DashboardController extends Controller
             ->get()
             ->map(function ($item) {
                 return [
-                    'hora' => $item->hora . ':00',
-                    'total' => $item->total,
+                    'hora' => str_pad($item->hora, 2, '0', STR_PAD_LEFT) . ':00',
+                    'total' => (int) $item->total,
+                ];
+            });
+
+        // Accesos por día (últimos 7 días)
+        $accesosPorDia = [];
+        for ($i = 6; $i >= 0; $i--) {
+            $fecha = $now->copy()->subDays($i);
+            $startOfDay = $fecha->copy()->startOfDay();
+            $endOfDay = $fecha->copy()->endOfDay();
+
+            $permitidos = Acceso::query()
+                ->whereBetween('fecha_acceso', [$startOfDay, $endOfDay])
+                ->where('permitido', true)
+                ->count();
+
+            $denegados = Acceso::query()
+                ->whereBetween('fecha_acceso', [$startOfDay, $endOfDay])
+                ->where('permitido', false)
+                ->count();
+
+            $diasSemana = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+            $accesosPorDia[] = [
+                'dia' => $fecha->format('d/m'),
+                'dia_nombre' => $diasSemana[$fecha->dayOfWeek],
+                'permitidos' => $permitidos,
+                'denegados' => $denegados,
+                'total' => $permitidos + $denegados,
+            ];
+        }
+
+        // Mantenimientos por estado
+        // - Programados: tipo=programado y fecha_límite >= hoy (fallback: fecha_mantenimiento)
+        // - Vencidos: tipo=programado y fecha_límite < hoy (fallback: fecha_mantenimiento)
+        $mantenimientosProgramados = \App\Models\Mantenimiento::query()
+            ->where('tipo', 'programado')
+            ->whereRaw('COALESCE(fecha_fin_programada, fecha_mantenimiento) >= ?', [$now->toDateString()])
+            ->count();
+
+        $mantenimientosVencidos = \App\Models\Mantenimiento::query()
+            ->where('tipo', 'programado')
+            ->whereRaw('COALESCE(fecha_fin_programada, fecha_mantenimiento) < ?', [$now->toDateString()])
+            ->count();
+
+        $mantenimientosRealizados = \App\Models\Mantenimiento::query()
+            ->where('tipo', 'realizado')
+            ->whereBetween('fecha_mantenimiento', [$now->copy()->subDays(30), $now])
+            ->count();
+
+        // Puertas (tarjetas del dashboard)
+        $puertasDashboard = Puerta::query()
+            ->where('activo', true)
+            ->with(['piso'])
+            ->orderBy('nombre')
+            ->limit(9)
+            ->get()
+            ->map(function ($p) {
+                return [
+                    'id' => $p->id,
+                    'nombre' => $p->nombre,
+                    'imagen' => $p->imagen,
+                    'activo' => (bool) $p->activo,
+                    'ip_entrada' => $p->ip_entrada,
+                    'ip_salida' => $p->ip_salida,
+                    'piso' => $p->piso ? ['id' => $p->piso->id, 'nombre' => $p->piso->nombre] : null,
+                    'estado_mantenimiento' => $p->estado_mantenimiento,
                 ];
             });
 
@@ -111,7 +176,14 @@ class DashboardController extends Controller
             ],
             'accesos_recientes' => $accesosRecientes,
             'puertas_mas_usadas' => $puertasMasUsadas,
+            'puertas_dashboard' => $puertasDashboard,
             'accesos_por_hora' => $accesosPorHora,
+            'accesos_por_dia' => $accesosPorDia,
+            'mantenimientos' => [
+                'programados' => $mantenimientosProgramados,
+                'vencidos' => $mantenimientosVencidos,
+                'realizados' => $mantenimientosRealizados,
+            ],
         ]);
     }
 }

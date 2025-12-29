@@ -426,44 +426,48 @@ const formPuertas = useForm({
     activo: null,
 });
 
-const exportarUsuarios = () => {
-    formUsuarios.get(route("reportes.exportar.usuarios"), {
-        preserveState: true,
-        preserveScroll: true,
-        onSuccess: () => {
-            // El navegador descargará el archivo automáticamente
-        },
+const downloadCsv = (url, form) => {
+    form.processing = true;
+
+    // Construir query string
+    const params = new URLSearchParams();
+    Object.keys(form.data()).forEach((key) => {
+        const value = form.data()[key];
+        if (value !== null && value !== undefined && value !== '') {
+            params.append(key, value);
+        }
     });
+
+    const fullUrl = url + (params.toString() ? `?${params.toString()}` : '');
+
+    // Usar window.open para descargar el archivo
+    // Esto respeta las cookies de sesión automáticamente
+    // Similar a como se hace en Ingreso/Index.vue para descargar QR
+    const downloadWindow = window.open(fullUrl, '_blank');
+
+    // Cerrar la ventana después de un breve delay (el navegador descargará el archivo)
+    setTimeout(() => {
+        if (downloadWindow) {
+            downloadWindow.close();
+        }
+        form.processing = false;
+    }, 2000);
+};
+
+const exportarUsuarios = () => {
+    downloadCsv(route("reportes.exportar.usuarios"), formUsuarios);
 };
 
 const exportarAccesos = () => {
-    formAccesos.get(route("reportes.exportar.accesos"), {
-        preserveState: true,
-        preserveScroll: true,
-        onSuccess: () => {
-            // El navegador descargará el archivo automáticamente
-        },
-    });
+    downloadCsv(route("reportes.exportar.accesos"), formAccesos);
 };
 
 const exportarMantenimientos = () => {
-    formMantenimientos.get(route("reportes.exportar.mantenimientos"), {
-        preserveState: true,
-        preserveScroll: true,
-        onSuccess: () => {
-            // El navegador descargará el archivo automáticamente
-        },
-    });
+    downloadCsv(route("reportes.exportar.mantenimientos"), formMantenimientos);
 };
 
 const exportarPuertas = () => {
-    formPuertas.get(route("reportes.exportar.puertas"), {
-        preserveState: true,
-        preserveScroll: true,
-        onSuccess: () => {
-            // El navegador descargará el archivo automáticamente
-        },
-    });
+    downloadCsv(route("reportes.exportar.puertas"), formPuertas);
 };
 </script>
 

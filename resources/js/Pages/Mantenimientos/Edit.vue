@@ -66,163 +66,110 @@
                         </FormField>
                         <FormField
                             v-if="form.tipo === 'programado'"
-                            label="Fecha de Fin Programada"
+                            label="Fecha límite (Programado)"
                             :error="form.errors.fecha_fin_programada"
                         >
                             <input
                                 v-model="form.fecha_fin_programada"
                                 type="date"
-                                :min="form.fecha_mantenimiento"
                                 class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                required
                             />
                             <p class="mt-1 text-xs text-slate-500">
-                                Indique hasta cuándo estará la puerta en mantenimiento
+                                Fecha máxima para completar el mantenimiento.
                             </p>
                         </FormField>
                     </div>
 
                     <FormField
-                        label="Estado de los Defectos"
-                        :error="form.errors.defectos"
+                        label="Falla"
+                        :error="form.errors.falla"
                     >
-                        <div class="space-y-3">
+                        <textarea
+                            v-model="form.falla"
+                            rows="4"
+                            class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                            placeholder="Describa la falla encontrada..."
+                        />
+                        <p class="mt-1 text-xs text-slate-500">
+                            Descripción de la falla o problema detectado
+                        </p>
+                    </FormField>
+
+                    <!-- Documentos existentes -->
+                    <div v-if="mantenimiento.documentos?.length > 0">
+                        <label class="block text-sm font-medium text-slate-700 mb-2">
+                            Documentos Actuales
+                        </label>
+                        <div class="space-y-2">
                             <div
-                                v-for="defecto in defectos"
-                                :key="defecto.id"
-                                class="flex items-center gap-4 p-3 bg-slate-50 rounded-lg"
+                                v-for="documento in mantenimiento.documentos"
+                                :key="documento.id"
+                                class="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-200"
                             >
-                                <label
-                                    :for="`defecto-${defecto.id}`"
-                                    class="flex-1 text-sm font-medium text-slate-700 min-w-[200px]"
-                                >
-                                    {{ defecto.nombre }}
-                                </label>
-                                <select
-                                    :id="`defecto-${defecto.id}`"
-                                    v-model="form.defectos[defecto.id]"
-                                    class="flex-1 px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm"
-                                    required
-                                >
-                                    <option value="0">Sin defecto</option>
-                                    <option value="1">Defecto ligero</option>
-                                    <option value="2">Defecto grave</option>
-                                    <option value="3">Defecto muy grave</option>
-                                </select>
-                                <span
-                                    :class="[
-                                        'px-2 py-1 rounded text-xs font-medium',
-                                        form.defectos[defecto.id] == 0
-                                            ? 'bg-green-100 text-green-700'
-                                            : form.defectos[defecto.id] == 1
-                                            ? 'bg-yellow-100 text-yellow-700'
-                                            : form.defectos[defecto.id] == 2
-                                            ? 'bg-orange-100 text-orange-700'
-                                            : 'bg-red-100 text-red-700',
-                                    ]"
-                                >
-                                    {{
-                                        form.defectos[defecto.id] == 0
-                                            ? "Sin defecto"
-                                            : form.defectos[defecto.id] == 1
-                                            ? "Ligero"
-                                            : form.defectos[defecto.id] == 2
-                                            ? "Grave"
-                                            : "Muy grave"
-                                    }}
-                                </span>
+                                <div class="flex items-center gap-2">
+                                    <input
+                                        type="checkbox"
+                                        :value="documento.id"
+                                        v-model="form.documentos_eliminar"
+                                        class="rounded border-slate-300 text-red-600 focus:ring-red-500"
+                                    />
+                                    <svg class="w-5 h-5 text-red-600" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clip-rule="evenodd" />
+                                    </svg>
+                                    <a
+                                        :href="`/storage/${documento.ruta_documento}`"
+                                        target="_blank"
+                                        class="text-sm font-medium text-slate-700 hover:text-blue-600"
+                                    >
+                                        {{ documento.nombre_original || 'Documento PDF' }}
+                                    </a>
+                                </div>
+                                <span class="text-xs text-slate-500">PDF</span>
                             </div>
                         </div>
                         <p class="mt-2 text-xs text-slate-500">
-                            Seleccione el nivel de gravedad para cada defecto
+                            Marque los documentos que desea eliminar
                         </p>
-                    </FormField>
-
-                    <FormField
-                        label="Otros Defectos"
-                        :error="form.errors.otros_defectos"
-                    >
-                        <textarea
-                            v-model="form.otros_defectos"
-                            rows="3"
-                            class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                            placeholder="Describa otros defectos encontrados..."
-                        />
-                    </FormField>
-
-                    <FormField
-                        label="Observaciones"
-                        :error="form.errors.observaciones"
-                    >
-                        <textarea
-                            v-model="form.observaciones"
-                            rows="3"
-                            class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                            placeholder="Observaciones adicionales sobre el mantenimiento..."
-                        />
-                    </FormField>
-
-                    <!-- Imágenes existentes -->
-                    <div v-if="mantenimiento.imagenes?.length > 0">
-                        <label class="block text-sm font-medium text-slate-700 mb-2">
-                            Imágenes Actuales
-                        </label>
-                        <div class="grid grid-cols-2 md:grid-cols-5 gap-2">
-                            <div
-                                v-for="imagen in mantenimiento.imagenes"
-                                :key="imagen.id"
-                                class="relative"
-                            >
-                                <img
-                                    :src="`/storage/${imagen.ruta_imagen}`"
-                                    :alt="imagen.descripcion || 'Imagen'"
-                                    class="w-full h-24 object-cover rounded border border-slate-200"
-                                />
-                                <button
-                                    type="button"
-                                    @click="eliminarImagen(imagen.id)"
-                                    class="absolute top-1 right-1 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center text-xs hover:bg-red-600"
-                                >
-                                    ×
-                                </button>
-                            </div>
-                        </div>
                     </div>
 
-                    <!-- Agregar nuevas imágenes -->
+                    <!-- Agregar nuevos documentos -->
                     <FormField
-                        label="Agregar Nuevas Imágenes"
-                        :error="form.errors.imagenes"
+                        label="Agregar Nuevos Documentos PDF"
+                        :error="form.errors.documentos"
                     >
                         <input
-                            @input="handleImages"
+                            @input="handleDocuments"
                             type="file"
                             multiple
-                            accept="image/jpeg,image/jpg,image/png,image/gif"
+                            accept=".pdf,application/pdf"
                             class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
                         />
                         <p class="mt-1 text-xs text-slate-500">
-                            Puede agregar hasta {{ 10 - (mantenimiento.imagenes?.length || 0) }} imágenes más. Formatos: JPEG, JPG, PNG, GIF (máx. 2MB cada una)
+                            Puede agregar hasta {{ 5 - (mantenimiento.documentos?.length || 0) }} documentos más. Tamaño máximo: 10MB cada uno
                         </p>
                         <div
-                            v-if="imagenesPreview.length > 0"
-                            class="mt-4 grid grid-cols-2 md:grid-cols-5 gap-2"
+                            v-if="documentosPreview.length > 0"
+                            class="mt-4 space-y-2"
                         >
                             <div
-                                v-for="(preview, index) in imagenesPreview"
+                                v-for="(doc, index) in documentosPreview"
                                 :key="index"
-                                class="relative"
+                                class="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-200"
                             >
-                                <img
-                                    :src="preview"
-                                    :alt="`Preview ${index + 1}`"
-                                    class="w-full h-24 object-cover rounded border border-slate-200"
-                                />
+                                <div class="flex items-center gap-2">
+                                    <svg class="w-5 h-5 text-red-600" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clip-rule="evenodd" />
+                                    </svg>
+                                    <span class="text-sm font-medium text-slate-700">{{ doc.name }}</span>
+                                    <span class="text-xs text-slate-500">({{ formatFileSize(doc.size) }})</span>
+                                </div>
                                 <button
                                     type="button"
-                                    @click="removeImage(index)"
-                                    class="absolute top-1 right-1 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center text-xs hover:bg-red-600"
+                                    @click="removeDocument(index)"
+                                    class="text-red-600 hover:text-red-700 text-sm font-medium"
                                 >
-                                    ×
+                                    Eliminar
                                 </button>
                             </div>
                         </div>
@@ -251,102 +198,97 @@
 </template>
 
 <script setup>
-import { ref } from "vue";
+import { ref, watch } from "vue";
 import AppLayout from "@/Layouts/AppLayout.vue";
 import FormField from "@/Components/FormField.vue";
 import { Link, router, useForm } from "@inertiajs/vue3";
+import { submitUploadForm } from "@/Support/inertiaUploads";
 
 const props = defineProps({
     mantenimiento: Object,
     puertas: Array,
-    defectos: Array,
 });
 
-const imagenesPreview = ref([]);
-const imagenesFiles = ref([]);
-
-// Inicializar defectos con los niveles de gravedad del mantenimiento
-const defectosIniciales = {};
-props.defectos.forEach((defecto) => {
-    // Buscar si este defecto está en el mantenimiento
-    const defectoMantenimiento = props.mantenimiento.defectos?.find(
-        (d) => d.id === defecto.id
-    );
-    defectosIniciales[defecto.id] = defectoMantenimiento?.pivot?.nivel_gravedad ?? 0;
-});
+const documentosPreview = ref([]);
+const documentosFiles = ref([]);
 
 const form = useForm({
     puerta_id: props.mantenimiento.puerta_id,
     fecha_mantenimiento: props.mantenimiento.fecha_mantenimiento
         ? new Date(props.mantenimiento.fecha_mantenimiento).toISOString().split("T")[0]
         : new Date().toISOString().split("T")[0],
-    tipo: props.mantenimiento.tipo || "realizado",
     fecha_fin_programada: props.mantenimiento.fecha_fin_programada
         ? new Date(props.mantenimiento.fecha_fin_programada).toISOString().split("T")[0]
         : null,
-    defectos: defectosIniciales, // Objeto con defecto_id: nivel_gravedad
-    otros_defectos: props.mantenimiento.otros_defectos || "",
-    observaciones: props.mantenimiento.observaciones || "",
-    imagenes: [],
+    tipo: props.mantenimiento.tipo || "realizado",
+    falla: props.mantenimiento.falla || "",
+    documentos: [],
+    documentos_eliminar: [],
 });
 
-const handleImages = (event) => {
-    const files = Array.from(event.target.files);
-    const imagenesActuales = props.mantenimiento.imagenes?.length || 0;
-    const maxNuevas = 10 - imagenesActuales;
+watch(
+    () => form.tipo,
+    (tipo) => {
+        if (tipo === "programado") {
+            if (!form.fecha_fin_programada) {
+                form.fecha_fin_programada = form.fecha_mantenimiento;
+            }
+        } else {
+            form.fecha_fin_programada = null;
+        }
+    },
+    { immediate: true }
+);
 
-    if (files.length > maxNuevas) {
-        alert(`Solo se pueden agregar hasta ${maxNuevas} imágenes más`);
+const handleDocuments = (event) => {
+    const files = Array.from(event.target.files);
+    const documentosActuales = props.mantenimiento.documentos?.length || 0;
+    const maxNuevos = 5 - documentosActuales;
+
+    if (documentosFiles.value.length + files.length > maxNuevos) {
+        alert(`Solo se pueden agregar hasta ${maxNuevos} documentos más`);
         return;
     }
 
-    imagenesFiles.value = files;
-    imagenesPreview.value = [];
+    // Validar que sean PDFs
+    const invalidFiles = files.filter(file => file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf'));
+    if (invalidFiles.length > 0) {
+        alert("Todos los archivos deben ser PDFs");
+        return;
+    }
 
+    // Agregar a la lista
     files.forEach((file) => {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            imagenesPreview.value.push(e.target.result);
-        };
-        reader.readAsDataURL(file);
+        documentosFiles.value.push(file);
+        documentosPreview.value.push({
+            name: file.name,
+            size: file.size,
+        });
     });
 
-    form.imagenes = files;
+    form.documentos = documentosFiles.value;
 };
 
-const removeImage = (index) => {
-    imagenesPreview.value.splice(index, 1);
-    imagenesFiles.value.splice(index, 1);
-    form.imagenes = imagenesFiles.value;
+const removeDocument = (index) => {
+    documentosPreview.value.splice(index, 1);
+    documentosFiles.value.splice(index, 1);
+    form.documentos = documentosFiles.value;
 };
 
-const eliminarImagen = (imagenId) => {
-    if (!confirm("¿Eliminar esta imagen?")) return;
-    router.delete(route("mantenimientos.imagenes.destroy", { imagen: imagenId }));
+const formatFileSize = (bytes) => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
 };
 
 const submit = () => {
-    // Convertir el objeto de defectos a array con id y nivel_gravedad
-    const defectosArray = Object.keys(form.defectos).map((defectoId) => ({
-        id: parseInt(defectoId),
-        nivel_gravedad: parseInt(form.defectos[defectoId]),
-    }));
-
-    const submitData = {
-        ...form.data(),
-        defectos: defectosArray,
-    };
-
-    if (form.imagenes.length > 0) {
-        form.transform(() => ({
-            ...submitData,
-            _method: "PUT",
-        })).post(route("mantenimientos.update", { mantenimiento: props.mantenimiento.id }), {
-            forceFormData: true,
-        });
-    } else {
-        form.transform(() => submitData).put(route("mantenimientos.update", { mantenimiento: props.mantenimiento.id }));
-    }
+    submitUploadForm(
+        form,
+        route("mantenimientos.update", { mantenimiento: props.mantenimiento.id }),
+        "put"
+    );
 };
 
 const destroy = () => {
@@ -354,4 +296,3 @@ const destroy = () => {
     router.delete(route("mantenimientos.destroy", { mantenimiento: props.mantenimiento.id }));
 };
 </script>
-

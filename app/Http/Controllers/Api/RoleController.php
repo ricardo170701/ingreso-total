@@ -26,10 +26,19 @@ class RoleController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
+        if (!$request->user() || !$request->user()->hasPermission('view_roles')) {
+            return response()->json(['message' => 'No autorizado.'], 403);
+        }
+
         $perPage = (int) ($request->query('per_page', 15));
         $perPage = max(1, min(100, $perPage));
 
-        return response()->json(Role::query()->orderBy('name')->paginate($perPage));
+        return response()->json(
+            Role::query()
+                ->whereIn('name', ['funcionario', 'visitante'])
+                ->orderBy('name')
+                ->paginate($perPage)
+        );
     }
 
     /**
@@ -38,7 +47,7 @@ class RoleController extends Controller
      * @OA\Post(
      *   path="/api/roles",
      *   tags={"Roles"},
-     *   summary="Crear rol (solo super_usuario)",
+     *   summary="Crear rol (requiere permiso edit_roles)",
      *   security={{"sanctum":{}}},
      *   @OA\RequestBody(required=true, @OA\JsonContent(
      *     required={"name"},
@@ -53,12 +62,13 @@ class RoleController extends Controller
      */
     public function store(StoreRoleRequest $request): JsonResponse
     {
-        if (($request->user()?->role?->name ?? null) !== 'super_usuario') {
+        if (!$request->user() || !$request->user()->hasPermission('edit_roles')) {
             return response()->json(['message' => 'No autorizado.'], 403);
         }
 
-        $role = Role::query()->create($request->validated());
-        return response()->json(['data' => $role], 201);
+        return response()->json([
+            'message' => 'Operación no permitida. Los roles son fijos: funcionario/visitante.',
+        ], 403);
     }
 
     /**
@@ -77,6 +87,14 @@ class RoleController extends Controller
      */
     public function show(Role $role): JsonResponse
     {
+        if (!request()->user() || !request()->user()->hasPermission('view_roles')) {
+            return response()->json(['message' => 'No autorizado.'], 403);
+        }
+
+        if (!in_array($role->name, ['funcionario', 'visitante'], true)) {
+            return response()->json(['message' => 'No encontrado.'], 404);
+        }
+
         return response()->json(['data' => $role]);
     }
 
@@ -86,7 +104,7 @@ class RoleController extends Controller
      * @OA\Put(
      *   path="/api/roles/{id}",
      *   tags={"Roles"},
-     *   summary="Actualizar rol (solo super_usuario)",
+     *   summary="Actualizar rol (requiere permiso edit_roles)",
      *   security={{"sanctum":{}}},
      *   @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
      *   @OA\RequestBody(required=true, @OA\JsonContent(
@@ -101,14 +119,13 @@ class RoleController extends Controller
      */
     public function update(UpdateRoleRequest $request, Role $role): JsonResponse
     {
-        if (($request->user()?->role?->name ?? null) !== 'super_usuario') {
+        if (!$request->user() || !$request->user()->hasPermission('edit_roles')) {
             return response()->json(['message' => 'No autorizado.'], 403);
         }
 
-        $role->fill($request->validated());
-        $role->save();
-
-        return response()->json(['data' => $role]);
+        return response()->json([
+            'message' => 'Operación no permitida. Los roles son fijos: funcionario/visitante.',
+        ], 403);
     }
 
     /**
@@ -117,7 +134,7 @@ class RoleController extends Controller
      * @OA\Delete(
      *   path="/api/roles/{id}",
      *   tags={"Roles"},
-     *   summary="Eliminar rol (solo super_usuario)",
+     *   summary="Eliminar rol (requiere permiso edit_roles)",
      *   security={{"sanctum":{}}},
      *   @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
      *   @OA\Response(response=200, description="OK"),
@@ -127,11 +144,12 @@ class RoleController extends Controller
      */
     public function destroy(Request $request, Role $role): JsonResponse
     {
-        if (($request->user()?->role?->name ?? null) !== 'super_usuario') {
+        if (!$request->user() || !$request->user()->hasPermission('edit_roles')) {
             return response()->json(['message' => 'No autorizado.'], 403);
         }
 
-        $role->delete();
-        return response()->json(['message' => 'Eliminado.']);
+        return response()->json([
+            'message' => 'Operación no permitida. Los roles son fijos: funcionario/visitante.',
+        ], 403);
     }
 }

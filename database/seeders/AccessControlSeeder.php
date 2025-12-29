@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\Cargo;
+use App\Models\Permission;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Database\Seeder;
@@ -17,13 +18,10 @@ class AccessControlSeeder extends Seeder
     public function run(): void
     {
         DB::transaction(function () {
-            // Roles del sistema (permisología de la app)
+            // Roles del sistema (bandera de tipo de usuario)
             $roles = [
-                ['name' => 'super_usuario', 'description' => 'Puede hacer todo'],
-                ['name' => 'operador', 'description' => 'Seguridad: crea QR para visitantes'],
-                ['name' => 'rrhh', 'description' => 'Registra funcionarios'],
-                ['name' => 'funcionario', 'description' => 'Genera su propio QR según permisos'],
-                ['name' => 'visitante', 'description' => 'Recibe QR por correo'],
+                ['name' => 'funcionario', 'description' => 'Usuario interno (permisos por cargo)'],
+                ['name' => 'visitante', 'description' => 'Usuario externo (QR por correo / accesos embebidos)'],
             ];
 
             foreach ($roles as $roleData) {
@@ -42,20 +40,29 @@ class AccessControlSeeder extends Seeder
                 ]
             );
 
+            // Asegurar que el cargo Super Admin tenga todos los permisos del sistema
+            $allPermissionIds = Permission::query()
+                ->where('activo', true)
+                ->pluck('id');
+
+            if ($allPermissionIds->isNotEmpty()) {
+                $cargoSuper->permissions()->sync($allPermissionIds);
+            }
+
             // Usuario inicial (configurable por .env)
             $adminEmail = env('SEED_ADMIN_EMAIL', 'admin@local.test');
             $adminPassword = env('SEED_ADMIN_PASSWORD', 'admin12345');
 
-            $roleSuper = Role::query()->where('name', 'super_usuario')->first();
+            $roleFuncionario = Role::query()->where('name', 'funcionario')->first();
 
             // Nota: usamos el modelo User (tabla users). Si luego quieres separar "usuarios" de "users",
             // lo ajustamos con otra migración.
             User::query()->updateOrCreate(
                 ['email' => $adminEmail],
                 [
-                    'name' => 'Super Usuario',
+                    'name' => 'Admin',
                     'password' => Hash::make($adminPassword),
-                    'role_id' => $roleSuper?->id,
+                    'role_id' => $roleFuncionario?->id,
                     'cargo_id' => $cargoSuper->id,
                     'activo' => true,
                 ]

@@ -30,8 +30,12 @@ class UpdateUserRequest extends FormRequest
             'email' => ['sometimes', 'required', 'email', 'max:255', Rule::unique('users', 'email')->ignore($userId)],
             'password' => ['nullable', 'string', 'min:8', 'max:255'],
 
-            'role_id' => ['nullable', 'integer', 'exists:roles,id'],
-            'role_name' => ['nullable', 'string', 'max:50', 'exists:roles,name'],
+            'role_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('roles', 'id')->whereIn('name', ['funcionario', 'visitante']),
+            ],
+            'role_name' => ['nullable', 'string', 'max:50', Rule::in(['funcionario', 'visitante'])],
 
             'cargo_id' => ['nullable', 'integer', 'exists:cargos,id'],
 
@@ -39,8 +43,15 @@ class UpdateUserRequest extends FormRequest
             'username' => ['nullable', 'string', 'max:50', Rule::unique('users', 'username')->ignore($userId)],
             'nombre' => ['nullable', 'string', 'max:100'],
             'apellido' => ['nullable', 'string', 'max:100'],
+            'n_identidad' => ['nullable', 'string', 'max:50', Rule::unique('users', 'n_identidad')->ignore($userId)],
             'departamento_id' => ['nullable', 'integer', 'exists:departamentos,id'],
             'foto_perfil' => ['nullable', 'string'],
+            'foto' => ['nullable', 'file', 'image', 'max:4096'],
+
+            // Documentos (contrato)
+            'contratos' => ['nullable', 'array', 'max:5'],
+            'contratos.*' => ['file', 'mimes:pdf', 'max:10240'], // 10MB c/u
+            'tipo_contrato' => ['nullable', 'string', Rule::in(['prestacion_servicios', 'contratista_externo'])],
 
             'activo' => ['nullable', 'boolean'],
             'fecha_expiracion' => ['nullable', 'date'],

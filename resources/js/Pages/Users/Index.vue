@@ -53,7 +53,9 @@
                             >
                                 <td class="px-4 py-3">{{ u.id }}</td>
                                 <td class="px-4 py-3">
+                                    <div class="font-medium text-slate-900">
                                     {{ u.name || "-" }}
+                                    </div>
                                 </td>
                                 <td class="px-4 py-3">{{ u.email }}</td>
                                 <td class="px-4 py-3">
@@ -77,23 +79,17 @@
                                         {{ u.activo ? "Sí" : "No" }}
                                     </span>
                                 </td>
-                                <td class="px-4 py-3 text-right space-x-2">
+                                <td class="px-4 py-3 text-right">
                                     <Link
                                         :href="
-                                            route('usuarios.edit', {
+                                            route('usuarios.show', {
                                                 user: u.id,
                                             })
                                         "
                                         class="inline-flex items-center px-3 py-1.5 rounded-md border border-slate-200 hover:bg-slate-50"
                                     >
-                                        Editar
+                                        Ver
                                     </Link>
-                                    <button
-                                        @click="destroy(u.id)"
-                                        class="inline-flex items-center px-3 py-1.5 rounded-md border border-red-200 text-red-700 hover:bg-red-50"
-                                    >
-                                        Eliminar
-                                    </button>
                                 </td>
                             </tr>
                             <tr v-if="users.data.length === 0">
@@ -139,7 +135,7 @@
 
 <script setup>
 import AppLayout from "@/Layouts/AppLayout.vue";
-import { Link, router, usePage } from "@inertiajs/vue3";
+import { Link, usePage } from "@inertiajs/vue3";
 import { computed } from "vue";
 
 const props = defineProps({
@@ -148,11 +144,4 @@ const props = defineProps({
 
 const page = usePage();
 const flash = computed(() => page.props.flash || {});
-
-const destroy = (id) => {
-    if (!confirm("¿Eliminar este usuario?")) return;
-    router.delete(route("usuarios.destroy", { user: id }), {
-        preserveScroll: true,
-    });
-};
 </script>

@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Http\Requests\GenerateCodigoQrRequest;
 use App\Mail\QrCodeMail;
 use App\Models\CodigoQr;
+use App\Models\Departamento;
+use App\Models\Piso;
 use App\Models\Puerta;
 use App\Models\User;
 use Carbon\Carbon;
@@ -15,6 +17,7 @@ use Inertia\Inertia;
 use Inertia\Response;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
 use Symfony\Component\HttpFoundation\Response as HttpResponse;
+use Illuminate\Support\Facades\Crypt;
 
 class IngresoController extends Controller
 {
@@ -26,7 +29,8 @@ class IngresoController extends Controller
         $actor = $request->user();
 
         // Si no tiene permiso para crear QR de otros, solo mostrar el usuario actual
-        $puedeCrearParaOtros = $actor && $actor->hasPermission('create_ingreso_otros');
+        $esVisitante = ($actor?->role?->name ?? null) === 'visitante';
+        $puedeCrearParaOtros = !$esVisitante && $actor && $actor->hasPermission('create_ingreso_otros');
 
         if ($puedeCrearParaOtros) {
             // Obtener todos los usuarios activos
@@ -47,10 +51,63 @@ class IngresoController extends Controller
             ->orderBy('nombre')
             ->get();
 
+        $pisos = Piso::query()
+            ->where('activo', true)
+            ->orderBy('orden')
+            ->get();
+
+        $departamentos = Departamento::query()
+            ->where('activo', true)
+            ->with('piso')
+            ->orderBy('nombre')
+            ->get();
+
+        // Si no tiene permiso para crear para otros, buscar QR activo del usuario actual
+        $qrPersonal = null;
+        if (!$puedeCrearParaOtros && $actor) {
+            $qrPersonal = CodigoQr::query()
+                ->where('user_id', $actor->id)
+                ->activos()
+                ->latest('fecha_generacion')
+                ->first();
+        }
+
+        // Si tiene QR personal activo, prepararlo para mostrar
+        $qrPersonalData = null;
+        if ($qrPersonal) {
+            // Obtener el token original desencriptado
+            $tokenOriginal = $qrPersonal->token_original;
+
+            // Generar SVG del QR si tenemos el token
+            $qrSvg = null;
+            if ($tokenOriginal) {
+                $qrSvg = QrCode::format('svg')
+                    ->size(300)
+                    ->margin(2)
+                    ->generate($tokenOriginal);
+                $qrSvg = strval($qrSvg);
+            }
+
+            $qrPersonalData = [
+                'id' => $qrPersonal->id,
+                'user_id' => $qrPersonal->user_id,
+                'user_name' => $actor->name,
+                'user_email' => $actor->email,
+                'token' => $tokenOriginal,
+                'expires_at' => $qrPersonal->fecha_expiracion?->toIso8601String(),
+                'expires_at_formatted' => $qrPersonal->fecha_expiracion?->format('d/m/Y H:i'),
+                'fecha_generacion' => $qrPersonal->fecha_generacion?->format('d/m/Y H:i'),
+                'svg' => $qrSvg,
+            ];
+        }
+
         return Inertia::render('Ingreso/Index', [
             'usuarios' => $usuarios,
             'puertas' => $puertas,
+            'pisos' => $pisos,
+            'departamentos' => $departamentos,
             'puedeCrearParaOtros' => $puedeCrearParaOtros,
+            'qrPersonal' => $qrPersonalData,
         ]);
     }
 
@@ -61,6 +118,11 @@ class IngresoController extends Controller
     {
         $actor = $request->user();
         $data = $request->validated();
+
+        // Visitante: no puede generar (solo ver/descargar su QR)
+        if (($actor?->role?->name ?? null) === 'visitante') {
+            abort(403, 'Como visitante solo puedes ver tu QR activo.');
+        }
 
         /** @var User $targetUser */
         $targetUser = User::query()->with('role')->findOrFail($data['user_id']);
@@ -73,25 +135,31 @@ class IngresoController extends Controller
             return back()->withErrors(['user_id' => 'No tienes permiso para generar QR para otros usuarios. Solo puedes generar tu propio QR.']);
         }
 
-        $actorRole = $actor?->role?->name;
         $targetRole = $targetUser->role?->name;
 
-        // Validar permisos según rol (solo si tiene permiso para crear para otros)
-        if ($puedeCrearParaOtros && $actorRole !== 'super_usuario') {
-            if ($actorRole === 'operador' && $targetRole !== 'visitante') {
-                return back()->withErrors(['user_id' => 'Operador solo puede generar QR para visitantes.']);
-            }
-            if ($actorRole === 'rrhh' && $targetRole === 'visitante') {
-                return back()->withErrors(['user_id' => 'RRHH no puede generar QR para visitantes.']);
+        $puertas = $data['puertas'] ?? [];
+        $pisos = $data['pisos'] ?? [];
+        $hasPuertas = is_array($puertas) && count($puertas) > 0;
+        $hasPisos = is_array($pisos) && count($pisos) > 0;
+
+        // Validar pisos para visitantes (más práctico)
+        if ($targetRole === 'visitante' && !$hasPisos) {
+            return back()->withErrors(['pisos' => 'Para visitantes debes seleccionar al menos un piso.']);
+        }
+
+        if ($targetRole === 'visitante' && $hasPisos) {
+            $puertasEnPisos = Puerta::query()
+                ->where('activo', true)
+                ->whereIn('piso_id', $pisos)
+                ->count();
+            if ($puertasEnPisos <= 0) {
+                return back()->withErrors(['pisos' => 'Los pisos seleccionados no tienen puertas activas.']);
             }
         }
 
-        $puertas = $data['puertas'] ?? [];
-        $hasPuertas = is_array($puertas) && count($puertas) > 0;
-
-        // Validar puertas para visitantes
-        if ($targetRole === 'visitante' && !$hasPuertas) {
-            return back()->withErrors(['puertas' => 'Para visitantes debes seleccionar al menos una puerta.']);
+        // Para visitantes: registrar a qué departamento va (solo cuando se genera para otros)
+        if ($puedeCrearParaOtros && $targetRole === 'visitante' && empty($data['departamento_id'])) {
+            return back()->withErrors(['departamento_id' => 'Para visitantes debes seleccionar el departamento destino.']);
         }
 
         // Validar cargo para no visitantes
@@ -100,7 +168,14 @@ class IngresoController extends Controller
         }
 
         $now = Carbon::now();
-        $expiresAt = $now->copy()->addHours(24);
+
+        // Para funcionarios: usar fecha de expiración del usuario si existe, sino 15 días
+        // Para visitantes: mantener 15 días
+        if ($targetRole === 'funcionario' && $targetUser->fecha_expiracion) {
+            $expiresAt = Carbon::parse($targetUser->fecha_expiracion)->endOfDay();
+        } else {
+            $expiresAt = $now->copy()->addDays(15);
+        }
 
         // Generar token único
         do {
@@ -110,22 +185,45 @@ class IngresoController extends Controller
 
         $qr = null;
 
-        DB::transaction(function () use (&$qr, $targetUser, $actor, $tokenHash, $now, $expiresAt, $data) {
-            $qr = CodigoQr::query()->create([
-                'user_id' => $targetUser->id,
-                'codigo' => $tokenHash,
-                'fecha_generacion' => $now,
-                'fecha_expiracion' => $expiresAt,
-                'usado' => false,
-                'activo' => true,
-                'generado_por' => $actor?->id,
-                'tipo' => 'temporal',
-                'uso_actual' => 'pendiente',
-                'intentos_fallidos' => 0,
-            ]);
+        DB::transaction(function () use (&$qr, $targetUser, $actor, $tokenHash, $now, $expiresAt, $data, $plainToken) {
+            // Regla: al generar uno nuevo, desactivar cualquier QR activo previo del usuario destino
+            CodigoQr::query()
+                ->where('user_id', $targetUser->id)
+                ->activos()
+                ->update([
+                    'activo' => false,
+                    'uso_actual' => 'expirado',
+                    'updated_at' => now(),
+                ]);
+
+            $qr = new CodigoQr();
+            $qr->user_id = $targetUser->id;
+            $qr->departamento_id = $data['departamento_id'] ?? null;
+            $qr->codigo = $tokenHash;
+            $qr->setTokenOriginal($plainToken); // Encriptar y guardar el token
+            $qr->fecha_generacion = $now;
+            $qr->fecha_expiracion = $expiresAt;
+            $qr->usado = false;
+            $qr->activo = true;
+            $qr->generado_por = $actor?->id;
+            $qr->tipo = 'temporal';
+            $qr->uso_actual = 'pendiente';
+            $qr->intentos_fallidos = 0;
+            $qr->save();
 
             // Asignar puertas si se enviaron
             $puertas = $data['puertas'] ?? [];
+            $pisos = $data['pisos'] ?? [];
+
+            // Si es visitante: expandir pisos -> puertas activas
+            if (($targetUser->role?->name ?? null) === 'visitante' && is_array($pisos) && count($pisos) > 0) {
+                $puertas = Puerta::query()
+                    ->where('activo', true)
+                    ->whereIn('piso_id', $pisos)
+                    ->pluck('id')
+                    ->toArray();
+            }
+
             if (is_array($puertas) && count($puertas) > 0) {
                 $pivot = [
                     'hora_inicio' => $data['hora_inicio'] ?? null,
@@ -179,9 +277,22 @@ class IngresoController extends Controller
             ->orderBy('nombre')
             ->get();
 
+        $pisos = Piso::query()
+            ->where('activo', true)
+            ->orderBy('orden')
+            ->get();
+
+        $departamentos = Departamento::query()
+            ->where('activo', true)
+            ->with('piso')
+            ->orderBy('nombre')
+            ->get();
+
         return Inertia::render('Ingreso/Index', [
             'usuarios' => $usuarios,
             'puertas' => $puertas,
+            'pisos' => $pisos,
+            'departamentos' => $departamentos,
             'puedeCrearParaOtros' => $puedeCrearParaOtros,
             'qrGenerado' => [
                 'id' => $qr->id,

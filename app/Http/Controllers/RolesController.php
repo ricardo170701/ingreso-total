@@ -16,24 +16,13 @@ class RolesController extends Controller
     public function index(): Response
     {
         $roles = Role::query()
-            ->with('permissions')
             ->withCount('users')
+            ->whereIn('name', ['funcionario', 'visitante'])
             ->orderBy('name')
             ->get();
-
-        $permissions = Permission::query()
-            ->where('activo', true)
-            ->orderBy('group')
-            ->orderBy('name')
-            ->get();
-
-        // Agrupar permisos por grupo para el frontend
-        $permissionsGrouped = $permissions->groupBy('group')->toArray();
 
         return Inertia::render('Roles/Index', [
             'roles' => $roles,
-            'permissions' => $permissions,
-            'permissionsGrouped' => $permissionsGrouped,
         ]);
     }
 
@@ -42,15 +31,6 @@ class RolesController extends Controller
      */
     public function updatePermissions(Request $request, Role $role)
     {
-        $request->validate([
-            'permissions' => ['required', 'array'],
-            'permissions.*' => ['integer', 'exists:permissions,id'],
-        ]);
-
-        $role->permissions()->sync($request->input('permissions', []));
-
-        return redirect()
-            ->route('roles.index')
-            ->with('message', 'Permisos actualizados exitosamente para el rol ' . $role->name);
+        abort(403, 'Los permisos ahora se gestionan por cargos. Los roles solo indican tipo de usuario (funcionario/visitante).');
     }
 }

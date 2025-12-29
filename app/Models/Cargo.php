@@ -31,10 +31,28 @@ class Cargo extends Model
 
     /**
      * Relación: Un cargo tiene muchas puertas (muchos a muchos)
+     * @deprecated Use pisos() en su lugar. Los permisos ahora son por piso.
      */
     public function puertas(): BelongsToMany
     {
         return $this->belongsToMany(Puerta::class, 'cargo_puerta_acceso')
+            ->withPivot([
+                'hora_inicio',
+                'hora_fin',
+                'dias_semana',
+                'fecha_inicio',
+                'fecha_fin',
+                'activo',
+            ])
+            ->withTimestamps();
+    }
+
+    /**
+     * Relación: Un cargo tiene muchos pisos (muchos a muchos)
+     */
+    public function pisos(): BelongsToMany
+    {
+        return $this->belongsToMany(Piso::class, 'cargo_piso_acceso')
             ->withPivot([
                 'hora_inicio',
                 'hora_fin',

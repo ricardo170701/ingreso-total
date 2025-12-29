@@ -76,6 +76,7 @@ class AccessController extends Controller
         $dispositivoId = $data['dispositivo_id'] ?? null;
 
         $puerta = Puerta::query()
+            ->with('piso')
             ->where('codigo_fisico', $data['codigo_fisico'])
             ->first();
 
@@ -96,21 +97,27 @@ class AccessController extends Controller
             return response()->json(['permitido' => false, 'message' => 'QR inválido.'], 200);
         }
 
-        // Expiración 24h (temporal)
-        if ($qr->fecha_expiracion && $qr->fecha_expiracion->lt($now)) {
-            $this->registrarAcceso($qr->user_id, $puerta->id, $qr->id, false, 'QR expirado', $data['codigo_fisico'], $tipoEvento, $dispositivoId);
-            return response()->json(['permitido' => false, 'message' => 'QR expirado.'], 200);
-        }
-
         $user = $qr->user;
         if (!$user || (isset($user->activo) && $user->activo === false)) {
             $this->registrarAcceso($qr->user_id, $puerta->id, $qr->id, false, 'Usuario inactivo', $data['codigo_fisico'], $tipoEvento, $dispositivoId);
             return response()->json(['permitido' => false, 'message' => 'Usuario inactivo.'], 200);
         }
 
-        if ($user->fecha_expiracion && Carbon::parse($user->fecha_expiracion)->lt($now->startOfDay())) {
-            $this->registrarAcceso($qr->user_id, $puerta->id, $qr->id, false, 'Usuario expirado', $data['codigo_fisico'], $tipoEvento, $dispositivoId);
-            return response()->json(['permitido' => false, 'message' => 'Usuario expirado.'], 200);
+        // Para funcionarios: verificar solo la fecha de expiración del usuario
+        // Para visitantes: verificar la fecha de expiración del QR (15 días)
+        $userRole = $user->role?->name ?? null;
+        if ($userRole === 'funcionario') {
+            // Funcionarios: el QR está activo hasta la fecha de expiración del usuario
+            if ($user->fecha_expiracion && Carbon::parse($user->fecha_expiracion)->lt($now->startOfDay())) {
+                $this->registrarAcceso($qr->user_id, $puerta->id, $qr->id, false, 'Usuario expirado', $data['codigo_fisico'], $tipoEvento, $dispositivoId);
+                return response()->json(['permitido' => false, 'message' => 'Usuario expirado.'], 200);
+            }
+        } else {
+            // Visitantes: verificar la fecha de expiración del QR (15 días)
+            if ($qr->fecha_expiracion && $qr->fecha_expiracion->lt($now)) {
+                $this->registrarAcceso($qr->user_id, $puerta->id, $qr->id, false, 'QR expirado', $data['codigo_fisico'], $tipoEvento, $dispositivoId);
+                return response()->json(['permitido' => false, 'message' => 'QR expirado.'], 200);
+            }
         }
 
         // Puerta de discapacidad: requiere usuario discapacitado, además de permiso
@@ -164,19 +171,22 @@ class AccessController extends Controller
             $permitido = $this->ruleAllows($qrRule, $now);
             $motivo = $permitido ? null : 'Fuera de horario (QR)';
         } else {
-            // 2) Permiso por cargo->puerta
+            // 2) Permiso por cargo->piso (si el cargo tiene permiso al piso de la puerta)
             if (!$user->cargo_id) {
                 $permitido = false;
                 $motivo = 'Sin cargo asignado';
+            } elseif (!$puerta->piso_id) {
+                $permitido = false;
+                $motivo = 'Puerta sin piso asignado';
             } else {
-                $cargoRule = DB::table('cargo_puerta_acceso')
+                $cargoRule = DB::table('cargo_piso_acceso')
                     ->where('cargo_id', $user->cargo_id)
-                    ->where('puerta_id', $puerta->id)
+                    ->where('piso_id', $puerta->piso_id)
                     ->first();
 
                 if (!$cargoRule) {
                     $permitido = false;
-                    $motivo = 'Sin permiso para la puerta';
+                    $motivo = 'Sin permiso para el piso';
                 } else {
                     $permitido = $this->ruleAllows($cargoRule, $now);
                     $motivo = $permitido ? null : 'Fuera de horario (cargo)';
@@ -186,9 +196,16 @@ class AccessController extends Controller
 
         $this->registrarAcceso($qr->user_id, $puerta->id, $qr->id, $permitido, $motivo, $data['codigo_fisico'], $tipoEvento, $dispositivoId);
 
+        // Determinar el tiempo de apertura según si el usuario es discapacitado
+        $tiempoApertura = $puerta->tiempo_apertura ?? 5; // Valor por defecto si no está configurado
+        if ($permitido && $user->es_discapacitado && $puerta->tiempo_discapacitados) {
+            $tiempoApertura = $puerta->tiempo_discapacitados;
+        }
+
         return response()->json([
             'permitido' => $permitido,
             'message' => $permitido ? 'Acceso permitido.' : ('Acceso denegado. ' . ($motivo ?? '')),
+            'tiempo_apertura' => $permitido ? $tiempoApertura : null, // Solo devolver tiempo si el acceso es permitido
             'data' => [
                 'user_id' => $qr->user_id,
                 'puerta_id' => $puerta->id,

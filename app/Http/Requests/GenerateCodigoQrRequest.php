@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class GenerateCodigoQrRequest extends FormRequest
 {
@@ -23,7 +24,12 @@ class GenerateCodigoQrRequest extends FormRequest
     {
         return [
             'user_id' => ['required', 'integer', 'exists:users,id'],
-            // Puertas específicas para este QR (opcional). Si viene vacío, se usa el cargo del usuario.
+            'departamento_id' => ['nullable', 'integer', Rule::exists('departamentos', 'id')],
+            // Pisos (recomendado para visitantes). Se expanden a puertas al generar el QR.
+            'pisos' => ['nullable', 'array'],
+            'pisos.*' => ['integer', Rule::exists('pisos', 'id')],
+
+            // Puertas específicas para este QR (legacy / opcional)
             'puertas' => ['nullable', 'array'],
             'puertas.*' => ['integer', 'exists:puertas,id'],
 

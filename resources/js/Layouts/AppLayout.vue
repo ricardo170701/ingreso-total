@@ -1,12 +1,31 @@
 <template>
     <div class="min-h-screen bg-slate-50">
+        <!-- Overlay (mobile) -->
+        <div
+            v-if="sidebarOpen"
+            class="fixed inset-0 bg-black/40 z-40 lg:hidden"
+            @click="sidebarOpen = false"
+        ></div>
+
         <!-- Sidebar -->
         <aside
-            class="fixed left-0 top-0 h-screen w-64 bg-slate-900 border-r border-slate-800 z-30 flex flex-col"
+            class="fixed left-0 top-0 h-screen w-64 bg-[#008c3a] border-r border-[#006a2d] z-50 flex flex-col transform transition-transform duration-200 ease-out lg:translate-x-0 lg:z-30"
+            :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full'"
         >
             <!-- Logo -->
-            <div class="h-16 flex items-center px-6 border-b border-slate-800 shrink-0">
-                <h1 class="text-xl font-bold text-white">Escaner Total</h1>
+            <div class="h-24 flex items-center justify-center px-4 border-b border-[#006a2d] shrink-0 bg-[#006a2d]/30">
+                <div class="flex items-center gap-3 justify-center w-full">
+                    <img
+                        src="/images/logo-gobernacion-meta.png"
+                        alt="Gobernación del Meta"
+                        class="h-20 w-auto object-contain drop-shadow-lg"
+                        onerror="this.style.display='none'"
+                    />
+                    <div class="flex flex-col">
+                        <h1 class="text-base font-bold text-white leading-tight">Gobernación</h1>
+                        <h1 class="text-base font-bold text-white leading-tight">del Meta</h1>
+                    </div>
+                </div>
             </div>
 
             <!-- Navigation -->
@@ -16,11 +35,12 @@
                         <Link
                             v-if="item.href !== '#'"
                             :href="item.href"
+                            @click="sidebarOpen = false"
                             :class="[
-                                'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
+                                'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200',
                                 isActive(item.href)
-                                    ? 'bg-slate-800 text-white'
-                                    : 'text-slate-400 hover:bg-slate-800/50 hover:text-white',
+                                    ? 'bg-[#006a2d] text-white shadow-lg shadow-black/20'
+                                    : 'text-white/80 hover:bg-[rgba(0,106,45,0.5)] hover:text-white hover:shadow-md hover:shadow-black/10',
                             ]"
                         >
                             <span v-if="item.icon" class="text-lg">{{
@@ -31,7 +51,7 @@
                         <a
                             v-else
                             href="#"
-                            class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-400 cursor-not-allowed"
+                            class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-white/60 cursor-not-allowed"
                         >
                             <span v-if="item.icon" class="text-lg">{{
                                 item.icon
@@ -42,13 +62,13 @@
                 </ul>
 
                 <!-- Sección de Permisos -->
-                <div class="mt-6 pt-4 border-t border-slate-800">
+                <div class="mt-6 pt-4 border-t border-[#006a2d]">
                     <button
                         @click="showPermissions = !showPermissions"
-                        class="w-full flex items-center justify-between px-3 py-2 text-sm font-medium text-slate-400 hover:text-white transition-colors"
+                        class="w-full flex items-center justify-between px-3 py-2 text-sm font-medium text-white/80 hover:text-white transition-colors"
                     >
                         <span class="flex items-center gap-2">
-                            <span>🔑</span>
+                            <span class="text-blue-400">🔑</span>
                             <span>Mis Permisos</span>
                         </span>
                         <span class="text-xs">
@@ -62,31 +82,31 @@
                     >
                         <!-- Permisos activos -->
                         <div v-if="userPermissions.length > 0">
-                            <p class="text-xs text-slate-500 mb-2">
+                            <p class="text-xs text-white/70 mb-2">
                                 Permisos activos ({{ userPermissions.length }}):
                             </p>
                             <div class="space-y-1">
                                 <div
                                     v-for="permission in userPermissions"
                                     :key="permission"
-                                    class="flex items-center gap-2 text-xs text-slate-400"
+                                    class="flex items-center gap-2 text-xs text-white/80"
                                 >
-                                    <span class="w-1.5 h-1.5 rounded-full bg-green-500"></span>
+                                    <span class="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
                                     <span>{{ formatPermissionName(permission) }}</span>
                                 </div>
                             </div>
                         </div>
 
                         <!-- Botones visibles -->
-                        <div class="mt-3 pt-3 border-t border-slate-800">
-                            <p class="text-xs text-slate-500 mb-2">
+                        <div class="mt-3 pt-3 border-t border-[#006a2d]">
+                            <p class="text-xs text-white/70 mb-2">
                                 Botones visibles ({{ filteredMenuItems.length }}):
                             </p>
                             <div class="space-y-1">
                                 <div
                                     v-for="item in filteredMenuItems"
                                     :key="item.name"
-                                    class="flex items-center gap-2 text-xs text-slate-400"
+                                    class="flex items-center gap-2 text-xs text-white/80"
                                 >
                                     <span class="text-sm">{{ item.icon }}</span>
                                     <span>{{ item.label }}</span>
@@ -97,7 +117,7 @@
                         <!-- Sin permisos -->
                         <div
                             v-if="userPermissions.length === 0"
-                            class="text-xs text-slate-500 italic"
+                            class="text-xs text-white/70 italic"
                         >
                             No tienes permisos asignados
                         </div>
@@ -107,36 +127,13 @@
 
             <!-- User Section -->
             <div
-                class="shrink-0 p-4 border-t border-slate-800 bg-slate-900"
+                class="shrink-0 p-4 border-t border-[#006a2d] bg-[#006a2d]/30"
             >
-                <!-- SOS -->
-                <Link
-                    href="/soporte"
-                    class="w-full inline-flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-red-600 text-white font-semibold hover:bg-red-500 transition-colors"
-                >
-                    <span class="text-lg leading-none">🆘</span>
-                    <span>SOS</span>
-                </Link>
 
-                <div class="flex items-center gap-3">
-                    <div
-                        class="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center text-white text-sm font-semibold"
-                    >
-                        {{ userInitials }}
-                    </div>
-                    <div class="flex-1 min-w-0">
-                        <p class="text-sm font-medium text-white truncate">
-                            {{ user?.name || user?.email }}
-                        </p>
-                        <p class="text-xs text-slate-400 truncate">
-                            {{ user?.role?.name || "Usuario" }}
-                        </p>
-                    </div>
-                </div>
                 <form @submit.prevent="logout" class="mt-3">
                     <button
                         type="submit"
-                        class="w-full text-left px-3 py-2 text-sm text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
+                        class="w-full text-left px-3 py-2 text-sm text-white/80 hover:text-white hover:bg-[rgba(0,106,45,0.5)] rounded-lg transition-colors"
                     >
                         Cerrar Sesión
                     </button>
@@ -145,18 +142,52 @@
         </aside>
 
         <!-- Main Content -->
-        <div class="ml-64">
+        <div class="lg:ml-64">
             <!-- Top Bar -->
             <header
-                class="sticky top-0 z-20 bg-white border-b border-slate-200 h-16 flex items-center px-6"
+                class="sticky top-0 z-20 bg-white border-b border-slate-200 h-16 flex items-center justify-between px-4 sm:px-6"
             >
-                <h2 class="text-lg font-semibold text-slate-900">
-                    {{ pageTitle }}
-                </h2>
+                <div class="flex items-center gap-3 min-w-0">
+                    <button
+                        type="button"
+                        class="lg:hidden inline-flex items-center justify-center w-10 h-10 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-700"
+                        @click="sidebarOpen = !sidebarOpen"
+                        aria-label="Abrir menú"
+                    >
+                        ☰
+                    </button>
+                    <h2 class="text-lg font-semibold text-slate-900 truncate">
+                        {{ pageTitle }}
+                    </h2>
+                </div>
+                <div class="flex items-center gap-4">
+                    <div class="text-right">
+                        <p class="text-sm font-medium text-slate-900">
+                            {{ user?.name || user?.email }}
+                        </p>
+                        <p class="text-xs text-slate-600">
+                            {{ userSubtitle }}
+                        </p>
+                    </div>
+                    <div class="w-10 h-10 rounded-full overflow-hidden bg-slate-200 shrink-0">
+                        <img
+                            v-if="user?.foto_perfil"
+                            :src="storageUrl(user.foto_perfil)"
+                            alt="Foto de perfil"
+                            class="w-full h-full object-cover"
+                        />
+                        <div
+                            v-else
+                            class="w-full h-full flex items-center justify-center text-slate-700 text-sm font-semibold"
+                        >
+                            {{ userInitials }}
+                        </div>
+                    </div>
+                </div>
             </header>
 
             <!-- Page Content -->
-            <main class="p-6">
+            <main class="p-4 sm:p-6">
                 <slot />
             </main>
         </div>
@@ -164,13 +195,15 @@
 </template>
 
 <script setup>
-import { computed, ref } from "vue";
+import { computed, ref, watch, onMounted, onUnmounted } from "vue";
 import { usePage, router, Link } from "@inertiajs/vue3";
 
 const page = usePage();
 const showPermissions = ref(false);
+const sidebarOpen = ref(false);
 
 const user = computed(() => page.props.auth?.user || page.props.user);
+const esVisitante = computed(() => user.value?.role?.name === "visitante");
 const pageTitle = computed(() => {
     const component = page.component || "";
     const parts = component.split("/");
@@ -186,6 +219,19 @@ const userInitials = computed(() => {
     }
     return name[0]?.toUpperCase() || "U";
 });
+
+const userSubtitle = computed(() => {
+    if (!user.value) return "";
+    if (esVisitante.value) return "Visitante";
+    return user.value.cargo?.name || "Sin cargo asignado";
+});
+
+const storageUrl = (path) => {
+    if (!path) return "";
+    if (String(path).startsWith("http")) return path;
+    // Requiere `php artisan storage:link`
+    return `/storage/${path}`;
+};
 
 const menuItems = [
     {
@@ -224,11 +270,11 @@ const menuItems = [
         permission: "view_ingreso",
     },
     {
-        name: "mantenimientos",
-        label: "Mantenimientos",
-        href: "/mantenimientos",
-        icon: "🔧",
-        permission: "view_mantenimientos",
+        name: "ups",
+        label: "UPS",
+        href: "/ups",
+        icon: "🔋",
+        permission: "view_ups",
     },
 
     {
@@ -244,6 +290,13 @@ const menuItems = [
         href: "/reportes",
         icon: "📊",
         permission: "view_users", // Mismo permiso que usuarios
+    },
+    {
+        name: "protocolo",
+        label: "Protocolo",
+        href: "/protocolo",
+        icon: "🚨",
+        permission: "view_protocolo",
     },{
         name: "soporte",
         label: "Soporte",
@@ -256,6 +309,13 @@ const menuItems = [
 // Filtrar items del menú según permisos del usuario
 const userPermissions = computed(() => page.props.auth?.user?.permissions || []);
 const filteredMenuItems = computed(() => {
+    // Visitante: acceso web limitado a Ingreso y Soporte (independiente de permisos del cargo)
+    if (esVisitante.value) {
+        return menuItems.filter((item) =>
+            ["ingreso", "soporte"].includes(item.name)
+        );
+    }
+
     return menuItems.filter((item) => {
         // Si no tiene permiso definido, siempre se muestra
         if (!item.permission) {
@@ -281,6 +341,40 @@ const logout = () => {
     router.post(route("logout"));
 };
 
+// Cerrar sidebar al navegar (mobile)
+watch(
+    () => page.url,
+    () => {
+        sidebarOpen.value = false;
+    }
+);
+
+// Bloquear scroll del body cuando sidebar está abierto (mobile)
+watch(
+    () => sidebarOpen.value,
+    (isOpen) => {
+        if (typeof document === "undefined") return;
+        document.body.classList.toggle("overflow-hidden", isOpen);
+    }
+);
+
+// Cerrar con ESC
+const onKeyDown = (e) => {
+    if (e.key === "Escape") {
+        sidebarOpen.value = false;
+    }
+};
+
+onMounted(() => {
+    if (typeof window === "undefined") return;
+    window.addEventListener("keydown", onKeyDown);
+});
+
+onUnmounted(() => {
+    if (typeof window === "undefined") return;
+    window.removeEventListener("keydown", onKeyDown);
+});
+
 const formatPermissionName = (permission) => {
     const names = {
         view_dashboard: "Ver Dashboard",
@@ -302,6 +396,8 @@ const formatPermissionName = (permission) => {
         create_mantenimientos: "Crear Mantenimientos",
         edit_mantenimientos: "Editar Mantenimientos",
         delete_mantenimientos: "Eliminar Mantenimientos",
+        view_protocolo: "Ver Protocolo de Emergencia",
+        protocol_emergencia_open_all: "Ejecutar Protocolo de Emergencia",
     };
     return names[permission] || permission;
 };

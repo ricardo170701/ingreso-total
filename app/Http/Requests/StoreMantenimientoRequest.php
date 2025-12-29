@@ -24,15 +24,11 @@ class StoreMantenimientoRequest extends FormRequest
         return [
             'puerta_id' => ['required', 'integer', 'exists:puertas,id'],
             'fecha_mantenimiento' => ['required', 'date'],
-            'tipo' => ['required', 'in:programado,realizado'],
             'fecha_fin_programada' => ['nullable', 'date', 'required_if:tipo,programado', 'after_or_equal:fecha_mantenimiento'],
-            'defectos' => ['required', 'array'],
-            'defectos.*.id' => ['required', 'integer', 'exists:defectos,id'],
-            'defectos.*.nivel_gravedad' => ['required', 'integer', 'in:0,1,2,3'], // 0=sin defecto, 1=ligero, 2=grave, 3=muy grave
-            'otros_defectos' => ['nullable', 'string', 'max:1000'],
-            'observaciones' => ['nullable', 'string', 'max:2000'],
-            'imagenes' => ['nullable', 'array', 'max:10'],
-            'imagenes.*' => ['image', 'mimes:jpeg,jpg,png,gif', 'max:2048'], // Max 2MB por imagen
+            'tipo' => ['required', 'in:programado,realizado'],
+            'falla' => ['nullable', 'string', 'max:5000'],
+            'documentos' => ['nullable', 'array', 'max:5'],
+            'documentos.*' => ['file', 'mimes:pdf', 'max:10240'], // Max 10MB por PDF
         ];
     }
 }

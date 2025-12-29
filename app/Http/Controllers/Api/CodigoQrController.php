@@ -13,14 +13,14 @@ use Illuminate\Support\Facades\DB;
 class CodigoQrController extends Controller
 {
     /**
-     * Genera un QR temporal (24h).
+     * Genera un QR temporal (15 días).
      * En BD se guarda sha256(token) en `codigos_qr.codigo` (hash) y se retorna el token plano para convertirlo a QR.
      * Nota: el token retornado es corto (10 caracteres) para facilitar lectura en dispositivos.
      *
      * @OA\Post(
      *   path="/api/qrs",
      *   tags={"QR"},
-     *   summary="Generar QR temporal (24h)",
+     *   summary="Generar QR temporal (15 días)",
      *   security={{"sanctum":{}}},
      *   @OA\RequestBody(required=true, @OA\JsonContent(
      *     required={"user_id"},
@@ -50,37 +50,57 @@ class CodigoQrController extends Controller
         $actor = $request->user();
         $data = $request->validated();
 
+        // Visitante: solo puede ver/usar su QR, no generar
+        if (($actor?->role?->name ?? null) === 'visitante') {
+            return response()->json(['message' => 'Como visitante no puedes generar QR.'], 403);
+        }
+
         /** @var User $targetUser */
         $targetUser = User::query()->with('role')->findOrFail($data['user_id']);
 
-        $actorRole = $actor?->role?->name;
         $targetRole = $targetUser->role?->name;
 
-        // Reglas mínimas por rol del actor:
-        // - super_usuario: puede generar para cualquiera
-        // - operador: solo para visitantes
-        // - rrhh: no para visitantes
-        // - funcionario: solo para sí mismo
-        if ($actorRole !== 'super_usuario') {
-            if ($actorRole === 'operador' && $targetRole !== 'visitante') {
-                return response()->json(['message' => 'Operador solo puede generar QR para visitantes.'], 403);
-            }
-            if ($actorRole === 'rrhh' && $targetRole === 'visitante') {
-                return response()->json(['message' => 'RRHH no puede generar QR para visitantes.'], 403);
-            }
-            if ($actorRole === 'funcionario' && $actor?->id !== $targetUser->id) {
-                return response()->json(['message' => 'Funcionario solo puede generar su propio QR.'], 403);
-            }
+        // Autorización por permisos (los roles solo representan tipo de usuario: funcionario/visitante)
+        if (!$actor || !$actor->hasPermission('create_ingreso')) {
+            return response()->json(['message' => 'No autorizado.'], 403);
+        }
+
+        // Si está generando para otro usuario, requiere permiso explícito
+        if ($actor->id !== $targetUser->id && !$actor->hasPermission('create_ingreso_otros')) {
+            return response()->json(['message' => 'No autorizado para generar QR para otros usuarios.'], 403);
         }
 
         $puertas = $data['puertas'] ?? [];
+        $pisos = $data['pisos'] ?? [];
         $hasPuertas = is_array($puertas) && count($puertas) > 0;
+        $hasPisos = is_array($pisos) && count($pisos) > 0;
 
-        // Regla: visitantes deben traer puertas explícitas (sus accesos van “embebidos” en el QR)
-        if ($targetRole === 'visitante' && !$hasPuertas) {
+        // Regla: visitantes deben traer pisos (se expanden a puertas en backend)
+        if ($targetRole === 'visitante' && !$hasPisos) {
             return response()->json([
-                'message' => 'Para visitantes debes seleccionar al menos una puerta.',
-                'errors' => ['puertas' => ['Para visitantes debes seleccionar al menos una puerta.']],
+                'message' => 'Para visitantes debes seleccionar al menos un piso.',
+                'errors' => ['pisos' => ['Para visitantes debes seleccionar al menos un piso.']],
+            ], 422);
+        }
+
+        if ($targetRole === 'visitante' && $hasPisos) {
+            $puertasEnPisos = \App\Models\Puerta::query()
+                ->where('activo', true)
+                ->whereIn('piso_id', $pisos)
+                ->count();
+            if ($puertasEnPisos <= 0) {
+                return response()->json([
+                    'message' => 'Los pisos seleccionados no tienen puertas activas.',
+                    'errors' => ['pisos' => ['Los pisos seleccionados no tienen puertas activas.']],
+                ], 422);
+            }
+        }
+
+        // Regla: si se genera para visitante y es "para otros", debe indicar departamento destino
+        if ($actor->id !== $targetUser->id && $targetRole === 'visitante' && empty($data['departamento_id'])) {
+            return response()->json([
+                'message' => 'Para visitantes debes seleccionar el departamento destino.',
+                'errors' => ['departamento_id' => ['Para visitantes debes seleccionar el departamento destino.']],
             ], 422);
         }
 
@@ -93,7 +113,7 @@ class CodigoQrController extends Controller
         }
 
         $now = Carbon::now();
-        $expiresAt = $now->copy()->addHours(24);
+        $expiresAt = $now->copy()->addDays(15);
 
         // Token opaco (para QR) + hash (para BD)
         // Token corto (10 chars), evitando caracteres confusos para lectores (0/O, 1/I/L).
@@ -105,23 +125,44 @@ class CodigoQrController extends Controller
 
         $qr = null;
 
-        DB::transaction(function () use (&$qr, $targetUser, $actor, $tokenHash, $now, $expiresAt, $data) {
-            $qr = CodigoQr::query()->create([
-                'user_id' => $targetUser->id,
-                'codigo' => $tokenHash, // hash sha256
-                'fecha_generacion' => $now,
-                'fecha_expiracion' => $expiresAt,
-                'usado' => false,
-                'activo' => true,
-                // extras (ya existen en la migración)
-                'generado_por' => $actor?->id,
-                'tipo' => 'temporal',
-                'uso_actual' => 'pendiente',
-                'intentos_fallidos' => 0,
-            ]);
+        DB::transaction(function () use (&$qr, $targetUser, $actor, $tokenHash, $now, $expiresAt, $data, $plainToken) {
+            // Regla: al generar uno nuevo, desactivar cualquier QR activo previo del usuario destino
+            CodigoQr::query()
+                ->where('user_id', $targetUser->id)
+                ->activos()
+                ->update([
+                    'activo' => false,
+                    'uso_actual' => 'expirado',
+                    'updated_at' => now(),
+                ]);
+
+            $qr = new CodigoQr();
+            $qr->user_id = $targetUser->id;
+            $qr->departamento_id = $data['departamento_id'] ?? null;
+            $qr->codigo = $tokenHash;
+            $qr->setTokenOriginal($plainToken); // Encriptar y guardar el token
+            $qr->fecha_generacion = $now;
+            $qr->fecha_expiracion = $expiresAt;
+            $qr->usado = false;
+            $qr->activo = true;
+            $qr->generado_por = $actor?->id;
+            $qr->tipo = 'temporal';
+            $qr->uso_actual = 'pendiente';
+            $qr->intentos_fallidos = 0;
+            $qr->save();
 
             // Si envían puertas explícitas, se guardan reglas QR->puerta (sino se evalúa por cargo en verificación)
             $puertas = $data['puertas'] ?? [];
+            $pisos = $data['pisos'] ?? [];
+
+            if (($targetUser->role?->name ?? null) === 'visitante' && is_array($pisos) && count($pisos) > 0) {
+                $puertas = \App\Models\Puerta::query()
+                    ->where('activo', true)
+                    ->whereIn('piso_id', $pisos)
+                    ->pluck('id')
+                    ->toArray();
+            }
+
             if (is_array($puertas) && count($puertas) > 0) {
                 $pivot = [
                     'hora_inicio' => $data['hora_inicio'] ?? null,

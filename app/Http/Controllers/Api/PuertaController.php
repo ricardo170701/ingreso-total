@@ -26,6 +26,10 @@ class PuertaController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
+        if (!$request->user() || !$request->user()->hasPermission('view_puertas')) {
+            return response()->json(['message' => 'No autorizado.'], 403);
+        }
+
         $perPage = (int) ($request->query('per_page', 15));
         $perPage = max(1, min(100, $perPage));
 
@@ -38,7 +42,7 @@ class PuertaController extends Controller
      * @OA\Post(
      *   path="/api/puertas",
      *   tags={"Puertas"},
-     *   summary="Crear puerta (solo super_usuario)",
+     *   summary="Crear puerta (requiere permiso create_puertas)",
      *   security={{"sanctum":{}}},
      *   @OA\RequestBody(required=true, @OA\JsonContent(
      *     required={"nombre"},
@@ -58,7 +62,7 @@ class PuertaController extends Controller
      */
     public function store(StorePuertaRequest $request): JsonResponse
     {
-        if (($request->user()?->role?->name ?? null) !== 'super_usuario') {
+        if (!$request->user() || !$request->user()->hasPermission('create_puertas')) {
             return response()->json(['message' => 'No autorizado.'], 403);
         }
 
@@ -82,6 +86,10 @@ class PuertaController extends Controller
      */
     public function show(Puerta $puerta): JsonResponse
     {
+        if (!request()->user() || !request()->user()->hasPermission('view_puertas')) {
+            return response()->json(['message' => 'No autorizado.'], 403);
+        }
+
         return response()->json(['data' => $puerta->load('zona')]);
     }
 
@@ -91,7 +99,7 @@ class PuertaController extends Controller
      * @OA\Put(
      *   path="/api/puertas/{id}",
      *   tags={"Puertas"},
-     *   summary="Actualizar puerta (solo super_usuario)",
+     *   summary="Actualizar puerta (requiere permiso edit_puertas)",
      *   security={{"sanctum":{}}},
      *   @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
      *   @OA\RequestBody(required=true, @OA\JsonContent(
@@ -111,7 +119,7 @@ class PuertaController extends Controller
      */
     public function update(UpdatePuertaRequest $request, Puerta $puerta): JsonResponse
     {
-        if (($request->user()?->role?->name ?? null) !== 'super_usuario') {
+        if (!$request->user() || !$request->user()->hasPermission('edit_puertas')) {
             return response()->json(['message' => 'No autorizado.'], 403);
         }
 
@@ -127,7 +135,7 @@ class PuertaController extends Controller
      * @OA\Delete(
      *   path="/api/puertas/{id}",
      *   tags={"Puertas"},
-     *   summary="Eliminar puerta (solo super_usuario)",
+     *   summary="Eliminar puerta (requiere permiso delete_puertas)",
      *   security={{"sanctum":{}}},
      *   @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
      *   @OA\Response(response=200, description="OK"),
@@ -137,7 +145,7 @@ class PuertaController extends Controller
      */
     public function destroy(Request $request, Puerta $puerta): JsonResponse
     {
-        if (($request->user()?->role?->name ?? null) !== 'super_usuario') {
+        if (!$request->user() || !$request->user()->hasPermission('delete_puertas')) {
             return response()->json(['message' => 'No autorizado.'], 403);
         }
 

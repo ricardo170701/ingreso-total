@@ -73,6 +73,20 @@
                             />
                         </FormField>
                         <FormField
+                            label="N. identidad"
+                            :error="form.errors.n_identidad"
+                        >
+                            <input
+                                v-model="form.n_identidad"
+                                type="text"
+                                class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                            />
+                        </FormField>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <FormField
+                            v-if="!esVisitante"
                             label="Departamento"
                             :error="form.errors.departamento_id"
                         >
@@ -91,6 +105,110 @@
                                 </option>
                             </select>
                         </FormField>
+                        <FormField label="Foto" :error="form.errors.foto">
+                            <div
+                                v-if="fotoPreviewUrl || fotoActualUrl"
+                                class="mb-2 flex justify-center"
+                            >
+                                <img
+                                    :src="fotoPreviewUrl || fotoActualUrl"
+                                    alt="Foto de perfil"
+                                    class="h-24 w-24 rounded-full object-cover border border-slate-200"
+                                />
+                            </div>
+                            <input
+                                type="file"
+                                accept="image/*"
+                                @change="onFotoChange"
+                                class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900"
+                            />
+                            <p class="mt-1 text-xs text-slate-500">
+                                JPG/PNG/WebP. Máx 4MB.
+                            </p>
+                        </FormField>
+                    </div>
+
+                    <div class="grid grid-cols-1 gap-2">
+                        <FormField
+                            label="Documentos de contrato (PDF) (opcional)"
+                            :error="form.errors.contratos"
+                        >
+                            <div class="mb-2">
+                                <label class="block text-sm font-medium text-slate-700 mb-1">
+                                    Tipo de contrato
+                                </label>
+                                <select
+                                    v-model="form.tipo_contrato"
+                                    class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                >
+                                    <option :value="null">-</option>
+                                    <option value="prestacion_servicios">Prestación de servicios</option>
+                                    <option value="contratista_externo">Contratista externo</option>
+                                </select>
+                            </div>
+                            <input
+                                type="file"
+                                accept="application/pdf"
+                                multiple
+                                @change="onContratosChange"
+                                class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900"
+                            />
+                            <p class="mt-1 text-xs text-slate-500">
+                                Puedes subir hasta 5 PDFs (máx 10MB cada uno).
+                            </p>
+                            <ul
+                                v-if="contratosSeleccionados.length > 0"
+                                class="mt-2 text-sm text-slate-700 list-disc list-inside"
+                            >
+                                <li v-for="(f, idx) in contratosSeleccionados" :key="idx">
+                                    {{ f.name }}
+                                </li>
+                            </ul>
+                        </FormField>
+                    </div>
+
+                    <div
+                        v-if="(documentos || []).length > 0"
+                        class="bg-slate-50 border border-slate-200 rounded-xl p-4"
+                    >
+                        <h3 class="text-sm font-semibold text-slate-900 mb-2">
+                            Contratos cargados
+                        </h3>
+                        <div class="space-y-2">
+                            <div
+                                v-for="doc in documentos"
+                                :key="doc.id"
+                                class="flex items-center justify-between gap-3 bg-white border border-slate-200 rounded-lg p-3"
+                            >
+                                <div class="min-w-0">
+                                    <p class="text-sm font-medium text-slate-900 truncate">
+                                        {{ doc.nombre || ('Contrato #' + doc.id) }}
+                                    </p>
+                                    <p v-if="doc.tipo_contrato" class="text-xs text-slate-600">
+                                        Tipo: {{ formatTipoContrato(doc.tipo_contrato) }}
+                                    </p>
+                                    <p class="text-xs text-slate-500">
+                                        {{ doc.created_at }}
+                                    </p>
+                                </div>
+                                <div class="flex items-center gap-2 shrink-0">
+                                    <a
+                                        :href="route('usuarios.documentos.download', { user: props.user.id, documento: doc.id })"
+                                        class="px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-700 text-sm"
+                                        target="_blank"
+                                    >
+                                        Descargar
+                                    </a>
+                                    <button
+                                        type="button"
+                                        @click="eliminarDocumento(doc)"
+                                        class="px-3 py-1.5 rounded-lg border border-red-200 hover:bg-red-50 text-red-700 text-sm"
+                                    >
+                                        Eliminar
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -109,7 +227,7 @@
                                 </option>
                             </select>
                         </FormField>
-                        <FormField label="Cargo" :error="form.errors.cargo_id">
+                        <FormField v-if="!esVisitante" label="Cargo" :error="form.errors.cargo_id">
                             <select
                                 v-model="form.cargo_id"
                                 class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
@@ -128,6 +246,7 @@
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <FormField
+                            v-if="!esVisitante"
                             label="Fecha expiración"
                             :error="form.errors.fecha_expiracion"
                         >
@@ -188,12 +307,20 @@
 import AppLayout from "@/Layouts/AppLayout.vue";
 import { Link, router, useForm } from "@inertiajs/vue3";
 import FormField from "@/Components/FormField.vue";
+import { submitUploadForm } from "@/Support/inertiaUploads";
+import { computed, watch } from "vue";
 
 const props = defineProps({
     user: Object,
     roles: Array,
     cargos: Array,
     departamentos: Array,
+    documentos: Array,
+});
+
+const esVisitante = computed(() => {
+    const role = props.roles?.find((r) => r.id === form.role_id);
+    return role?.name === "visitante";
 });
 
 const form = useForm({
@@ -204,18 +331,75 @@ const form = useForm({
     username: props.user.username || "",
     nombre: props.user.nombre || "",
     apellido: props.user.apellido || "",
+    n_identidad: props.user.n_identidad || "",
     departamento_id: props.user.departamento_id || null,
     fecha_expiracion: props.user.fecha_expiracion || null,
+    foto: null,
+    contratos: [],
+    tipo_contrato: null,
     activo: !!props.user.activo,
     es_discapacitado: !!props.user.es_discapacitado,
 });
 
+const onFotoChange = (e) => {
+    const file = e.target?.files?.[0] || null;
+    form.foto = file;
+};
+
+const onContratosChange = (e) => {
+    const files = Array.from(e.target?.files || []);
+    form.contratos = files;
+};
+
+const contratosSeleccionados = computed(() => form.contratos || []);
+
+const storageUrl = (path) => {
+    if (!path) return null;
+    if (String(path).startsWith("http")) return path;
+    return `/storage/${path}`;
+};
+
+const fotoActualUrl = computed(() => storageUrl(props.user.foto_perfil));
+
+const fotoPreviewUrl = computed(() => {
+    if (!form.foto) return null;
+    try {
+        return URL.createObjectURL(form.foto);
+    } catch {
+        return null;
+    }
+});
+
+watch(esVisitante, (isVisitante) => {
+    if (isVisitante) {
+        form.departamento_id = null;
+        form.fecha_expiracion = null;
+        form.cargo_id = null;
+    }
+});
+
 const submit = () => {
-    form.put(route("usuarios.update", { user: props.user.id }));
+    submitUploadForm(form, route("usuarios.update", { user: props.user.id }), "put");
 };
 
 const destroy = () => {
     if (!confirm("¿Eliminar este usuario?")) return;
     router.delete(route("usuarios.destroy", { user: props.user.id }));
+};
+
+const eliminarDocumento = (doc) => {
+    if (!confirm("¿Eliminar este documento?")) return;
+    router.delete(
+        route("usuarios.documentos.destroy", { user: props.user.id, documento: doc.id }),
+        { preserveScroll: true }
+    );
+};
+
+const formatTipoContrato = (tipo) => {
+    const map = {
+        prestacion_servicios: "Prestación de servicios",
+        contratista_externo: "Contratista externo",
+    };
+    return map[tipo] || tipo;
 };
 </script>

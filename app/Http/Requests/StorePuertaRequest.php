@@ -30,6 +30,7 @@ class StorePuertaRequest extends FormRequest
             'ip_salida' => ['nullable', 'ip'],
             'imagen' => ['nullable', 'image', 'mimes:jpeg,jpg,png,gif', 'max:2048'], // Max 2MB
             'tiempo_apertura' => ['nullable', 'integer', 'min:1', 'max:300'], // Entre 1 y 300 segundos
+            'tiempo_discapacitados' => ['nullable', 'integer', 'min:1', 'max:600'], // Entre 1 y 600 segundos (10 minutos)
             'alto' => ['nullable', 'numeric', 'min:0', 'max:1000'], // En centímetros
             'largo' => ['nullable', 'numeric', 'min:0', 'max:1000'], // En centímetros
             'ancho' => ['nullable', 'numeric', 'min:0', 'max:1000'], // En centímetros

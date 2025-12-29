@@ -23,3 +23,10 @@ yarn-error.log
 MEJORAS_FUTURAS.md
 /docs
 /test_server
+
+# Producción
+/backups/*.sql
+/backups/*.sql.gz
+/nginx/ssl/*
+/nginx/logs/*
+!.gitkeep

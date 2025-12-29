@@ -1,0 +1,3 @@
+# Este directorio almacena los backups de la base de datos
+# Los archivos .sql y .sql.gz son ignorados por .gitignore
+

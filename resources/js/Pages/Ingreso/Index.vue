@@ -1,13 +1,37 @@
 <template>
     <AppLayout>
         <div class="max-w-4xl mx-auto space-y-6 px-4 sm:px-6 lg:px-0">
-            <div>
-                <h1 class="text-xl font-semibold text-slate-900">
-                    Generar Código QR de Ingreso
-                </h1>
-                <p class="text-sm text-slate-600">
-                    Genera un código QR para acceso al edificio. Para funcionarios, el QR estará activo hasta la fecha de expiración del usuario. Para visitantes, el QR es válido por 15 días.
-                </p>
+            <!-- Header con fondo verde y logo centrado -->
+            <div class="relative bg-gradient-to-br from-[#008c3a] via-[#006a2d] to-[#008c3a] rounded-xl overflow-hidden shadow-lg">
+                <!-- Contenido centrado -->
+                <div class="relative z-10 p-4 sm:p-6 lg:p-8 text-center">
+                    <!-- Logo centrado -->
+                    <div class="flex justify-center mb-3 sm:mb-4">
+                        <img
+                            src="/images/logo-gobernacion-meta.png"
+                            alt="Gobernación del Meta"
+                            class="h-16 sm:h-20 lg:h-24 w-auto object-contain drop-shadow-lg"
+                            onerror="this.style.display='none'"
+                        />
+                    </div>
+
+                    <!-- Título móvil: solo "Tu Código QR de Acceso" -->
+                    <div class="sm:hidden">
+                        <h1 class="text-xl font-bold text-white">
+                            Tu Código QR de Acceso
+                        </h1>
+                    </div>
+
+                    <!-- Título y descripción desktop -->
+                    <div class="hidden sm:block">
+                        <h1 class="text-2xl lg:text-3xl font-bold text-white mb-3">
+                            Generar Código QR de Ingreso
+                        </h1>
+                        <p class="text-sm lg:text-base text-white/90 max-w-2xl mx-auto">
+                            Genera un código QR para acceso al edificio. Para funcionarios, el QR estará activo hasta la fecha de expiración del usuario. Para visitantes, el QR es válido por 15 días.
+                        </p>
+                    </div>
+                </div>
             </div>
 
             <div

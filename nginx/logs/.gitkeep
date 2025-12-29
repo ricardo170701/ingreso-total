@@ -1,0 +1,3 @@
+# Este directorio almacena los logs de Nginx
+# Los archivos de log son ignorados por .gitignore
+

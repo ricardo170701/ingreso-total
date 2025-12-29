@@ -1,0 +1,6 @@
+# Este directorio almacena los certificados SSL
+# Los archivos .pem son ignorados por .gitignore
+# Coloca aquí tus certificados:
+# - fullchain.pem
+# - privkey.pem
+

@@ -6,10 +6,11 @@
 
 FROM php:8.1-apache-bookworm AS app
 
-# Sistema + extensiones PHP requeridas por Laravel
+# Sistema + extensiones PHP requeridas por Laravel + ZipArchive
 RUN apt-get update && apt-get install -y --no-install-recommends \
     git \
     unzip \
+    curl \
     libpng-dev \
     libjpeg62-turbo-dev \
     libfreetype6-dev \
@@ -19,7 +20,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     default-mysql-client \
     ca-certificates \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install -j$(nproc) pdo_mysql mbstring zip gd bcmath \
+    && docker-php-ext-install -j$(nproc) pdo_mysql mbstring zip gd bcmath sockets \
     && a2enmod rewrite headers \
     && rm -rf /var/lib/apt/lists/*
 

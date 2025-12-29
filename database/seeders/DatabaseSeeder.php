@@ -13,16 +13,25 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         $this->call([
+            // 1. Permisos del sistema (debe ejecutarse primero)
+            PermissionSeeder::class,
+
+            // 2. Datos maestros básicos
+            PisoSeeder::class,
+            TipoPuertaSeeder::class,
+            MaterialSeeder::class,
+
+            // 3. Control de acceso (roles, cargo Super Admin, usuario admin)
             AccessControlSeeder::class,
+
+            // 4. Cargo super user con todos los permisos
+            SuperUserCargoSeeder::class,
+
+            // 5. Estructura del edificio (zonas y puertas)
             BuildingSeeder::class,
-            DemoPermisosSeeder::class,
+
+            // 6. Usuario super user
+            SuperUserSeeder::class,
         ]);
-
-        // \App\Models\User::factory(10)->create();
-
-        // \App\Models\User::factory()->create([
-        //     'name' => 'Test User',
-        //     'email' => 'test@example.com',
-        // ]);
     }
 }

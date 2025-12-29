@@ -4,49 +4,77 @@ services:
   app:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile2
     container_name: escaner_total_app
     restart: unless-stopped
     ports:
       - "8181:80"
     environment:
-      APP_ENV: local
-      APP_DEBUG: "true"
-      APP_URL: http://localhost:8181
+      APP_ENV: ${APP_ENV:-local}
+      APP_DEBUG: ${APP_DEBUG:-true}
+      APP_URL: ${APP_URL:-http://localhost:8181}
 
-      DB_CONNECTION: mysql
-      DB_HOST: db
-      DB_PORT: 3306
-      DB_DATABASE: escaner_total
-      DB_USERNAME: escaner_user
-      DB_PASSWORD: root
+      DB_CONNECTION: ${DB_CONNECTION:-mysql}
+      DB_HOST: ${DB_HOST:-db}
+      DB_PORT: ${DB_PORT:-3306}
+      DB_DATABASE: ${DB_DATABASE:-escaner_total}
+      DB_USERNAME: ${DB_USERNAME:-escaner_user}
+      DB_PASSWORD: ${DB_PASSWORD:-root}
 
       # Opcionales para demo (puedes cambiarlos a false)
-      RUN_MIGRATIONS: "true"
-      RUN_SEEDERS: "true"
-      SEEDER_CLASS: Database\Seeders\DatabaseSeeder
+      RUN_MIGRATIONS: ${RUN_MIGRATIONS:-true}
+      RUN_SEEDERS: ${RUN_SEEDERS:-true}
+      SEEDER_CLASS: ${SEEDER_CLASS:-Database\\Seeders\\DatabaseSeeder}
+
+      # API Keys
+      ACCESS_DEVICE_KEY: ${ACCESS_DEVICE_KEY:-abcd1234}
+      DOOR_API_KEY: ${DOOR_API_KEY:-cambia_esto_por_una_clave_secreta}
+      DOOR_EMERGENCY_PORT: ${DOOR_EMERGENCY_PORT:-8000}
+
+      # OpenAI (opcional)
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+
+      # Mail
+      MAIL_MAILER: ${MAIL_MAILER:-log}
+      MAIL_FROM_ADDRESS: ${MAIL_FROM_ADDRESS:-noreply@localhost}
+      MAIL_FROM_NAME: ${MAIL_FROM_NAME:-Escáner Total}
     volumes:
       - storage_data:/var/www/html/storage
+      - ./storage/app:/var/www/html/storage/app
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     networks:
       - escaner_net
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
   db:
     image: mysql:8.0
     container_name: escaner_total_db
     restart: unless-stopped
     environment:
-      MYSQL_DATABASE: escaner_total
-      MYSQL_USER: escaner_user
-      MYSQL_PASSWORD: root
-      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: ${DB_DATABASE:-escaner_total}
+      MYSQL_USER: ${DB_USERNAME:-escaner_user}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-root}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root}
     ports:
-      - "3307:3306"
+      - "${DB_EXTERNAL_PORT:-3307}:3306"
     volumes:
       - db_data:/var/lib/mysql
     networks:
       - escaner_net
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-root}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    command: --default-authentication-plugin=mysql_native_password
 
 networks:
   escaner_net:
@@ -54,6 +82,8 @@ networks:
 
 volumes:
   db_data:
+    driver: local
   storage_data:
+    driver: local
 
 

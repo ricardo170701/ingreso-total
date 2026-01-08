@@ -13,6 +13,7 @@ class RestrictVisitanteWeb
      * - Ingreso (ver/descargar QR personal)
      * - Soporte
      * - Logout
+     * - Perfil
      */
     public function handle(Request $request, Closure $next): Response
     {
@@ -22,6 +23,9 @@ class RestrictVisitanteWeb
             return $next($request);
         }
 
+        // Recargar relaciones para asegurar que tenemos datos actualizados
+        $user->load(['role', 'cargo.permissions']);
+
         $roleName = $user->role?->name;
 
         if ($roleName !== 'visitante') {
@@ -30,9 +34,13 @@ class RestrictVisitanteWeb
 
         $allowedRouteNames = [
             'ingreso.index',
+            'ingreso.generate',
             'ingreso.download',
+            'ingreso.send-email',
             'soporte.index',
             'logout',
+            'profile.show',
+            'profile.update',
         ];
 
         if ($request->routeIs($allowedRouteNames)) {

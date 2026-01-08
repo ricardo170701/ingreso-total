@@ -161,15 +161,21 @@
                     </h2>
                 </div>
                 <div class="flex items-center gap-4">
-                    <div class="text-right">
+                    <Link
+                        :href="route('profile.show')"
+                        class="text-right hover:opacity-80 transition-opacity"
+                    >
                         <p class="text-sm font-medium text-slate-900">
                             {{ user?.name || user?.email }}
                         </p>
                         <p class="text-xs text-slate-600">
                             {{ userSubtitle }}
                         </p>
-                    </div>
-                    <div class="w-10 h-10 rounded-full overflow-hidden bg-slate-200 shrink-0">
+                    </Link>
+                    <Link
+                        :href="route('profile.show')"
+                        class="w-10 h-10 rounded-full overflow-hidden bg-slate-200 shrink-0 hover:ring-2 hover:ring-green-500 transition-all cursor-pointer"
+                    >
                         <img
                             v-if="user?.foto_perfil"
                             :src="storageUrl(user.foto_perfil)"
@@ -182,7 +188,7 @@
                         >
                             {{ userInitials }}
                         </div>
-                    </div>
+                    </Link>
                 </div>
             </header>
 

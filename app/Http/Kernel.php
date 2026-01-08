@@ -67,5 +67,6 @@ class Kernel extends HttpKernel
         'verified' => \Illuminate\Auth\Middleware\EnsureEmailIsVerified::class,
         'permission' => \App\Http\Middleware\CheckPermission::class,
         'visitante.restrict' => \App\Http\Middleware\RestrictVisitanteWeb::class,
+        'permission.check' => \App\Http\Middleware\EnsureUserHasPermission::class,
     ];
 }

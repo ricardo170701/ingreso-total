@@ -134,6 +134,24 @@
                     </button>
                 </form>
 
+                <!-- Link para recuperar contraseña -->
+                <div class="mt-4 text-center">
+                    <Link
+                        :href="route('password.forgot')"
+                        class="text-sm text-[#008c3a] hover:text-[#006a2d] hover:underline transition-colors"
+                    >
+                        ¿Olvidaste tu contraseña?
+                    </Link>
+                </div>
+
+                <!-- Mensaje de éxito si viene de reset password -->
+                <div
+                    v-if="$page.props.flash?.success"
+                    class="mt-4 p-3 rounded-lg bg-green-50 border border-green-200 text-green-800 text-sm"
+                >
+                    {{ $page.props.flash.success }}
+                </div>
+
                 <!-- Demo Credentials Hint -->
 
             </div>
@@ -153,7 +171,7 @@
 
 <script setup>
 import { ref } from "vue";
-import { useForm } from "@inertiajs/vue3";
+import { useForm, Link } from "@inertiajs/vue3";
 
 defineOptions({
     layout: null, // Sin layout para login

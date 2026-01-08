@@ -17,6 +17,8 @@ use App\Http\Controllers\ProtocoloController;
 use App\Http\Controllers\UpsController;
 use App\Http\Controllers\UpsMantenimientosController;
 use App\Http\Controllers\UpsVitacoraController;
+use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\PasswordResetController;
 
 /*
 |--------------------------------------------------------------------------
@@ -38,12 +40,22 @@ Route::get('/', function () {
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login');
     Route::post('/login', [AuthController::class, 'login']);
+
+    // Recuperación de contraseña
+    Route::get('/forgot-password', [PasswordResetController::class, 'showForgotPasswordForm'])->name('password.forgot');
+    Route::post('/forgot-password', [PasswordResetController::class, 'sendResetLink'])->name('password.email');
+    Route::get('/reset-password/{token}', [PasswordResetController::class, 'showResetForm'])->name('password.reset');
+    Route::post('/reset-password', [PasswordResetController::class, 'reset'])->name('password.update');
 });
 
-Route::middleware(['auth', 'visitante.restrict'])->group(function () {
+Route::middleware(['auth', 'visitante.restrict', 'permission.check'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
+
+    // Perfil de usuario
+    Route::get('/perfil', [ProfileController::class, 'show'])->name('profile.show');
+    Route::match(['put', 'post'], '/perfil', [ProfileController::class, 'update'])->name('profile.update');
 
     // Usuarios (CRUD web)
     Route::get('/usuarios', [UsersController::class, 'index'])->name('usuarios.index');

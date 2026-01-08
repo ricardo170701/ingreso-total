@@ -63,16 +63,6 @@
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <FormField
-                            label="Username"
-                            :error="form.errors.username"
-                        >
-                            <input
-                                v-model="form.username"
-                                type="text"
-                                class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                            />
-                        </FormField>
-                        <FormField
                             label="N. identidad"
                             :error="form.errors.n_identidad"
                         >
@@ -328,7 +318,6 @@ const form = useForm({
     password: "",
     role_id: props.user.role_id ?? null,
     cargo_id: props.user.cargo_id ?? null,
-    username: props.user.username || "",
     nombre: props.user.nombre || "",
     apellido: props.user.apellido || "",
     n_identidad: props.user.n_identidad || "",

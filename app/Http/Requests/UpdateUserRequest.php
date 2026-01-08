@@ -40,7 +40,6 @@ class UpdateUserRequest extends FormRequest
             'cargo_id' => ['nullable', 'integer', 'exists:cargos,id'],
 
             'name' => ['nullable', 'string', 'max:255'],
-            'username' => ['nullable', 'string', 'max:50', Rule::unique('users', 'username')->ignore($userId)],
             'nombre' => ['nullable', 'string', 'max:100'],
             'apellido' => ['nullable', 'string', 'max:100'],
             'n_identidad' => ['nullable', 'string', 'max:50', Rule::unique('users', 'n_identidad')->ignore($userId)],

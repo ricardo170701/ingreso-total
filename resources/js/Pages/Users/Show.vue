@@ -8,8 +8,6 @@
                     </h1>
                     <p class="text-sm text-slate-600">
                         {{ user.email }}
-                        <span v-if="user.username" class="text-slate-300">·</span>
-                        <span v-if="user.username">{{ user.username }}</span>
                     </p>
                 </div>
                 <div class="flex gap-2 flex-wrap">
@@ -104,12 +102,6 @@
                                     <p class="text-xs text-slate-500">Email</p>
                                     <p class="text-sm text-slate-700 break-all">
                                         {{ user.email || "-" }}
-                                    </p>
-                                </div>
-                                <div>
-                                    <p class="text-xs text-slate-500">Username</p>
-                                    <p class="text-sm text-slate-700">
-                                        {{ user.username || "-" }}
                                     </p>
                                 </div>
                                 <div>

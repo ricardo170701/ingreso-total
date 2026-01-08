@@ -111,12 +111,6 @@
                         </h3>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
-                                <p class="text-xs text-slate-500 mb-1">Username</p>
-                                <p class="text-sm text-slate-900 font-medium">
-                                    {{ user.username || "-" }}
-                                </p>
-                            </div>
-                            <div>
                                 <p class="text-xs text-slate-500 mb-1">Rol</p>
                                 <p class="text-sm text-slate-900 font-medium">
                                     {{ user.role?.name || "-" }}

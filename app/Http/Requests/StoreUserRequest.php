@@ -40,7 +40,6 @@ class StoreUserRequest extends FormRequest
 
             // Perfil
             'name' => ['nullable', 'string', 'max:255'],
-            'username' => ['nullable', 'string', 'max:50', 'unique:users,username'],
             'nombre' => ['nullable', 'string', 'max:100'],
             'apellido' => ['nullable', 'string', 'max:100'],
             'n_identidad' => ['nullable', 'string', 'max:50', 'unique:users,n_identidad'],

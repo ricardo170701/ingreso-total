@@ -28,7 +28,6 @@ class UsersController extends Controller
                 'id' => $u->id,
                 'email' => $u->email,
                 'name' => $u->name,
-                'username' => $u->username,
                 'nombre' => $u->nombre,
                 'apellido' => $u->apellido,
                 'activo' => (bool) ($u->activo ?? true),
@@ -109,7 +108,7 @@ class UsersController extends Controller
         if (empty($data['name'])) {
             $nombre = trim((string) ($data['nombre'] ?? ''));
             $apellido = trim((string) ($data['apellido'] ?? ''));
-            $data['name'] = trim($nombre . ' ' . $apellido) ?: ($data['username'] ?? $data['email']);
+            $data['name'] = trim($nombre . ' ' . $apellido) ?: ($data['email'] ?? 'Usuario');
         }
 
         // Defaults
@@ -169,6 +168,7 @@ class UsersController extends Controller
 
         // Agregar nombres de auditoría para facilitar el acceso en la vista
         $userArray = $user->toArray();
+        unset($userArray['username']);
         $userArray['created_by_name'] = $user->createdBy?->name ?? $user->createdBy?->email ?? $user->creadoPor?->name ?? $user->creadoPor?->email ?? null;
         $userArray['updated_by_name'] = $user->updatedBy?->name ?? $user->updatedBy?->email ?? null;
 
@@ -188,7 +188,6 @@ class UsersController extends Controller
                 'id' => $user->id,
                 'email' => $user->email,
                 'name' => $user->name,
-                'username' => $user->username,
                 'nombre' => $user->nombre,
                 'apellido' => $user->apellido,
                 'n_identidad' => $user->n_identidad,

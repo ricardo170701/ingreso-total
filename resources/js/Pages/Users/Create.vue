@@ -66,17 +66,6 @@
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <FormField
-                            label="Username"
-                            :error="form.errors.username"
-                        >
-                            <input
-                                v-model="form.username"
-                                type="text"
-                                class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                                placeholder="usuario123"
-                            />
-                        </FormField>
-                        <FormField
                             label="Contraseña"
                             :error="form.errors.password"
                         >
@@ -279,7 +268,6 @@ const form = useForm({
     password: "",
     role_id: null,
     cargo_id: null,
-    username: "",
     nombre: "",
     apellido: "",
     n_identidad: "",

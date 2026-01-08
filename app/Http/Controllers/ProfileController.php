@@ -24,7 +24,6 @@ class ProfileController extends Controller
                 'id' => $user->id,
                 'name' => $user->name,
                 'email' => $user->email,
-                'username' => $user->username,
                 'nombre' => $user->nombre,
                 'apellido' => $user->apellido,
                 'n_identidad' => $user->n_identidad,
@@ -65,7 +64,7 @@ class ProfileController extends Controller
         $nombre = trim($user->nombre ?? '');
         $apellido = trim($user->apellido ?? '');
         if ($nombre || $apellido) {
-            $user->name = trim($nombre . ' ' . $apellido) ?: ($user->username ?? $user->email);
+            $user->name = trim($nombre . ' ' . $apellido) ?: $user->email;
         }
 
         // Actualizar foto de perfil si se subió una nueva

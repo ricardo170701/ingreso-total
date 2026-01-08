@@ -27,7 +27,6 @@ class User extends Authenticatable
         'role_id',
         'cargo_id',
         'es_discapacitado',
-        'username',
         'nombre',
         'apellido',
         'n_identidad',

@@ -277,6 +277,7 @@ const formatTipoContrato = (tipo) => {
     const map = {
         prestacion_servicios: "Prestación de servicios",
         contratista_externo: "Contratista externo",
+        contrato_indefinido: "Contrato indefinido",
     };
     return map[tipo] || tipo;
 };

@@ -171,6 +171,7 @@
                                     <option :value="null">-</option>
                                     <option value="prestacion_servicios">Prestación de servicios</option>
                                     <option value="contratista_externo">Contratista externo</option>
+                                    <option value="contrato_indefinido">Contrato indefinido</option>
                                 </select>
                             </div>
                             <input
@@ -196,7 +197,7 @@
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <FormField
-                            v-if="!esVisitante"
+                            v-if="!esVisitante && form.tipo_contrato !== 'contrato_indefinido'"
                             label="Fecha expiración"
                             :error="form.errors.fecha_expiracion"
                         >
@@ -306,6 +307,12 @@ watch(esVisitante, (isVisitante) => {
         form.departamento_id = null;
         form.fecha_expiracion = null;
         form.cargo_id = null;
+    }
+});
+
+watch(() => form.tipo_contrato, (nuevoTipo) => {
+    if (nuevoTipo === 'contrato_indefinido') {
+        form.fecha_expiracion = null;
     }
 });
 

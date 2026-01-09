@@ -104,6 +104,12 @@ class UsersController extends Controller
             $data['fecha_expiracion'] = null;
         }
 
+        // Si el tipo de contrato es indefinido, no debe tener fecha de expiración
+        $tipoContrato = $request->input('tipo_contrato');
+        if ($tipoContrato === 'contrato_indefinido') {
+            $data['fecha_expiracion'] = null;
+        }
+
         // Derivar name si no viene explícito
         if (empty($data['name'])) {
             $nombre = trim((string) ($data['nombre'] ?? ''));
@@ -255,6 +261,12 @@ class UsersController extends Controller
         if ($roleNameFinal === 'visitante') {
             $data['cargo_id'] = null;
             $data['departamento_id'] = null;
+            $data['fecha_expiracion'] = null;
+        }
+
+        // Si el tipo de contrato es indefinido, no debe tener fecha de expiración
+        $tipoContrato = $request->input('tipo_contrato');
+        if ($tipoContrato === 'contrato_indefinido') {
             $data['fecha_expiracion'] = null;
         }
 

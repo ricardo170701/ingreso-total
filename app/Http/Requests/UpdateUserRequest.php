@@ -50,7 +50,7 @@ class UpdateUserRequest extends FormRequest
             // Documentos (contrato)
             'contratos' => ['nullable', 'array', 'max:5'],
             'contratos.*' => ['file', 'mimes:pdf', 'max:10240'], // 10MB c/u
-            'tipo_contrato' => ['nullable', 'string', Rule::in(['prestacion_servicios', 'contratista_externo'])],
+            'tipo_contrato' => ['nullable', 'string', Rule::in(['prestacion_servicios', 'contratista_externo', 'contrato_indefinido'])],
 
             'activo' => ['nullable', 'boolean'],
             'fecha_expiracion' => ['nullable', 'date'],

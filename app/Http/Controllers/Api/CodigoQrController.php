@@ -113,7 +113,21 @@ class CodigoQrController extends Controller
         }
 
         $now = Carbon::now();
-        $expiresAt = $now->copy()->addDays(15);
+
+        // Para funcionarios:
+        // - Si tiene fecha_expiracion: usar esa fecha
+        // - Si NO tiene fecha_expiracion (contrato indefinido): null (el acceso se controla solo por campo 'activo')
+        // Para visitantes: mantener 15 días
+        if ($targetRole === 'funcionario') {
+            if ($targetUser->fecha_expiracion) {
+                $expiresAt = Carbon::parse($targetUser->fecha_expiracion)->endOfDay();
+            } else {
+                // Contrato indefinido: el QR no expira, el acceso se controla solo por el campo 'activo' del usuario
+                $expiresAt = null;
+            }
+        } else {
+            $expiresAt = $now->copy()->addDays(15);
+        }
 
         // Token opaco (para QR) + hash (para BD)
         // Token corto (10 chars), evitando caracteres confusos para lectores (0/O, 1/I/L).

@@ -19,7 +19,7 @@ class QrCodeMail extends Mailable
         public string $userName,
         public string $qrToken,
         public string $qrSvg,
-        public string $expiresAt,
+        public ?string $expiresAt,
     ) {
         //
     }

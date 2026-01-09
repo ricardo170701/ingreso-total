@@ -104,10 +104,13 @@ class AccessController extends Controller
         }
 
         // Para funcionarios: verificar solo la fecha de expiración del usuario
+        // - Si tiene fecha_expiracion: validar que no haya expirado
+        // - Si NO tiene fecha_expiracion (contrato indefinido): permitir acceso hasta que se marque como inactivo
         // Para visitantes: verificar la fecha de expiración del QR (15 días)
         $userRole = $user->role?->name ?? null;
         if ($userRole === 'funcionario') {
-            // Funcionarios: el QR está activo hasta la fecha de expiración del usuario
+            // Funcionarios: el QR está activo hasta la fecha de expiración del usuario (si existe)
+            // Si el usuario tiene contrato indefinido (sin fecha_expiracion), puede acceder hasta que se marque como inactivo
             if ($user->fecha_expiracion && Carbon::parse($user->fecha_expiracion)->lt($now->startOfDay())) {
                 $this->registrarAcceso($qr->user_id, $puerta->id, $qr->id, false, 'Usuario expirado', $data['codigo_fisico'], $tipoEvento, $dispositivoId);
                 return response()->json(['permitido' => false, 'message' => 'Usuario expirado.'], 200);

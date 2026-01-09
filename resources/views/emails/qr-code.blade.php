@@ -65,7 +65,7 @@
     <div class="content">
         <p>Hola <strong>{{ $userName }}</strong>,</p>
 
-        <p>Se ha generado un código QR para tu acceso al edificio. Para funcionarios, el QR estará activo hasta tu fecha de expiración. Para visitantes, el QR es válido por 15 días.</p>
+        <p>Se ha generado un código QR para tu acceso al edificio. Para funcionarios, el QR estará activo hasta tu fecha de expiración (si aplica) o hasta que se marque como inactivo. Para visitantes, el QR es válido por 15 días.</p>
 
         <div class="qr-container">
             {!! $qrSvg !!}
@@ -77,7 +77,11 @@
         <div class="info-box">
             <p style="margin: 0;"><strong>⚠️ Importante:</strong></p>
             <ul style="margin: 10px 0 0 20px; padding: 0;">
+                @if($expiresAt)
                 <li>Este código QR expira el: <strong>{{ $expiresAt }}</strong></li>
+                @else
+                <li>Este código QR <strong>no expira</strong> (contrato indefinido). El acceso se mantendrá activo hasta que se marque como inactivo.</li>
+                @endif
                 <li>Usa este código para acceder a las puertas autorizadas</li>
                 <li>Muestra el código QR al lector en la entrada</li>
             </ul>

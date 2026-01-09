@@ -169,10 +169,17 @@ class IngresoController extends Controller
 
         $now = Carbon::now();
 
-        // Para funcionarios: usar fecha de expiración del usuario si existe, sino 15 días
+        // Para funcionarios:
+        // - Si tiene fecha_expiracion: usar esa fecha
+        // - Si NO tiene fecha_expiracion (contrato indefinido): null (el acceso se controla solo por campo 'activo')
         // Para visitantes: mantener 15 días
-        if ($targetRole === 'funcionario' && $targetUser->fecha_expiracion) {
-            $expiresAt = Carbon::parse($targetUser->fecha_expiracion)->endOfDay();
+        if ($targetRole === 'funcionario') {
+            if ($targetUser->fecha_expiracion) {
+                $expiresAt = Carbon::parse($targetUser->fecha_expiracion)->endOfDay();
+            } else {
+                // Contrato indefinido: el QR no expira, el acceso se controla solo por el campo 'activo' del usuario
+                $expiresAt = null;
+            }
         } else {
             $expiresAt = $now->copy()->addDays(15);
         }
@@ -334,7 +341,9 @@ class IngresoController extends Controller
 
         $qrSvg = strval($qrSvg);
 
-        $expiresAt = Carbon::parse($qr->fecha_expiracion)->format('d/m/Y H:i');
+        $expiresAt = $qr->fecha_expiracion
+            ? Carbon::parse($qr->fecha_expiracion)->format('d/m/Y H:i')
+            : null;
 
         try {
             Mail::to($request->email)->send(new QrCodeMail(

@@ -17,7 +17,7 @@ class ProfileController extends Controller
      */
     public function show(Request $request): Response
     {
-        $user = $request->user()->load(['role', 'cargo', 'departamento.piso']);
+        $user = $request->user()->load(['role', 'cargo', 'gerencia.secretaria.piso']);
 
         return Inertia::render('Profile/Index', [
             'user' => [
@@ -33,10 +33,17 @@ class ProfileController extends Controller
                 'fecha_expiracion' => $user->fecha_expiracion?->format('Y-m-d'),
                 'role' => $user->role ? ['id' => $user->role->id, 'name' => $user->role->name] : null,
                 'cargo' => $user->cargo ? ['id' => $user->cargo->id, 'name' => $user->cargo->name] : null,
-                'departamento' => $user->departamento ? [
-                    'id' => $user->departamento->id,
-                    'nombre' => $user->departamento->nombre,
-                    'piso' => $user->departamento->piso ? ['id' => $user->departamento->piso->id, 'nombre' => $user->departamento->piso->nombre] : null,
+                'gerencia' => $user->gerencia ? [
+                    'id' => $user->gerencia->id,
+                    'nombre' => $user->gerencia->nombre,
+                    'secretaria' => $user->gerencia->secretaria ? [
+                        'id' => $user->gerencia->secretaria->id,
+                        'nombre' => $user->gerencia->secretaria->nombre,
+                        'piso' => $user->gerencia->secretaria->piso ? [
+                            'id' => $user->gerencia->secretaria->piso->id,
+                            'nombre' => $user->gerencia->secretaria->piso->nombre,
+                        ] : null,
+                    ] : null,
                 ] : null,
                 'created_at' => $user->created_at?->format('d/m/Y H:i'),
                 'updated_at' => $user->updated_at?->format('d/m/Y H:i'),

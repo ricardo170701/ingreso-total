@@ -190,30 +190,55 @@
                         v-if="usuarioSeleccionado?.role?.name === 'visitante'"
                         class="space-y-4"
                     >
-                        <FormField
-                            v-if="puedeCrearParaOtros"
-                            label="Departamento destino (obligatorio para visitantes)"
-                            :error="form.errors.departamento_id"
-                        >
-                            <select
-                                v-model="form.departamento_id"
-                                class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-transparent transition-colors duration-200"
-                                required
+                        <div v-if="puedeCrearParaOtros" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <FormField
+                                label="Secretaría destino"
+                                :error="form.errors.secretaria_id"
                             >
-                                <option :value="null">Selecciona un departamento</option>
-                                <option
-                                    v-for="d in (departamentos || [])"
-                                    :key="d.id"
-                                    :value="d.id"
+                                <select
+                                    v-model="form.secretaria_id"
+                                    @change="onSecretariaChange"
+                                    class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-transparent transition-colors duration-200"
+                                    required
                                 >
-                                    {{ d.nombre }}
-                                    <span v-if="d.piso"> - {{ d.piso.nombre }}</span>
-                                </option>
-                            </select>
-                            <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                                Este dato se registra en el QR del visitante.
-                            </p>
-                        </FormField>
+                                    <option :value="null">Selecciona una secretaría</option>
+                                    <option
+                                        v-for="sec in (secretarias || [])"
+                                        :key="sec.id"
+                                        :value="sec.id"
+                                    >
+                                        {{ sec.nombre }}
+                                        <span v-if="sec.piso"> - {{ sec.piso.nombre }}</span>
+                                    </option>
+                                </select>
+                            </FormField>
+                            <FormField
+                                label="Gerencia destino (obligatorio para visitantes)"
+                                :error="form.errors.gerencia_id"
+                            >
+                                <select
+                                    v-model="form.gerencia_id"
+                                    :disabled="!form.secretaria_id"
+                                    class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-transparent transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    required
+                                >
+                                    <option :value="null">Selecciona una gerencia</option>
+                                    <option
+                                        v-for="ger in gerenciasFiltradas"
+                                        :key="ger.id"
+                                        :value="ger.id"
+                                    >
+                                        {{ ger.nombre }}
+                                    </option>
+                                </select>
+                                <p v-if="!form.secretaria_id" class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                                    Selecciona una secretaría primero
+                                </p>
+                                <p v-else class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                                    Este dato se registra en el QR del visitante.
+                                </p>
+                            </FormField>
+                        </div>
 
                         <FormField
                             label="Pisos (obligatorio para visitantes)"
@@ -225,16 +250,16 @@
                                 <label
                                     v-for="p in (pisos || [])"
                                     :key="p.id"
-                                    class="flex items-center gap-2 p-2 hover:bg-slate-50 dark:hover:bg-slate-600 rounded transition-colors duration-200"
+                                    class="flex items-center gap-2 p-2 hover:bg-slate-50 dark:hover:bg-slate-600 rounded transition-colors duration-200 cursor-pointer"
                                 >
                                     <input
                                         type="checkbox"
                                         :value="p.id"
                                         v-model="form.pisos"
-                                        class="h-4 w-4"
+                                        class="h-4 w-4 text-green-600 dark:text-green-500 border-slate-300 dark:border-slate-600 rounded focus:ring-green-500 dark:focus:ring-green-400"
                                     />
                                     <div class="flex-1">
-                                        <span class="font-medium">{{ p.nombre }}</span>
+                                        <span class="font-medium text-slate-900 dark:text-white">{{ p.nombre }}</span>
                                     </div>
                                 </label>
                             </div>
@@ -446,7 +471,8 @@ const props = defineProps({
     usuarios: Array,
     puertas: Array,
     pisos: Array,
-    departamentos: Array,
+    secretarias: Array,
+    gerencias: Array,
     qrGenerado: Object,
     puedeCrearParaOtros: Boolean,
     qrPersonal: Object,
@@ -457,7 +483,8 @@ const esVisitante = computed(() => currentUser.value?.role?.name === "visitante"
 
 const form = useForm({
     user_id: null,
-    departamento_id: null,
+    secretaria_id: null,
+    gerencia_id: null,
     pisos: [],
     puertas: [],
     hora_inicio: null,
@@ -466,6 +493,17 @@ const form = useForm({
     fecha_inicio: null,
     fecha_fin: null,
 });
+
+// Filtrar gerencias por secretaría seleccionada
+const gerenciasFiltradas = computed(() => {
+    if (!form.secretaria_id) return [];
+    return props.gerencias?.filter(g => g.secretaria_id === form.secretaria_id) || [];
+});
+
+// Limpiar gerencia cuando cambia la secretaría
+const onSecretariaChange = () => {
+    form.gerencia_id = null;
+};
 
 // Si no puede crear para otros, pre-seleccionar el usuario actual
 onMounted(() => {
@@ -524,7 +562,8 @@ watch(
     () => usuarioSeleccionado.value?.role?.name,
     (roleName) => {
         if (roleName !== "visitante") {
-            form.departamento_id = null;
+            form.secretaria_id = null;
+            form.gerencia_id = null;
             form.pisos = [];
         } else {
             // Cuando se selecciona un visitante, establecer valores por defecto de seguridad

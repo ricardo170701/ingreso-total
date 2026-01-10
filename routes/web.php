@@ -11,7 +11,9 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\MantenimientosController;
 use App\Http\Controllers\RolesController;
 use App\Http\Controllers\SoporteController;
-use App\Http\Controllers\DepartamentosController;
+use App\Http\Controllers\DependenciasController;
+use App\Http\Controllers\SecretariasController;
+use App\Http\Controllers\GerenciasController;
 use App\Http\Controllers\ReportesController;
 use App\Http\Controllers\ProtocoloController;
 use App\Http\Controllers\UpsController;
@@ -66,6 +68,7 @@ Route::middleware(['auth', 'visitante.restrict', 'permission.check'])->group(fun
     Route::put('/usuarios/{user}', [UsersController::class, 'update'])->name('usuarios.update');
     Route::delete('/usuarios/{user}', [UsersController::class, 'destroy'])->name('usuarios.destroy');
     Route::get('/usuarios/{user}/documentos/{documento}/descargar', [UsersController::class, 'downloadDocumento'])->name('usuarios.documentos.download');
+    Route::put('/usuarios/{user}/documentos/{documento}', [UsersController::class, 'updateDocumento'])->name('usuarios.documentos.update');
     Route::delete('/usuarios/{user}/documentos/{documento}', [UsersController::class, 'destroyDocumento'])->name('usuarios.documentos.destroy');
 
     // Puertas (CRUD web)
@@ -122,8 +125,25 @@ Route::middleware(['auth', 'visitante.restrict', 'permission.check'])->group(fun
     // Soporte
     Route::get('/soporte', [SoporteController::class, 'index'])->name('soporte.index');
 
-    // Departamentos
-    Route::resource('departamentos', DepartamentosController::class);
+    // Dependencias (nombre del módulo, pero gestiona Secretarías como recurso principal)
+    Route::get('/dependencias', [DependenciasController::class, 'index'])->name('dependencias.index');
+    
+    // Secretarías (recurso principal)
+    Route::resource('secretarias', SecretariasController::class);
+    
+    // Gerencias (nivel secundario: anidadas dentro de Secretarías)
+    Route::prefix('secretarias/{secretaria}')->group(function () {
+        Route::get('gerencias', [GerenciasController::class, 'index'])->name('gerencias.index');
+        Route::get('gerencias/crear', [GerenciasController::class, 'create'])->name('gerencias.create');
+        Route::post('gerencias', [GerenciasController::class, 'store'])->name('gerencias.store');
+        
+        Route::prefix('gerencias/{gerencia}')->group(function () {
+            Route::get('/', [GerenciasController::class, 'show'])->name('gerencias.show');
+            Route::get('/editar', [GerenciasController::class, 'edit'])->name('gerencias.edit');
+            Route::put('/', [GerenciasController::class, 'update'])->name('gerencias.update');
+            Route::delete('/', [GerenciasController::class, 'destroy'])->name('gerencias.destroy');
+        });
+    });
 
     // Reportes
     Route::get('/reportes', [ReportesController::class, 'index'])->name('reportes.index');

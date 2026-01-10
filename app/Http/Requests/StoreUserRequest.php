@@ -43,7 +43,22 @@ class StoreUserRequest extends FormRequest
             'nombre' => ['nullable', 'string', 'max:100'],
             'apellido' => ['nullable', 'string', 'max:100'],
             'n_identidad' => ['nullable', 'string', 'max:50', 'unique:users,n_identidad'],
-            'departamento_id' => ['nullable', 'integer', 'exists:departamentos,id'],
+            'numero_caso' => ['nullable', 'string', 'max:100'],
+            'secretaria_id' => ['nullable', 'integer', 'exists:secretarias,id'],
+            'gerencia_id' => [
+                'nullable',
+                'integer',
+                'exists:gerencias,id',
+                // Validar que la gerencia pertenezca a la secretaría seleccionada (si se envía secretaria_id)
+                function ($attribute, $value, $fail) {
+                    if ($value && $this->input('secretaria_id')) {
+                        $gerencia = \App\Models\Gerencia::find($value);
+                        if ($gerencia && $gerencia->secretaria_id != $this->input('secretaria_id')) {
+                            $fail('La gerencia seleccionada no pertenece a la secretaría seleccionada.');
+                        }
+                    }
+                },
+            ],
             'foto_perfil' => ['nullable', 'string'],
             'foto' => ['nullable', 'file', 'image', 'max:4096'],
 

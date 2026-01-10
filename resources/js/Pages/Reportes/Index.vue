@@ -52,22 +52,47 @@
                     </FormField>
 
                     <FormField
-                        label="Departamento"
-                        :error="formUsuarios.errors.departamento_id"
+                        label="Secretaría"
+                        :error="formUsuarios.errors.secretaria_id"
                     >
                         <select
-                            v-model="formUsuarios.departamento_id"
+                            v-model="formUsuarios.secretaria_id"
+                            @change="onSecretariaChange('usuarios')"
                             class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 transition-colors duration-200"
                         >
-                            <option :value="null">Todos</option>
+                            <option :value="null">Todas</option>
                             <option
-                                v-for="dept in departamentos"
-                                :key="dept.id"
-                                :value="dept.id"
+                                v-for="sec in (secretarias || [])"
+                                :key="sec.id"
+                                :value="sec.id"
                             >
-                                {{ dept.nombre }}
+                                {{ sec.nombre }}
+                                <span v-if="sec.piso"> - {{ sec.piso.nombre }}</span>
                             </option>
                         </select>
+                    </FormField>
+
+                    <FormField
+                        label="Gerencia"
+                        :error="formUsuarios.errors.gerencia_id"
+                    >
+                        <select
+                            v-model="formUsuarios.gerencia_id"
+                            :disabled="!formUsuarios.secretaria_id"
+                            class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            <option :value="null">Todas</option>
+                            <option
+                                v-for="ger in gerenciasFiltradasUsuarios"
+                                :key="ger.id"
+                                :value="ger.id"
+                            >
+                                {{ ger.nombre }}
+                            </option>
+                        </select>
+                        <p v-if="!formUsuarios.secretaria_id" class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                            Selecciona una secretaría primero
+                        </p>
                     </FormField>
 
                     <FormField label="Estado" :error="formUsuarios.errors.activo">
@@ -380,11 +405,13 @@
 import AppLayout from "@/Layouts/AppLayout.vue";
 import FormField from "@/Components/FormField.vue";
 import { useForm } from "@inertiajs/vue3";
+import { computed } from "vue";
 
 const props = defineProps({
     roles: Array,
     cargos: Array,
-    departamentos: Array,
+    secretarias: Array,
+    gerencias: Array,
     pisos: Array,
     puertas: Array,
     tiposPuerta: Array,
@@ -396,9 +423,23 @@ const props = defineProps({
 const formUsuarios = useForm({
     role_id: null,
     cargo_id: null,
-    departamento_id: null,
+    secretaria_id: null,
+    gerencia_id: null,
     activo: null,
 });
+
+// Filtrar gerencias por secretaría seleccionada
+const gerenciasFiltradasUsuarios = computed(() => {
+    if (!formUsuarios.secretaria_id) return props.gerencias || [];
+    return props.gerencias?.filter(g => g.secretaria_id === formUsuarios.secretaria_id) || [];
+});
+
+// Limpiar gerencia cuando cambia la secretaría
+const onSecretariaChange = (formType) => {
+    if (formType === 'usuarios') {
+        formUsuarios.gerencia_id = null;
+    }
+};
 
 // Formulario para accesos
 const formAccesos = useForm({

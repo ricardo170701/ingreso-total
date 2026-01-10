@@ -38,7 +38,7 @@
                                 <th class="px-4 py-3 font-semibold">Email</th>
                                 <th class="px-4 py-3 font-semibold">Rol</th>
                                 <th class="px-4 py-3 font-semibold">Cargo</th>
-                                <th class="px-4 py-3 font-semibold">Departamento</th>
+                                <th class="px-4 py-3 font-semibold">Secretaría / Gerencia</th>
                                 <th class="px-4 py-3 font-semibold">Activo</th>
                                 <th class="px-4 py-3 font-semibold text-right">
                                     Acciones
@@ -65,7 +65,13 @@
                                     {{ u.cargo?.name || "-" }}
                                 </td>
                                 <td class="px-4 py-3 text-slate-700 dark:text-slate-300">
-                                    {{ u.departamento?.nombre || "-" }}
+                                    <div v-if="u.gerencia">
+                                        <div class="font-medium">{{ u.gerencia.secretaria?.nombre || "-" }}</div>
+                                        <div class="text-xs text-slate-500 dark:text-slate-400">
+                                            {{ u.gerencia.nombre }}
+                                        </div>
+                                    </div>
+                                    <span v-else>-</span>
                                 </td>
                                 <td class="px-4 py-3">
                                     <span

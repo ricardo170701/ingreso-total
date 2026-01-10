@@ -97,10 +97,10 @@ class CodigoQrController extends Controller
         }
 
         // Regla: si se genera para visitante y es "para otros", debe indicar departamento destino
-        if ($actor->id !== $targetUser->id && $targetRole === 'visitante' && empty($data['departamento_id'])) {
+        if ($actor->id !== $targetUser->id && $targetRole === 'visitante' && empty($data['gerencia_id'])) {
             return response()->json([
-                'message' => 'Para visitantes debes seleccionar el departamento destino.',
-                'errors' => ['departamento_id' => ['Para visitantes debes seleccionar el departamento destino.']],
+                'message' => 'Para visitantes debes seleccionar la gerencia destino.',
+                'errors' => ['gerencia_id' => ['Para visitantes debes seleccionar la gerencia destino.']],
             ], 422);
         }
 
@@ -152,7 +152,7 @@ class CodigoQrController extends Controller
 
             $qr = new CodigoQr();
             $qr->user_id = $targetUser->id;
-            $qr->departamento_id = $data['departamento_id'] ?? null;
+            $qr->gerencia_id = $data['gerencia_id'] ?? null;
             $qr->codigo = $tokenHash;
             $qr->setTokenOriginal($plainToken); // Encriptar y guardar el token
             $qr->fecha_generacion = $now;

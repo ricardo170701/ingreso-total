@@ -110,6 +110,12 @@
                                         {{ user.n_identidad || "-" }}
                                     </p>
                                 </div>
+                                <div v-if="user.numero_caso">
+                                    <p class="text-xs text-slate-500 dark:text-slate-400">Número de Caso</p>
+                                    <p class="text-sm text-slate-700 dark:text-slate-300 font-medium">
+                                        {{ user.numero_caso }}
+                                    </p>
+                                </div>
                             </div>
                         </div>
 
@@ -129,19 +135,28 @@
                                         {{ user.cargo?.name || "-" }}
                                     </p>
                                 </div>
-                                <div v-if="user.departamento">
-                                    <p class="text-xs text-slate-500 dark:text-slate-400">Departamento</p>
+                                <div v-if="user.gerencia">
+                                    <p class="text-xs text-slate-500 dark:text-slate-400">Secretaría / Gerencia</p>
                                     <p class="text-sm text-slate-700 dark:text-slate-300">
-                                        {{ user.departamento?.nombre || "-" }}
-                                        <span v-if="user.departamento?.piso" class="text-slate-500 dark:text-slate-400">
-                                            · {{ user.departamento.piso.nombre }}
+                                        <span class="font-medium">{{ user.gerencia.secretaria?.nombre || "-" }}</span>
+                                        <span v-if="user.gerencia.secretaria?.piso" class="text-slate-500 dark:text-slate-400">
+                                            · {{ user.gerencia.secretaria.piso.nombre }}
                                         </span>
+                                    </p>
+                                    <p class="text-xs text-slate-600 dark:text-slate-400 mt-1">
+                                        Gerencia: {{ user.gerencia.nombre }}
                                     </p>
                                 </div>
                                 <div v-if="user.fecha_expiracion">
                                     <p class="text-xs text-slate-500 dark:text-slate-400">Fecha expiración</p>
                                     <p class="text-sm text-slate-700 dark:text-slate-300">
                                         {{ formatDate(user.fecha_expiracion) }}
+                                    </p>
+                                </div>
+                                <div v-if="user.tipo_contrato">
+                                    <p class="text-xs text-slate-500 dark:text-slate-400">Tipo de contrato</p>
+                                    <p class="text-sm text-slate-700 dark:text-slate-300 font-medium">
+                                        {{ formatTipoContrato(user.tipo_contrato) }}
                                     </p>
                                 </div>
                             </div>

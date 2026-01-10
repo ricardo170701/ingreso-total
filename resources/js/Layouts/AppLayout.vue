@@ -298,11 +298,11 @@ const menuItems = [
     },
 
     {
-        name: "departamentos",
-        label: "Departamentos",
-        href: "/departamentos",
+        name: "dependencias",
+        label: "Dependencias",
+        href: "/dependencias",
         icon: "🏢",
-        permission: "view_users", // Mismo permiso que usuarios
+        permission: "view_departamentos", // Mantiene el mismo permiso por compatibilidad
     },
     {
         name: "reportes",

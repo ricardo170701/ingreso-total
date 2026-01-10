@@ -4,7 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\Acceso;
 use App\Models\Cargo;
-use App\Models\Departamento;
+use App\Models\Secretaria;
+use App\Models\Gerencia;
 use App\Models\Mantenimiento;
 use App\Models\Material;
 use App\Models\Piso;
@@ -34,10 +35,17 @@ class ReportesController extends Controller
             ->orderBy('name')
             ->get(['id', 'name']);
         $cargos = Cargo::query()->orderBy('name')->get(['id', 'name']);
-        $departamentos = Departamento::query()
+        $secretarias = Secretaria::query()
             ->where('activo', true)
+            ->with('piso')
             ->orderBy('nombre')
-            ->get(['id', 'nombre']);
+            ->get(['id', 'nombre', 'piso_id']);
+        
+        $gerencias = Gerencia::query()
+            ->where('activo', true)
+            ->with('secretaria')
+            ->orderBy('nombre')
+            ->get(['id', 'nombre', 'secretaria_id']);
         $pisos = Piso::query()
             ->where('activo', true)
             ->orderBy('orden')
@@ -62,7 +70,8 @@ class ReportesController extends Controller
         return Inertia::render('Reportes/Index', [
             'roles' => $roles,
             'cargos' => $cargos,
-            'departamentos' => $departamentos,
+            'secretarias' => $secretarias,
+            'gerencias' => $gerencias,
             'pisos' => $pisos,
             'puertas' => $puertas,
             'tiposPuerta' => $tiposPuerta,
@@ -83,12 +92,12 @@ class ReportesController extends Controller
         $filtros = $request->only([
             'role_id',
             'cargo_id',
-            'departamento_id',
+            'gerencia_id',
             'activo',
         ]);
 
         $query = User::query()
-            ->with(['role', 'cargo', 'departamento']);
+            ->with(['role', 'cargo', 'gerencia.secretaria.piso']);
 
         if (!empty($filtros['role_id'])) {
             $query->where('role_id', $filtros['role_id']);
@@ -98,8 +107,8 @@ class ReportesController extends Controller
             $query->where('cargo_id', $filtros['cargo_id']);
         }
 
-        if (!empty($filtros['departamento_id'])) {
-            $query->where('departamento_id', $filtros['departamento_id']);
+        if (!empty($filtros['gerencia_id'])) {
+            $query->where('gerencia_id', $filtros['gerencia_id']);
         }
 
         if (isset($filtros['activo']) && $filtros['activo'] !== '') {
@@ -123,7 +132,8 @@ class ReportesController extends Controller
                 'Email',
                 'Rol',
                 'Cargo',
-                'Departamento',
+                'Secretaría',
+                'Gerencia',
                 'Activo',
                 'Fecha Expiración',
             ]);
@@ -136,7 +146,8 @@ class ReportesController extends Controller
                     $usuario->email,
                     $usuario->role?->name ?? '',
                     $usuario->cargo?->name ?? '',
-                    $usuario->departamento?->nombre ?? '',
+                    $usuario->gerencia?->secretaria?->nombre ?? '',
+                    $usuario->gerencia?->nombre ?? '',
                     $usuario->activo ? 'Sí' : 'No',
                     $usuario->fecha_expiracion?->format('Y-m-d') ?? '',
                 ]);

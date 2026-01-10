@@ -66,6 +66,23 @@
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <FormField
+                            label="Número de Caso"
+                            :error="form.errors.numero_caso"
+                        >
+                            <input
+                                v-model="form.numero_caso"
+                                type="text"
+                                class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-transparent transition-colors duration-200"
+                                placeholder="Número de caso (opcional)"
+                            />
+                            <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                                Número de caso para seguimiento de solicitud/renovación (opcional)
+                            </p>
+                        </FormField>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <FormField
                             label="Contraseña"
                             :error="form.errors.password"
                         >
@@ -111,27 +128,51 @@
                         </FormField>
                     </div>
 
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div v-if="!esVisitante" class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <FormField
-                            v-if="!esVisitante"
-                            label="Departamento"
-                            :error="form.errors.departamento_id"
+                            label="Secretaría"
+                            :error="form.errors.secretaria_id"
                         >
                             <select
-                                v-model="form.departamento_id"
+                                v-model="form.secretaria_id"
+                                @change="onSecretariaChange"
                                 class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-transparent transition-colors duration-200"
                             >
-                                <option :value="null">Sin departamento</option>
+                                <option :value="null">Sin secretaría</option>
                                 <option
-                                    v-for="dept in departamentos"
-                                    :key="dept.id"
-                                    :value="dept.id"
+                                    v-for="sec in secretarias"
+                                    :key="sec.id"
+                                    :value="sec.id"
                                 >
-                                    {{ dept.nombre }}
-                                    <span v-if="dept.piso"> - {{ dept.piso.nombre }}</span>
+                                    {{ sec.nombre }}
+                                    <span v-if="sec.piso"> - {{ sec.piso.nombre }}</span>
                                 </option>
                             </select>
                         </FormField>
+                        <FormField
+                            label="Gerencia"
+                            :error="form.errors.gerencia_id"
+                        >
+                            <select
+                                v-model="form.gerencia_id"
+                                :disabled="!form.secretaria_id"
+                                class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-transparent transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                <option :value="null">Sin gerencia</option>
+                                <option
+                                    v-for="ger in gerenciasFiltradas"
+                                    :key="ger.id"
+                                    :value="ger.id"
+                                >
+                                    {{ ger.nombre }}
+                                </option>
+                            </select>
+                            <p v-if="!form.secretaria_id" class="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                                Selecciona una secretaría primero
+                            </p>
+                        </FormField>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <FormField label="Foto" :error="form.errors.foto">
                             <div
                                 v-if="fotoPreviewUrl"
@@ -155,25 +196,31 @@
                         </FormField>
                     </div>
 
+                    <div v-if="!esVisitante" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <FormField
+                            label="Tipo de contrato"
+                            :error="form.errors.tipo_contrato"
+                        >
+                            <select
+                                v-model="form.tipo_contrato"
+                                class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-transparent transition-colors duration-200"
+                            >
+                                <option :value="null">-</option>
+                                <option value="prestacion_servicios">Prestación de servicios</option>
+                                <option value="contratista_externo">Contratista externo</option>
+                                <option value="contrato_indefinido">Contrato indefinido</option>
+                            </select>
+                            <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                                Tipo de contrato actual (se guarda incluso sin documento)
+                            </p>
+                        </FormField>
+                    </div>
+
                     <div class="grid grid-cols-1 gap-2">
                         <FormField
                             label="Documentos de contrato (PDF) (opcional)"
                             :error="form.errors.contratos"
                         >
-                            <div class="mb-2">
-                                <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                                    Tipo de contrato
-                                </label>
-                                <select
-                                    v-model="form.tipo_contrato"
-                                    class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-transparent transition-colors duration-200"
-                                >
-                                    <option :value="null">-</option>
-                                    <option value="prestacion_servicios">Prestación de servicios</option>
-                                    <option value="contratista_externo">Contratista externo</option>
-                                    <option value="contrato_indefinido">Contrato indefinido</option>
-                                </select>
-                            </div>
                             <input
                                 type="file"
                                 accept="application/pdf"
@@ -182,7 +229,7 @@
                                 class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 transition-colors duration-200"
                             />
                             <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                                Puedes subir hasta 5 PDFs (máx 10MB cada uno).
+                                Puedes subir hasta 5 PDFs (máx 10MB cada uno). El tipo de contrato se guarda incluso si no subes documentos.
                             </p>
                             <ul
                                 v-if="contratosSeleccionados.length > 0"
@@ -256,7 +303,8 @@ import { computed, watch } from "vue";
 const props = defineProps({
     roles: Array,
     cargos: Array,
-    departamentos: Array,
+    secretarias: Array,
+    gerencias: Array,
 });
 
 const esVisitante = computed(() => {
@@ -272,7 +320,9 @@ const form = useForm({
     nombre: "",
     apellido: "",
     n_identidad: "",
-    departamento_id: null,
+    numero_caso: "",
+    secretaria_id: null,
+    gerencia_id: null,
     fecha_expiracion: null,
     foto: null,
     contratos: [],
@@ -280,6 +330,17 @@ const form = useForm({
     activo: true,
     es_discapacitado: false,
 });
+
+// Filtrar gerencias por secretaría seleccionada
+const gerenciasFiltradas = computed(() => {
+    if (!form.secretaria_id) return [];
+    return props.gerencias?.filter(g => g.secretaria_id === form.secretaria_id) || [];
+});
+
+// Limpiar gerencia cuando cambia la secretaría
+const onSecretariaChange = () => {
+    form.gerencia_id = null;
+};
 
 const onFotoChange = (e) => {
     const file = e.target?.files?.[0] || null;
@@ -304,7 +365,8 @@ const fotoPreviewUrl = computed(() => {
 
 watch(esVisitante, (isVisitante) => {
     if (isVisitante) {
-        form.departamento_id = null;
+        form.secretaria_id = null;
+        form.gerencia_id = null;
         form.fecha_expiracion = null;
         form.cargo_id = null;
     }

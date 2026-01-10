@@ -17,7 +17,7 @@ class CodigoQr extends Model
 
     protected $fillable = [
         'user_id',
-        'departamento_id',
+        'gerencia_id',
         'codigo',
         'token_encrypted',
         'fecha_generacion',
@@ -46,11 +46,11 @@ class CodigoQr extends Model
     }
 
     /**
-     * Departamento destino (solo aplica típicamente para QRs de visitantes)
+     * Gerencia destino (solo aplica típicamente para QRs de visitantes)
      */
-    public function departamento(): BelongsTo
+    public function gerencia(): BelongsTo
     {
-        return $this->belongsTo(Departamento::class);
+        return $this->belongsTo(Gerencia::class);
     }
 
     /**

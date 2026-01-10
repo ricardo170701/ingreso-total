@@ -24,7 +24,21 @@ class GenerateCodigoQrRequest extends FormRequest
     {
         return [
             'user_id' => ['required', 'integer', 'exists:users,id'],
-            'departamento_id' => ['nullable', 'integer', Rule::exists('departamentos', 'id')],
+            'secretaria_id' => ['nullable', 'integer', Rule::exists('secretarias', 'id')],
+            'gerencia_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('gerencias', 'id'),
+                // Validar que la gerencia pertenezca a la secretaría seleccionada (si se envía secretaria_id)
+                function ($attribute, $value, $fail) {
+                    if ($value && $this->input('secretaria_id')) {
+                        $gerencia = \App\Models\Gerencia::find($value);
+                        if ($gerencia && $gerencia->secretaria_id != $this->input('secretaria_id')) {
+                            $fail('La gerencia seleccionada no pertenece a la secretaría seleccionada.');
+                        }
+                    }
+                },
+            ],
             // Pisos (recomendado para visitantes). Se expanden a puertas al generar el QR.
             'pisos' => ['nullable', 'array'],
             'pisos.*' => ['integer', Rule::exists('pisos', 'id')],

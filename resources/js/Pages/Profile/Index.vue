@@ -122,13 +122,16 @@
                                     {{ user.cargo?.name || "-" }}
                                 </p>
                             </div>
-                            <div v-if="user.departamento">
-                                <p class="text-xs text-slate-500 mb-1">Departamento</p>
+                            <div v-if="user.gerencia">
+                                <p class="text-xs text-slate-500 mb-1">Secretaría / Gerencia</p>
                                 <p class="text-sm text-slate-900 font-medium">
-                                    {{ user.departamento?.nombre || "-" }}
-                                    <span v-if="user.departamento?.piso" class="text-slate-500">
-                                        · {{ user.departamento.piso.nombre }}
+                                    <span class="font-medium">{{ user.gerencia.secretaria?.nombre || "-" }}</span>
+                                    <span v-if="user.gerencia.secretaria?.piso" class="text-slate-500">
+                                        · {{ user.gerencia.secretaria.piso.nombre }}
                                     </span>
+                                </p>
+                                <p class="text-xs text-slate-600 mt-1">
+                                    Gerencia: {{ user.gerencia.nombre }}
                                 </p>
                             </div>
                         </div>

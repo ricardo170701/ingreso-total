@@ -5,7 +5,8 @@ namespace App\Http\Controllers;
 use App\Http\Requests\GenerateCodigoQrRequest;
 use App\Mail\QrCodeMail;
 use App\Models\CodigoQr;
-use App\Models\Departamento;
+use App\Models\Secretaria;
+use App\Models\Gerencia;
 use App\Models\Piso;
 use App\Models\Puerta;
 use App\Models\User;
@@ -56,11 +57,17 @@ class IngresoController extends Controller
             ->orderBy('orden')
             ->get();
 
-        $departamentos = Departamento::query()
+        $secretarias = Secretaria::query()
             ->where('activo', true)
             ->with('piso')
             ->orderBy('nombre')
-            ->get();
+            ->get(['id', 'nombre', 'piso_id']);
+
+        $gerencias = Gerencia::query()
+            ->where('activo', true)
+            ->with('secretaria')
+            ->orderBy('nombre')
+            ->get(['id', 'nombre', 'secretaria_id']);
 
         // Si no tiene permiso para crear para otros, buscar QR activo del usuario actual
         $qrPersonal = null;
@@ -112,7 +119,8 @@ class IngresoController extends Controller
             'usuarios' => $usuarios,
             'puertas' => $puertas,
             'pisos' => $pisos,
-            'departamentos' => $departamentos,
+            'secretarias' => $secretarias,
+            'gerencias' => $gerencias,
             'puedeCrearParaOtros' => $puedeCrearParaOtros,
             'qrPersonal' => $qrPersonalData,
         ]);
@@ -164,9 +172,9 @@ class IngresoController extends Controller
             }
         }
 
-        // Para visitantes: registrar a qué departamento va (solo cuando se genera para otros)
-        if ($puedeCrearParaOtros && $targetRole === 'visitante' && empty($data['departamento_id'])) {
-            return back()->withErrors(['departamento_id' => 'Para visitantes debes seleccionar el departamento destino.']);
+        // Para visitantes: registrar a qué gerencia va (solo cuando se genera para otros)
+        if ($puedeCrearParaOtros && $targetRole === 'visitante' && empty($data['gerencia_id'])) {
+            return back()->withErrors(['gerencia_id' => 'Para visitantes debes seleccionar la gerencia destino.']);
         }
 
         // Validar cargo para no visitantes
@@ -212,7 +220,7 @@ class IngresoController extends Controller
 
             $qr = new CodigoQr();
             $qr->user_id = $targetUser->id;
-            $qr->departamento_id = $data['departamento_id'] ?? null;
+            $qr->gerencia_id = $data['gerencia_id'] ?? null;
             $qr->codigo = $tokenHash;
             $qr->setTokenOriginal($plainToken); // Encriptar y guardar el token
             $qr->fecha_generacion = $now;
@@ -312,17 +320,24 @@ class IngresoController extends Controller
             ->orderBy('orden')
             ->get();
 
-        $departamentos = Departamento::query()
+        $secretarias = Secretaria::query()
             ->where('activo', true)
             ->with('piso')
             ->orderBy('nombre')
-            ->get();
+            ->get(['id', 'nombre', 'piso_id']);
+
+        $gerencias = Gerencia::query()
+            ->where('activo', true)
+            ->with('secretaria')
+            ->orderBy('nombre')
+            ->get(['id', 'nombre', 'secretaria_id']);
 
         return Inertia::render('Ingreso/Index', [
             'usuarios' => $usuarios,
             'puertas' => $puertas,
             'pisos' => $pisos,
-            'departamentos' => $departamentos,
+            'secretarias' => $secretarias,
+            'gerencias' => $gerencias,
             'puedeCrearParaOtros' => $puedeCrearParaOtros,
             'qrGenerado' => [
                 'id' => $qr->id,

@@ -3,7 +3,7 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
-use App\Models\Departamento;
+use App\Models\Gerencia;
 use App\Models\Permission;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -30,10 +30,12 @@ class User extends Authenticatable
         'nombre',
         'apellido',
         'n_identidad',
-        'departamento_id',
+        'numero_caso',
+        'gerencia_id',
         'foto_perfil',
         'activo',
         'fecha_expiracion',
+        'tipo_contrato',
         'creado_por',
         'created_by',
         'updated_by',
@@ -79,11 +81,11 @@ class User extends Authenticatable
     }
 
     /**
-     * Relación: Un usuario pertenece a un departamento
+     * Relación: Un usuario pertenece a una gerencia
      */
-    public function departamento()
+    public function gerencia()
     {
-        return $this->belongsTo(Departamento::class);
+        return $this->belongsTo(Gerencia::class);
     }
 
     /**

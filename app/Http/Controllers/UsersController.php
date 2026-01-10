@@ -6,6 +6,8 @@ use App\Http\Requests\StoreUserRequest;
 use App\Http\Requests\UpdateUserRequest;
 use App\Models\Cargo;
 use App\Models\Role;
+use App\Models\Secretaria;
+use App\Models\Gerencia;
 use App\Models\User;
 use App\Models\UserDocumento;
 use Illuminate\Http\RedirectResponse;
@@ -21,7 +23,7 @@ class UsersController extends Controller
         $this->authorize('viewAny', User::class);
 
         $users = User::query()
-            ->with(['role', 'cargo', 'departamento.piso', 'createdBy', 'updatedBy', 'creadoPor'])
+            ->with(['role', 'cargo', 'gerencia.secretaria.piso', 'createdBy', 'updatedBy', 'creadoPor'])
             ->orderByDesc('id')
             ->paginate(10)
             ->through(fn(User $u) => [
@@ -35,7 +37,18 @@ class UsersController extends Controller
                 'fecha_expiracion' => $u->fecha_expiracion?->format('Y-m-d'),
                 'role' => $u->role ? ['id' => $u->role->id, 'name' => $u->role->name] : null,
                 'cargo' => $u->cargo ? ['id' => $u->cargo->id, 'name' => $u->cargo->name] : null,
-                'departamento' => $u->departamento ? ['id' => $u->departamento->id, 'nombre' => $u->departamento->nombre] : null,
+                'gerencia' => $u->gerencia ? [
+                    'id' => $u->gerencia->id,
+                    'nombre' => $u->gerencia->nombre,
+                    'secretaria' => $u->gerencia->secretaria ? [
+                        'id' => $u->gerencia->secretaria->id,
+                        'nombre' => $u->gerencia->secretaria->nombre,
+                        'piso' => $u->gerencia->secretaria->piso ? [
+                            'id' => $u->gerencia->secretaria->piso->id,
+                            'nombre' => $u->gerencia->secretaria->piso->nombre,
+                        ] : null,
+                    ] : null,
+                ] : null,
                 // Auditoría (nuevo): created_by / updated_by + fechas
                 'created_by_name' => $u->createdBy?->name
                     ?? $u->createdBy?->email
@@ -56,17 +69,25 @@ class UsersController extends Controller
     {
         $this->authorize('create', User::class);
 
+        // Cargar todas las gerencias activas para que el frontend pueda filtrar
+        $gerencias = Gerencia::query()
+            ->where('activo', true)
+            ->with('secretaria')
+            ->orderBy('nombre')
+            ->get(['id', 'nombre', 'secretaria_id']);
+
         return Inertia::render('Users/Create', [
             'roles' => Role::query()
                 ->whereIn('name', ['funcionario', 'visitante'])
                 ->orderBy('name')
                 ->get(['id', 'name']),
             'cargos' => Cargo::query()->orderBy('name')->get(['id', 'name']),
-            'departamentos' => \App\Models\Departamento::query()
+            'secretarias' => Secretaria::query()
                 ->where('activo', true)
                 ->with('piso')
                 ->orderBy('nombre')
-                ->get(),
+                ->get(['id', 'nombre', 'piso_id']),
+            'gerencias' => $gerencias,
         ]);
     }
 
@@ -90,21 +111,22 @@ class UsersController extends Controller
             $data['foto_perfil'] = $path;
         }
 
-        // Evitar que inputs auxiliares queden en mass assignment
-        unset($data['tipo_contrato']);
+        // secretaria_id no se guarda en la BD, solo se usa para filtrar gerencias en el frontend
+        unset($data['secretaria_id']);
 
-        // Si es visitante, no debe tener departamento ni fecha de expiración
+        // Si es visitante, no debe tener gerencia ni fecha de expiración
         $roleName = !empty($data['role_id'])
             ? Role::query()->whereKey($data['role_id'])->value('name')
             : null;
 
         if ($roleName === 'visitante') {
             $data['cargo_id'] = null;
-            $data['departamento_id'] = null;
+            $data['gerencia_id'] = null;
             $data['fecha_expiracion'] = null;
         }
 
         // Si el tipo de contrato es indefinido, no debe tener fecha de expiración
+        // tipo_contrato ahora se guarda en el usuario incluso sin documento
         $tipoContrato = $request->input('tipo_contrato');
         if ($tipoContrato === 'contrato_indefinido') {
             $data['fecha_expiracion'] = null;
@@ -129,11 +151,37 @@ class UsersController extends Controller
         $data['creado_por'] = $data['creado_por'] ?? $actorId; // compat (campo legacy)
         $data['created_by'] = $data['created_by'] ?? $actorId;
 
+        // tipo_contrato se guarda en el usuario incluso sin documento
+        // Ya viene en $data desde el request validado
+        
         $user = User::query()->create($data);
 
-        $tipoContrato = $request->input('tipo_contrato');
+        // Si hay tipo_contrato pero no hay archivos, crear un registro en user_documentos sin path
+        // para que aparezca en el historial y se le pueda agregar un documento después
+        if ($tipoContrato && !$request->hasFile('contratos')) {
+            // Verificar si ya existe un contrato sin documento con este tipo_contrato
+            $existeContratoSinDocumento = UserDocumento::query()
+                ->where('user_id', $user->id)
+                ->where('tipo', 'contrato')
+                ->where('tipo_contrato', $tipoContrato)
+                ->whereNull('path')
+                ->exists();
+            
+            if (!$existeContratoSinDocumento) {
+                UserDocumento::query()->create([
+                    'user_id' => $user->id,
+                    'tipo' => 'contrato',
+                    'tipo_contrato' => $tipoContrato,
+                    'nombre_original' => null,
+                    'mime' => null,
+                    'size' => null,
+                    'path' => null,
+                    'subido_por' => $request->user()?->id,
+                ]);
+            }
+        }
 
-        // Subir contratos PDF opcionales
+        // Subir contratos PDF opcionales (si hay archivos, también guardamos el tipo_contrato en el documento)
         if ($request->hasFile('contratos')) {
             foreach (($request->file('contratos') ?? []) as $file) {
                 if (!$file) {
@@ -143,7 +191,7 @@ class UsersController extends Controller
                 UserDocumento::query()->create([
                     'user_id' => $user->id,
                     'tipo' => 'contrato',
-                    'tipo_contrato' => $tipoContrato,
+                    'tipo_contrato' => $tipoContrato ?? $user->tipo_contrato,
                     'nombre_original' => $file->getClientOriginalName(),
                     'mime' => $file->getClientMimeType(),
                     'size' => $file->getSize(),
@@ -163,7 +211,7 @@ class UsersController extends Controller
         $user->load([
             'role',
             'cargo',
-            'departamento.piso',
+            'gerencia.secretaria.piso',
             'createdBy',
             'updatedBy',
             'creadoPor',
@@ -187,7 +235,14 @@ class UsersController extends Controller
     {
         $this->authorize('update', $user);
 
-        $user->load(['role', 'cargo', 'departamento.piso']);
+        $user->load(['role', 'cargo', 'gerencia.secretaria.piso']);
+
+        // Cargar todas las gerencias activas para que el frontend pueda filtrar
+        $gerencias = Gerencia::query()
+            ->where('activo', true)
+            ->with('secretaria')
+            ->orderBy('nombre')
+            ->get(['id', 'nombre', 'secretaria_id']);
 
         return Inertia::render('Users/Edit', [
             'user' => [
@@ -197,22 +252,27 @@ class UsersController extends Controller
                 'nombre' => $user->nombre,
                 'apellido' => $user->apellido,
                 'n_identidad' => $user->n_identidad,
-                'departamento_id' => $user->departamento_id,
+                'numero_caso' => $user->numero_caso,
+                'gerencia_id' => $user->gerencia_id,
+                'secretaria_id' => $user->gerencia?->secretaria_id ?? null,
                 'foto_perfil' => $user->foto_perfil,
                 'activo' => (bool) ($user->activo ?? true),
                 'es_discapacitado' => (bool) ($user->es_discapacitado ?? false),
                 'fecha_expiracion' => $user->fecha_expiracion?->format('Y-m-d'),
+                'tipo_contrato' => $user->tipo_contrato,
                 'role_id' => $user->role_id,
                 'cargo_id' => $user->cargo_id,
             ],
             'documentos' => $user->documentos()
                 ->where('tipo', 'contrato')
+                ->orderBy('created_at', 'desc')
                 ->get()
                 ->map(fn(UserDocumento $d) => [
                     'id' => $d->id,
                     'nombre' => $d->nombre_original,
                     'tipo_contrato' => $d->tipo_contrato,
                     'size' => $d->size,
+                    'path' => $d->path,
                     'created_at' => $d->created_at?->format('d/m/Y H:i'),
                 ]),
             'roles' => Role::query()
@@ -220,11 +280,12 @@ class UsersController extends Controller
                 ->orderBy('name')
                 ->get(['id', 'name']),
             'cargos' => Cargo::query()->orderBy('name')->get(['id', 'name']),
-            'departamentos' => \App\Models\Departamento::query()
+            'secretarias' => Secretaria::query()
                 ->where('activo', true)
                 ->with('piso')
                 ->orderBy('nombre')
-                ->get(),
+                ->get(['id', 'nombre', 'piso_id']),
+            'gerencias' => $gerencias,
         ]);
     }
 
@@ -252,19 +313,20 @@ class UsersController extends Controller
             $data['foto_perfil'] = $path;
         }
 
-        // Evitar que inputs auxiliares queden en mass assignment
-        unset($data['tipo_contrato']);
+        // secretaria_id no se guarda, solo se usa para filtrar gerencias en el frontend
+        unset($data['secretaria_id']);
 
-        // Si es visitante, no debe tener departamento ni fecha de expiración
+        // Si es visitante, no debe tener gerencia ni fecha de expiración
         $roleIdFinal = $data['role_id'] ?? $user->role_id;
         $roleNameFinal = $roleIdFinal ? Role::query()->whereKey($roleIdFinal)->value('name') : null;
         if ($roleNameFinal === 'visitante') {
             $data['cargo_id'] = null;
-            $data['departamento_id'] = null;
+            $data['gerencia_id'] = null;
             $data['fecha_expiracion'] = null;
         }
 
         // Si el tipo de contrato es indefinido, no debe tener fecha de expiración
+        // tipo_contrato ahora se guarda en el usuario incluso sin documento
         $tipoContrato = $request->input('tipo_contrato');
         if ($tipoContrato === 'contrato_indefinido') {
             $data['fecha_expiracion'] = null;
@@ -283,11 +345,54 @@ class UsersController extends Controller
         // Auditoría (última edición) - debe ir ANTES del update()
         $data['updated_by'] = $request->user()?->id;
 
+        // tipo_contrato se guarda en el usuario incluso sin documento
+        // Ya viene en $data desde el request validado
+        
         $user->update($data);
 
-        $tipoContrato = $request->input('tipo_contrato');
+        // Si hay tipo_contrato pero no hay archivos nuevos, crear/actualizar registro en user_documentos sin path
+        // para que aparezca en el historial y se le pueda agregar un documento después
+        if ($tipoContrato && !$request->hasFile('contratos')) {
+            // Buscar si ya existe un contrato sin documento con el nuevo tipo_contrato
+            $contratoSinDocumentoExistente = UserDocumento::query()
+                ->where('user_id', $user->id)
+                ->where('tipo', 'contrato')
+                ->where('tipo_contrato', $tipoContrato)
+                ->whereNull('path')
+                ->first();
+            
+            if (!$contratoSinDocumentoExistente) {
+                // Si no existe uno con el nuevo tipo_contrato, buscar si hay alguno sin documento con otro tipo
+                $contratoSinDocumentoAnterior = UserDocumento::query()
+                    ->where('user_id', $user->id)
+                    ->where('tipo', 'contrato')
+                    ->whereNull('path')
+                    ->first();
+                
+                if ($contratoSinDocumentoAnterior) {
+                    // Si existe uno con otro tipo_contrato, actualizarlo al nuevo
+                    $contratoSinDocumentoAnterior->update([
+                        'tipo_contrato' => $tipoContrato,
+                        'subido_por' => $request->user()?->id,
+                    ]);
+                } else {
+                    // Si no existe ninguno sin documento, crear uno nuevo
+                    UserDocumento::query()->create([
+                        'user_id' => $user->id,
+                        'tipo' => 'contrato',
+                        'tipo_contrato' => $tipoContrato,
+                        'nombre_original' => null,
+                        'mime' => null,
+                        'size' => null,
+                        'path' => null,
+                        'subido_por' => $request->user()?->id,
+                    ]);
+                }
+            }
+            // Si ya existe uno con el tipo_contrato correcto, no hacer nada
+        }
 
-        // Subir contratos PDF opcionales
+        // Subir contratos PDF opcionales (si hay archivos, también guardamos el tipo_contrato en el documento)
         if ($request->hasFile('contratos')) {
             foreach (($request->file('contratos') ?? []) as $file) {
                 if (!$file) {
@@ -297,7 +402,7 @@ class UsersController extends Controller
                 UserDocumento::query()->create([
                     'user_id' => $user->id,
                     'tipo' => 'contrato',
-                    'tipo_contrato' => $tipoContrato,
+                    'tipo_contrato' => $tipoContrato ?? $user->tipo_contrato,
                     'nombre_original' => $file->getClientOriginalName(),
                     'mime' => $file->getClientMimeType(),
                     'size' => $file->getSize(),
@@ -318,12 +423,48 @@ class UsersController extends Controller
             abort(404);
         }
 
-        if (!Storage::exists($documento->path)) {
-            abort(404, 'Archivo no encontrado.');
+        if (!$documento->path || !Storage::exists($documento->path)) {
+            abort(404, 'Archivo no encontrado o no hay documento adjunto.');
         }
 
         $filename = $documento->nombre_original ?: ('contrato_' . $documento->id . '.pdf');
         return Storage::download($documento->path, $filename);
+    }
+
+    public function updateDocumento(Request $request, User $user, UserDocumento $documento): RedirectResponse
+    {
+        $this->authorize('update', $user);
+
+        if ($documento->user_id !== $user->id) {
+            abort(404);
+        }
+
+        $request->validate([
+            'documento' => ['required', 'file', 'mimes:pdf', 'max:10240'],
+        ]);
+
+        if (!$request->hasFile('documento')) {
+            return redirect()->back()->with('error', 'No se proporcionó ningún archivo.');
+        }
+
+        $file = $request->file('documento');
+
+        // Si ya existe un archivo, eliminarlo
+        if ($documento->path && Storage::exists($documento->path)) {
+            Storage::delete($documento->path);
+        }
+
+        $path = $file->store("user_documentos/{$user->id}/contratos");
+
+        $documento->update([
+            'nombre_original' => $file->getClientOriginalName(),
+            'mime' => $file->getClientMimeType(),
+            'size' => $file->getSize(),
+            'path' => $path,
+            'subido_por' => $request->user()?->id,
+        ]);
+
+        return redirect()->back()->with('success', 'Documento agregado correctamente.');
     }
 
     public function destroyDocumento(Request $request, User $user, UserDocumento $documento): RedirectResponse

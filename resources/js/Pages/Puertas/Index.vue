@@ -3,10 +3,10 @@
         <div class="space-y-4">
             <div class="flex items-center justify-between flex-wrap gap-3">
                 <div>
-                    <h1 class="text-xl font-semibold text-slate-900">
+                    <h1 class="text-xl font-semibold text-slate-900 dark:text-slate-100">
                         Puertas
                     </h1>
-                    <p class="text-sm text-slate-600">
+                    <p class="text-sm text-slate-600 dark:text-slate-400">
                         Gestiona las puertas del edificio y sus permisos.
                     </p>
                 </div>
@@ -14,7 +14,7 @@
                     <button
                         @click="refrescarConexiones"
                         :disabled="refrescandoConexiones"
-                        class="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm font-medium"
+                        class="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-blue-600 dark:bg-blue-700 text-white hover:bg-blue-700 dark:hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm font-medium duration-200"
                         title="Actualizar estados de conexión de las puertas"
                     >
                         <span v-if="refrescandoConexiones">⏳</span>
@@ -23,7 +23,7 @@
                     </button>
                     <Link
                         :href="route('puertas.create')"
-                        class="w-full sm:w-auto px-4 py-2 rounded-lg bg-slate-900 text-white hover:bg-slate-800 font-medium text-sm text-center"
+                        class="w-full sm:w-auto px-4 py-2 rounded-lg bg-slate-900 dark:bg-slate-700 text-white hover:bg-slate-800 dark:hover:bg-slate-600 font-medium text-sm text-center transition-colors duration-200"
                     >
                         Nueva Puerta
                     </Link>
@@ -32,7 +32,7 @@
 
             <div
                 v-if="$page.props.flash?.message"
-                class="p-4 rounded-lg bg-green-50 border border-green-200 text-green-800"
+                class="p-4 rounded-lg bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 text-green-800 dark:text-green-200 transition-colors duration-200"
             >
                 {{ $page.props.flash.message }}
             </div>
@@ -41,34 +41,34 @@
             <div class="lg:hidden">
                 <button
                     type="button"
-                    class="w-full flex items-center justify-between px-4 py-3 rounded-xl bg-white border border-slate-200 text-slate-900"
+                    class="w-full flex items-center justify-between px-4 py-3 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 transition-colors duration-200"
                     @click="filtroPisosOpen = !filtroPisosOpen"
                 >
                     <span class="font-semibold">Filtrar por Piso</span>
-                    <span class="text-sm text-slate-600">
+                    <span class="text-sm text-slate-600 dark:text-slate-400">
                         {{ filtroPisosOpen ? "▲" : "▼" }}
                     </span>
                 </button>
                 <div
                     v-if="filtroPisosOpen"
-                    class="mt-2 bg-white border border-slate-200 rounded-xl p-3"
+                    class="mt-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-3 transition-colors duration-200"
                 >
                     <div class="space-y-2">
                         <Link
                             :href="route('puertas.index')"
                             @click="filtroPisosOpen = false"
                             :class="[
-                                'block px-4 py-3 rounded-lg text-sm font-medium transition-colors',
+                                'block px-4 py-3 rounded-lg text-sm font-medium transition-colors duration-200',
                                 !pisoSeleccionado
-                                    ? 'bg-slate-900 text-white'
-                                    : 'bg-slate-50 text-slate-700 hover:bg-slate-100',
+                                    ? 'bg-slate-900 dark:bg-slate-700 text-white'
+                                    : 'bg-slate-50 dark:bg-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-600',
                             ]"
                         >
                             <div class="flex items-center justify-between">
                                 <span>Todas las puertas</span>
                                 <span
                                     v-if="!pisoSeleccionado"
-                                    class="px-2 py-0.5 bg-white/20 rounded text-xs"
+                                    class="px-2 py-0.5 bg-white/20 dark:bg-slate-800/50 rounded text-xs"
                                 >
                                     {{ puertas.total }}
                                 </span>
@@ -80,10 +80,10 @@
                             :href="route('puertas.index', { piso_id: piso.id })"
                             @click="filtroPisosOpen = false"
                             :class="[
-                                'block px-4 py-3 rounded-lg text-sm font-medium transition-colors',
+                                'block px-4 py-3 rounded-lg text-sm font-medium transition-colors duration-200',
                                 pisoSeleccionado === piso.id
-                                    ? 'bg-slate-900 text-white'
-                                    : 'bg-slate-50 text-slate-700 hover:bg-slate-100',
+                                    ? 'bg-slate-900 dark:bg-slate-700 text-white'
+                                    : 'bg-slate-50 dark:bg-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-600',
                             ]"
                         >
                             <div class="flex items-center justify-between">
@@ -92,8 +92,8 @@
                                     :class="[
                                         'px-2 py-0.5 rounded text-xs',
                                         pisoSeleccionado === piso.id
-                                            ? 'bg-white/20'
-                                            : 'bg-slate-200 text-slate-600',
+                                            ? 'bg-white/20 dark:bg-slate-800/50'
+                                            : 'bg-slate-200 dark:bg-slate-600 text-slate-600 dark:text-slate-300',
                                     ]"
                                 >
                                     {{ piso.puertas_count || 0 }}
@@ -115,10 +115,10 @@
                         <div
                             v-for="puerta in puertas.data"
                             :key="puerta.id"
-                            class="bg-white border border-slate-200 rounded-xl hover:shadow-lg transition-shadow relative group"
+                            class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl hover:shadow-lg transition-all duration-200 relative group"
                         >
                             <!-- Imagen de la puerta -->
-                            <div class="h-48 bg-slate-100 relative overflow-hidden rounded-t-xl">
+                            <div class="h-48 bg-slate-100 dark:bg-slate-700 relative overflow-hidden rounded-t-xl transition-colors duration-200">
                                 <img
                                     v-if="puerta.imagen"
                                     :src="`/storage/${puerta.imagen}`"
@@ -127,7 +127,7 @@
                                 />
                                 <div
                                     v-else
-                                    class="w-full h-full flex items-center justify-center text-slate-400"
+                                    class="w-full h-full flex items-center justify-center text-slate-400 dark:text-slate-500"
                                 >
                                     <span class="text-4xl">🚪</span>
                                 </div>
@@ -137,12 +137,12 @@
                                     <span
                                         v-if="puerta.ip_entrada"
                                         :class="[
-                                            'px-2 py-1 rounded text-xs font-medium transition-colors',
+                                            'px-2 py-1 rounded text-xs font-medium transition-colors duration-200',
                                             estadosConexion[puerta.id]?.entrada === true
-                                                ? 'bg-green-100 text-green-700'
+                                                ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
                                                 : estadosConexion[puerta.id]?.entrada === false
-                                                ? 'bg-red-100 text-red-700'
-                                                : 'bg-gray-100 text-gray-500',
+                                                ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
+                                                : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400',
                                         ]"
                                         :title="estadosConexion[puerta.id]?.entrada === true ? 'Entrada conectada' : estadosConexion[puerta.id]?.entrada === false ? 'Entrada desconectada' : refrescandoConexiones ? 'Verificando entrada...' : 'Sin verificar entrada'"
                                     >
@@ -160,12 +160,12 @@
                                     <span
                                         v-if="puerta.ip_salida"
                                         :class="[
-                                            'px-2 py-1 rounded text-xs font-medium transition-colors',
+                                            'px-2 py-1 rounded text-xs font-medium transition-colors duration-200',
                                             estadosConexion[puerta.id]?.salida === true
-                                                ? 'bg-green-100 text-green-700'
+                                                ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
                                                 : estadosConexion[puerta.id]?.salida === false
-                                                ? 'bg-red-100 text-red-700'
-                                                : 'bg-gray-100 text-gray-500',
+                                                ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
+                                                : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400',
                                         ]"
                                         :title="estadosConexion[puerta.id]?.salida === true ? 'Salida conectada' : estadosConexion[puerta.id]?.salida === false ? 'Salida desconectada' : refrescandoConexiones ? 'Verificando salida...' : 'Sin verificar salida'"
                                     >
@@ -182,10 +182,10 @@
                                     <!-- Badge de estado activo/inactivo -->
                                     <span
                                         :class="[
-                                            'px-2 py-1 rounded text-xs font-medium',
+                                            'px-2 py-1 rounded text-xs font-medium transition-colors duration-200',
                                             puerta.activo
-                                                ? 'bg-green-100 text-green-700'
-                                                : 'bg-red-100 text-red-700',
+                                                ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
+                                                : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400',
                                         ]"
                                     >
                                         {{ puerta.activo ? "Activa" : "Inactiva" }}
@@ -193,14 +193,14 @@
                                     <!-- Badge de mantenimiento -->
                                     <span
                                         v-if="puerta.estado_mantenimiento === 'programado'"
-                                        class="px-2 py-1 rounded text-xs font-medium bg-yellow-100 text-yellow-700"
+                                        class="px-2 py-1 rounded text-xs font-medium bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 transition-colors duration-200"
                                         title="Puerta en mantenimiento programado"
                                     >
                                         ⚠️ Mantenimiento
                                     </span>
                                     <span
                                         v-else-if="puerta.estado_mantenimiento === 'vencido'"
-                                        class="px-2 py-1 rounded text-xs font-medium bg-red-100 text-red-700"
+                                        class="px-2 py-1 rounded text-xs font-medium bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 transition-colors duration-200"
                                         title="Mantenimiento programado vencido"
                                     >
                                         🔴 Mantenimiento Vencido
@@ -211,7 +211,7 @@
                             <!-- Contenido de la card -->
                             <div class="p-4">
                                 <div class="flex items-start justify-between mb-3">
-                                    <h3 class="font-semibold text-slate-900 text-lg">
+                                    <h3 class="font-semibold text-slate-900 dark:text-slate-100 text-lg">
                                         {{ puerta.nombre }}
                                     </h3>
                                     <span
@@ -224,7 +224,7 @@
                                 </div>
 
                                 <!-- Información simplificada (siempre visible) -->
-                                <div class="space-y-2 text-sm text-slate-600">
+                                <div class="space-y-2 text-sm text-slate-600 dark:text-slate-400">
                                     <div class="flex items-center gap-2">
                                         <span class="font-medium">Piso:</span>
                                         <span>{{ puerta.piso?.nombre || "-" }}</span>
@@ -237,10 +237,10 @@
                                         <span class="font-medium">Tipo:</span>
                                         <span
                                             :class="[
-                                                'px-2 py-0.5 rounded text-xs font-medium',
+                                                'px-2 py-0.5 rounded text-xs font-medium transition-colors duration-200',
                                                 puerta.tipo_puerta?.codigo === 'rodillo'
-                                                    ? 'bg-blue-100 text-blue-700'
-                                                    : 'bg-slate-100 text-slate-700',
+                                                    ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400'
+                                                    : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300',
                                             ]"
                                         >
                                             {{ puerta.tipo_puerta?.nombre || "-" }}
@@ -251,12 +251,12 @@
                                         class="flex items-center gap-2"
                                     >
                                         <span class="font-medium">Tiempo Apertura:</span>
-                                        <span class="px-2 py-0.5 bg-blue-50 rounded text-xs font-medium text-blue-700">
+                                        <span class="px-2 py-0.5 bg-blue-50 dark:bg-blue-900/30 rounded text-xs font-medium text-blue-700 dark:text-blue-400 transition-colors duration-200">
                                             {{ puerta.tiempo_apertura }}s
                                         </span>
                                         <span
                                             v-if="puerta.tiempo_discapacitados"
-                                            class="px-2 py-0.5 bg-purple-50 rounded text-xs font-medium text-purple-700"
+                                            class="px-2 py-0.5 bg-purple-50 dark:bg-purple-900/30 rounded text-xs font-medium text-purple-700 dark:text-purple-400 transition-colors duration-200"
                                             title="Tiempo para discapacitados"
                                         >
                                             Disc: {{ puerta.tiempo_discapacitados }}s
@@ -265,12 +265,12 @@
                                 </div>
 
                                 <!-- Acciones (preview): Ver / Abrir / Reiniciar -->
-                                <div class="mt-4 pt-4 border-t border-slate-200">
+                                <div class="mt-4 pt-4 border-t border-slate-200 dark:border-slate-700">
                                     <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
                                         <Link
                                             v-if="hasPermission('view_puertas')"
                                             :href="route('puertas.show', { puerta: puerta.id })"
-                                            class="w-full inline-flex items-center justify-center px-4 py-2 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-800 text-sm font-semibold"
+                                            class="w-full inline-flex items-center justify-center px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 text-sm font-semibold transition-colors duration-200"
                                         >
                                             Ver
                                         </Link>
@@ -279,7 +279,7 @@
                                             type="button"
                                             @click="abrirPuerta(puerta)"
                                             :disabled="abriendo[puerta.id] === true"
-                                            class="w-full inline-flex items-center justify-center px-4 py-2 rounded-xl bg-slate-900 text-white hover:bg-slate-800 text-sm font-semibold disabled:opacity-50"
+                                            class="w-full inline-flex items-center justify-center px-4 py-2 rounded-xl bg-slate-900 dark:bg-slate-700 text-white hover:bg-slate-800 dark:hover:bg-slate-600 text-sm font-semibold disabled:opacity-50 transition-colors duration-200"
                                             title="Abrir/Cerrar (Entrada)"
                                         >
                                             {{ abriendo[puerta.id] ? "..." : "Abrir" }}
@@ -289,7 +289,7 @@
                                             type="button"
                                             @click="reiniciarPuerta(puerta)"
                                             :disabled="reiniciando[puerta.id] === true"
-                                            class="w-full inline-flex items-center justify-center px-4 py-2 rounded-xl border border-blue-200 bg-blue-50 hover:bg-blue-100 text-blue-700 text-sm font-semibold disabled:opacity-50"
+                                            class="w-full inline-flex items-center justify-center px-4 py-2 rounded-xl border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-900/50 text-blue-700 dark:text-blue-400 text-sm font-semibold disabled:opacity-50 transition-colors duration-200"
                                             title="Reiniciar Raspberry"
                                         >
                                             {{ reiniciando[puerta.id] ? "..." : "Reiniciar" }}
@@ -300,85 +300,85 @@
 
                             <!-- Tooltip flotante con información completa (visible en hover) -->
                             <div
-                                class="hidden lg:block absolute left-full top-4 ml-2 w-80 bg-white border-2 border-slate-300 rounded-xl p-4 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 pointer-events-none z-50 shadow-2xl"
+                                class="hidden lg:block absolute left-full top-4 ml-2 w-80 bg-white dark:bg-slate-800 border-2 border-slate-300 dark:border-slate-700 rounded-xl p-4 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 pointer-events-none z-50 shadow-2xl"
                             >
-                                    <div class="space-y-2 text-sm">
-                                        <h4 class="font-semibold text-slate-900 mb-3 pb-2 border-b border-slate-200">
-                                            Información Completa
-                                        </h4>
-                                        <div class="flex items-center gap-2">
-                                            <span class="font-medium text-slate-700 min-w-[100px]">IP Entrada:</span>
-                                            <code
-                                                v-if="puerta.ip_entrada"
-                                                class="px-1.5 py-0.5 bg-slate-100 rounded text-xs"
-                                            >
-                                                {{ puerta.ip_entrada }}
-                                            </code>
-                                            <span v-else class="text-slate-400">-</span>
-                                        </div>
-                                        <div class="flex items-center gap-2">
-                                            <span class="font-medium text-slate-700 min-w-[100px]">IP Salida:</span>
-                                            <code
-                                                v-if="puerta.ip_salida"
-                                                class="px-1.5 py-0.5 bg-slate-100 rounded text-xs"
-                                            >
-                                                {{ puerta.ip_salida }}
-                                            </code>
-                                            <span v-else class="text-slate-400">-</span>
-                                        </div>
-                                        <div
-                                            v-if="puerta.material"
-                                            class="flex items-center gap-2"
+                                <div class="space-y-2 text-sm">
+                                    <h4 class="font-semibold text-slate-900 dark:text-slate-100 mb-3 pb-2 border-b border-slate-200 dark:border-slate-700">
+                                        Información Completa
+                                    </h4>
+                                    <div class="flex items-center gap-2">
+                                        <span class="font-medium text-slate-700 dark:text-slate-300 min-w-[100px]">IP Entrada:</span>
+                                        <code
+                                            v-if="puerta.ip_entrada"
+                                            class="px-1.5 py-0.5 bg-slate-100 dark:bg-slate-700 rounded text-xs text-slate-900 dark:text-slate-100"
                                         >
-                                            <span class="font-medium text-slate-700 min-w-[100px]">Material:</span>
-                                            <span class="px-2 py-0.5 bg-purple-50 rounded text-xs font-medium text-purple-700">
-                                                {{ puerta.material.nombre }}
-                                            </span>
-                                        </div>
-                                        <div
-                                            v-if="puerta.alto || puerta.largo || puerta.ancho"
-                                            class="flex items-center gap-2"
-                                        >
-                                            <span class="font-medium text-slate-700 min-w-[100px]">Dimensiones:</span>
-                                            <span class="text-xs">
-                                                {{ puerta.alto || '-' }} × {{ puerta.largo || '-' }} × {{ puerta.ancho || '-' }} cm
-                                            </span>
-                                        </div>
-                                        <div
-                                            v-if="puerta.peso"
-                                            class="flex items-center gap-2"
-                                        >
-                                            <span class="font-medium text-slate-700 min-w-[100px]">Peso:</span>
-                                            <span class="px-2 py-0.5 bg-orange-50 rounded text-xs font-medium text-orange-700">
-                                                {{ puerta.peso }} kg
-                                            </span>
-                                        </div>
-                                        <div
-                                            v-if="puerta.ubicacion"
-                                            class="flex items-center gap-2"
-                                        >
-                                            <span class="font-medium text-slate-700 min-w-[100px]">Ubicación:</span>
-                                            <span class="text-xs">{{ puerta.ubicacion }}</span>
-                                        </div>
-                                        <div
-                                            v-if="puerta.codigo_fisico"
-                                            class="flex items-center gap-2"
-                                        >
-                                            <span class="font-medium text-slate-700 min-w-[100px]">Código Físico:</span>
-                                            <code class="px-1.5 py-0.5 bg-slate-100 rounded text-xs">
-                                                {{ puerta.codigo_fisico }}
-                                            </code>
-                                        </div>
-                                        <div
-                                            v-if="puerta.descripcion"
-                                            class="pt-2 border-t border-slate-200"
-                                        >
-                                            <span class="font-medium text-slate-700 block mb-1">Descripción:</span>
-                                            <p class="text-xs text-slate-600">
-                                                {{ puerta.descripcion }}
-                                            </p>
-                                        </div>
+                                            {{ puerta.ip_entrada }}
+                                        </code>
+                                        <span v-else class="text-slate-400 dark:text-slate-500">-</span>
                                     </div>
+                                    <div class="flex items-center gap-2">
+                                        <span class="font-medium text-slate-700 dark:text-slate-300 min-w-[100px]">IP Salida:</span>
+                                        <code
+                                            v-if="puerta.ip_salida"
+                                            class="px-1.5 py-0.5 bg-slate-100 dark:bg-slate-700 rounded text-xs text-slate-900 dark:text-slate-100"
+                                        >
+                                            {{ puerta.ip_salida }}
+                                        </code>
+                                        <span v-else class="text-slate-400 dark:text-slate-500">-</span>
+                                    </div>
+                                    <div
+                                        v-if="puerta.material"
+                                        class="flex items-center gap-2"
+                                    >
+                                        <span class="font-medium text-slate-700 dark:text-slate-300 min-w-[100px]">Material:</span>
+                                        <span class="px-2 py-0.5 bg-purple-50 dark:bg-purple-900/30 rounded text-xs font-medium text-purple-700 dark:text-purple-400 transition-colors duration-200">
+                                            {{ puerta.material.nombre }}
+                                        </span>
+                                    </div>
+                                    <div
+                                        v-if="puerta.alto || puerta.largo || puerta.ancho"
+                                        class="flex items-center gap-2"
+                                    >
+                                        <span class="font-medium text-slate-700 dark:text-slate-300 min-w-[100px]">Dimensiones:</span>
+                                        <span class="text-xs text-slate-700 dark:text-slate-300">
+                                            {{ puerta.alto || '-' }} × {{ puerta.largo || '-' }} × {{ puerta.ancho || '-' }} cm
+                                        </span>
+                                    </div>
+                                    <div
+                                        v-if="puerta.peso"
+                                        class="flex items-center gap-2"
+                                    >
+                                        <span class="font-medium text-slate-700 dark:text-slate-300 min-w-[100px]">Peso:</span>
+                                        <span class="px-2 py-0.5 bg-orange-50 dark:bg-orange-900/30 rounded text-xs font-medium text-orange-700 dark:text-orange-400 transition-colors duration-200">
+                                            {{ puerta.peso }} kg
+                                        </span>
+                                    </div>
+                                    <div
+                                        v-if="puerta.ubicacion"
+                                        class="flex items-center gap-2"
+                                    >
+                                        <span class="font-medium text-slate-700 dark:text-slate-300 min-w-[100px]">Ubicación:</span>
+                                        <span class="text-xs text-slate-700 dark:text-slate-300">{{ puerta.ubicacion }}</span>
+                                    </div>
+                                    <div
+                                        v-if="puerta.codigo_fisico"
+                                        class="flex items-center gap-2"
+                                    >
+                                        <span class="font-medium text-slate-700 dark:text-slate-300 min-w-[100px]">Código Físico:</span>
+                                        <code class="px-1.5 py-0.5 bg-slate-100 dark:bg-slate-700 rounded text-xs text-slate-900 dark:text-slate-100">
+                                            {{ puerta.codigo_fisico }}
+                                        </code>
+                                    </div>
+                                    <div
+                                        v-if="puerta.descripcion"
+                                        class="pt-2 border-t border-slate-200 dark:border-slate-700"
+                                    >
+                                        <span class="font-medium text-slate-700 dark:text-slate-300 block mb-1">Descripción:</span>
+                                        <p class="text-xs text-slate-600 dark:text-slate-400">
+                                            {{ puerta.descripcion }}
+                                        </p>
+                                    </div>
+                                </div>
                                 </div>
                         </div>
                     </div>
@@ -386,9 +386,9 @@
                     <!-- Mensaje cuando no hay puertas -->
                     <div
                         v-else
-                        class="bg-white border border-slate-200 rounded-xl p-12 text-center"
+                        class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-12 text-center transition-colors duration-200"
                     >
-                        <p class="text-slate-500">
+                        <p class="text-slate-500 dark:text-slate-400">
                             {{
                                 pisoSeleccionado
                                     ? "No hay puertas en este piso."
@@ -400,9 +400,9 @@
                     <!-- Paginación -->
                     <div
                         v-if="puertas.links && puertas.links.length > 3"
-                        class="mt-6 px-4 py-3 bg-white border border-slate-200 rounded-xl flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
+                        class="mt-6 px-4 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 transition-colors duration-200"
                     >
-                        <div class="text-sm text-slate-600">
+                        <div class="text-sm text-slate-600 dark:text-slate-400">
                             Mostrando {{ puertas.from }} a {{ puertas.to }} de
                             {{ puertas.total }} resultados
                         </div>
@@ -412,10 +412,10 @@
                                 :key="link.label"
                                 :href="link.url || '#'"
                                 :class="[
-                                    'px-3 py-1 rounded border text-sm',
+                                    'px-3 py-1 rounded border text-sm transition-colors duration-200',
                                     link.active
-                                        ? 'bg-slate-900 text-white border-slate-900'
-                                        : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50',
+                                        ? 'bg-slate-900 dark:bg-slate-700 text-white border-slate-900 dark:border-slate-700'
+                                        : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700',
                                     !link.url && 'opacity-50 cursor-not-allowed',
                                 ]"
                                 v-html="link.label"
@@ -426,23 +426,23 @@
 
                 <!-- Sidebar de Pisos (pegado a la derecha) -->
                 <div class="hidden lg:block shrink-0" style="width: 240px;">
-                    <div class="bg-white border border-slate-200 rounded-xl p-4 sticky top-4">
-                        <h2 class="font-semibold text-slate-900 mb-4">Filtrar por Piso</h2>
+                    <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-4 sticky top-4 transition-colors duration-200">
+                        <h2 class="font-semibold text-slate-900 dark:text-slate-100 mb-4">Filtrar por Piso</h2>
                         <div class="space-y-2">
                             <Link
                                 :href="route('puertas.index')"
                                 :class="[
-                                    'block px-4 py-3 rounded-lg text-sm font-medium transition-colors',
+                                    'block px-4 py-3 rounded-lg text-sm font-medium transition-colors duration-200',
                                     !pisoSeleccionado
-                                        ? 'bg-slate-900 text-white'
-                                        : 'bg-slate-50 text-slate-700 hover:bg-slate-100',
+                                        ? 'bg-slate-900 dark:bg-slate-700 text-white'
+                                        : 'bg-slate-50 dark:bg-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-600',
                                 ]"
                             >
                                 <div class="flex items-center justify-between">
                                     <span>Todas las puertas</span>
                                     <span
                                         v-if="!pisoSeleccionado"
-                                        class="px-2 py-0.5 bg-white/20 rounded text-xs"
+                                        class="px-2 py-0.5 bg-white/20 dark:bg-slate-800/50 rounded text-xs"
                                     >
                                         {{ puertas.total }}
                                     </span>
@@ -453,10 +453,10 @@
                                 :key="piso.id"
                                 :href="route('puertas.index', { piso_id: piso.id })"
                                 :class="[
-                                    'block px-4 py-3 rounded-lg text-sm font-medium transition-colors',
+                                    'block px-4 py-3 rounded-lg text-sm font-medium transition-colors duration-200',
                                     pisoSeleccionado === piso.id
-                                        ? 'bg-slate-900 text-white'
-                                        : 'bg-slate-50 text-slate-700 hover:bg-slate-100',
+                                        ? 'bg-slate-900 dark:bg-slate-700 text-white'
+                                        : 'bg-slate-50 dark:bg-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-600',
                                 ]"
                             >
                                 <div class="flex items-center justify-between">
@@ -465,8 +465,8 @@
                                         :class="[
                                             'px-2 py-0.5 rounded text-xs',
                                             pisoSeleccionado === piso.id
-                                                ? 'bg-white/20'
-                                                : 'bg-slate-200 text-slate-600',
+                                                ? 'bg-white/20 dark:bg-slate-800/50'
+                                                : 'bg-slate-200 dark:bg-slate-600 text-slate-600 dark:text-slate-300',
                                         ]"
                                     >
                                         {{ piso.puertas_count || 0 }}

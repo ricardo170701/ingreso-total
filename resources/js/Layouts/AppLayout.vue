@@ -1,5 +1,5 @@
 <template>
-    <div class="min-h-screen bg-slate-50">
+    <div class="min-h-screen bg-slate-50 dark:bg-slate-900 transition-colors duration-200">
         <!-- Overlay (mobile) -->
         <div
             v-if="sidebarOpen"
@@ -145,36 +145,48 @@
         <div class="lg:ml-64">
             <!-- Top Bar -->
             <header
-                class="sticky top-0 z-20 bg-white border-b border-slate-200 h-16 flex items-center justify-between px-4 sm:px-6"
+                class="sticky top-0 z-20 bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 h-16 flex items-center justify-between px-4 sm:px-6 transition-colors duration-200"
             >
                 <div class="flex items-center gap-3 min-w-0">
                     <button
                         type="button"
-                        class="lg:hidden inline-flex items-center justify-center w-10 h-10 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-700"
+                        class="lg:hidden inline-flex items-center justify-center w-10 h-10 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-colors duration-200"
                         @click="sidebarOpen = !sidebarOpen"
                         aria-label="Abrir menú"
                     >
                         ☰
                     </button>
-                    <h2 class="text-lg font-semibold text-slate-900 truncate">
+                    <h2 class="text-lg font-semibold text-slate-900 dark:text-slate-100 truncate">
                         {{ pageTitle }}
                     </h2>
                 </div>
                 <div class="flex items-center gap-4">
+                    <!-- Botón de Modo Oscuro -->
+                    <button
+                        @click="toggleDarkMode"
+                        type="button"
+                        class="p-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-colors duration-200"
+                        :title="isDark ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'"
+                        aria-label="Toggle dark mode"
+                    >
+                        <span v-if="isDark" class="text-xl">☀️</span>
+                        <span v-else class="text-xl">🌙</span>
+                    </button>
+                    
                     <Link
                         :href="route('profile.show')"
                         class="text-right hover:opacity-80 transition-opacity"
                     >
-                        <p class="text-sm font-medium text-slate-900">
+                        <p class="text-sm font-medium text-slate-900 dark:text-slate-100">
                             {{ user?.name || user?.email }}
                         </p>
-                        <p class="text-xs text-slate-600">
+                        <p class="text-xs text-slate-600 dark:text-slate-400">
                             {{ userSubtitle }}
                         </p>
                     </Link>
                     <Link
                         :href="route('profile.show')"
-                        class="w-10 h-10 rounded-full overflow-hidden bg-slate-200 shrink-0 hover:ring-2 hover:ring-green-500 transition-all cursor-pointer"
+                        class="w-10 h-10 rounded-full overflow-hidden bg-slate-200 dark:bg-slate-600 shrink-0 hover:ring-2 hover:ring-green-500 dark:hover:ring-green-400 transition-all cursor-pointer"
                     >
                         <img
                             v-if="user?.foto_perfil"
@@ -184,7 +196,7 @@
                         />
                         <div
                             v-else
-                            class="w-full h-full flex items-center justify-center text-slate-700 text-sm font-semibold"
+                            class="w-full h-full flex items-center justify-center text-slate-700 dark:text-slate-200 text-sm font-semibold"
                         >
                             {{ userInitials }}
                         </div>
@@ -203,10 +215,12 @@
 <script setup>
 import { computed, ref, watch, onMounted, onUnmounted } from "vue";
 import { usePage, router, Link } from "@inertiajs/vue3";
+import { useDarkMode } from "@/composables/useDarkMode";
 
 const page = usePage();
 const showPermissions = ref(false);
 const sidebarOpen = ref(false);
+const { isDark, toggleDarkMode } = useDarkMode();
 
 const user = computed(() => page.props.auth?.user || page.props.user);
 const esVisitante = computed(() => user.value?.role?.name === "visitante");

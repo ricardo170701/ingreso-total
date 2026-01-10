@@ -88,6 +88,13 @@ class IngresoController extends Controller
                 $qrSvg = strval($qrSvg);
             }
 
+            $actorRole = $actor->role?->name;
+            $expiresAtFormatted = $qrPersonal->fecha_expiracion
+                ? $qrPersonal->fecha_expiracion->format('d/m/Y H:i')
+                : ($actorRole === 'funcionario' 
+                    ? 'Hasta fin de contrato o inactivación' 
+                    : 'No definido');
+
             $qrPersonalData = [
                 'id' => $qrPersonal->id,
                 'user_id' => $qrPersonal->user_id,
@@ -95,7 +102,7 @@ class IngresoController extends Controller
                 'user_email' => $actor->email,
                 'token' => $tokenOriginal,
                 'expires_at' => $qrPersonal->fecha_expiracion?->toIso8601String(),
-                'expires_at_formatted' => $qrPersonal->fecha_expiracion?->format('d/m/Y H:i'),
+                'expires_at_formatted' => $expiresAtFormatted,
                 'fecha_generacion' => $qrPersonal->fecha_generacion?->format('d/m/Y H:i'),
                 'svg' => $qrSvg,
             ];
@@ -232,16 +239,32 @@ class IngresoController extends Controller
             }
 
             if (is_array($puertas) && count($puertas) > 0) {
-                $pivot = [
-                    'hora_inicio' => $data['hora_inicio'] ?? null,
-                    'hora_fin' => $data['hora_fin'] ?? null,
-                    'dias_semana' => $data['dias_semana'] ?? '1,2,3,4,5,6,7',
-                    'fecha_inicio' => $data['fecha_inicio'] ?? null,
-                    'fecha_fin' => $data['fecha_fin'] ?? null,
-                    'activo' => true,
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ];
+                // Para funcionarios: no guardar fechas ni horarios
+                // El QR es válido hasta la fecha de expiración del usuario o hasta que esté inactivo
+                if ($targetRole === 'funcionario') {
+                    $pivot = [
+                        'hora_inicio' => null,
+                        'hora_fin' => null,
+                        'dias_semana' => '1,2,3,4,5,6,7',
+                        'fecha_inicio' => null,
+                        'fecha_fin' => null,
+                        'activo' => true,
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ];
+                } else {
+                    // Para visitantes: usar las fechas y horarios proporcionados
+                    $pivot = [
+                        'hora_inicio' => $data['hora_inicio'] ?? null,
+                        'hora_fin' => $data['hora_fin'] ?? null,
+                        'dias_semana' => $data['dias_semana'] ?? '1,2,3,4,5,6,7',
+                        'fecha_inicio' => $data['fecha_inicio'] ?? null,
+                        'fecha_fin' => $data['fecha_fin'] ?? null,
+                        'activo' => true,
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ];
+                }
 
                 foreach ($puertas as $puertaId) {
                     DB::table('codigo_qr_puerta_acceso')->updateOrInsert(
@@ -307,8 +330,12 @@ class IngresoController extends Controller
                 'user_name' => $targetUser->name,
                 'user_email' => $targetUser->email,
                 'token' => $plainToken,
-                'expires_at' => $expiresAt->toIso8601String(),
-                'expires_at_formatted' => $expiresAt->format('d/m/Y H:i'),
+                'expires_at' => $expiresAt?->toIso8601String(),
+                'expires_at_formatted' => $expiresAt 
+                    ? $expiresAt->format('d/m/Y H:i')
+                    : ($targetRole === 'funcionario' 
+                        ? 'Hasta fin de contrato o inactivación' 
+                        : 'No definido'),
                 'svg' => (string) $qrSvg, // Asegurar que sea string
             ],
         ]);

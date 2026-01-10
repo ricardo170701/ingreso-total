@@ -3,36 +3,36 @@
         <div class="max-w-3xl mx-auto space-y-4">
             <div class="flex items-center justify-between">
                 <div>
-                    <h1 class="text-xl font-semibold text-slate-900">
+                    <h1 class="text-xl font-semibold text-slate-900 dark:text-slate-100">
                         Editar puerta #{{ puerta.id }}
                     </h1>
-                    <p class="text-sm text-slate-600">
+                    <p class="text-sm text-slate-600 dark:text-slate-400">
                         Actualiza los datos de la puerta.
                     </p>
                 </div>
                 <Link
                     :href="route('puertas.index')"
-                    class="px-3 py-2 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-700"
+                    class="px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-colors duration-200"
                 >
                     Volver
                 </Link>
             </div>
 
-            <div class="bg-white border border-slate-200 rounded-xl p-6">
+            <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-6 transition-colors duration-200">
                 <form @submit.prevent="submit" class="grid grid-cols-1 gap-4">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <FormField label="Nombre" :error="form.errors.nombre">
                             <input
                                 v-model="form.nombre"
                                 type="text"
-                                class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-transparent transition-colors duration-200"
                                 required
                             />
                         </FormField>
                         <FormField label="Zona" :error="form.errors.zona_id">
                             <select
                                 v-model="form.zona_id"
-                                class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-transparent transition-colors duration-200"
                             >
                                 <option :value="null">- Sin zona -</option>
                                 <option
@@ -50,7 +50,7 @@
                         <FormField label="Piso" :error="form.errors.piso_id">
                             <select
                                 v-model="form.piso_id"
-                                class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-transparent transition-colors duration-200"
                             >
                                 <option :value="null">- Sin piso -</option>
                                 <option
@@ -65,7 +65,7 @@
                         <FormField label="Tipo" :error="form.errors.tipo_puerta_id">
                             <select
                                 v-model="form.tipo_puerta_id"
-                                class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-transparent transition-colors duration-200"
                             >
                                 <option :value="null">- Sin tipo -</option>
                                 <option
@@ -80,7 +80,7 @@
                         <FormField label="Material" :error="form.errors.material_id">
                             <select
                                 v-model="form.material_id"
-                                class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-transparent transition-colors duration-200"
                             >
                                 <option :value="null">- Sin material -</option>
                                 <option
@@ -104,7 +104,7 @@
                                 type="number"
                                 min="1"
                                 max="300"
-                                class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-transparent transition-colors duration-200"
                                 placeholder="Ej: 5"
                             />
                         </FormField>
@@ -117,10 +117,10 @@
                                 type="number"
                                 min="1"
                                 max="600"
-                                class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-transparent transition-colors duration-200"
                                 placeholder="Ej: 10"
                             />
-                            <p class="mt-1 text-xs text-slate-500">
+                            <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
                                 Tiempo adicional para personas discapacitadas
                             </p>
                         </FormField>
@@ -130,7 +130,7 @@
                                 type="number"
                                 min="0"
                                 step="0.01"
-                                class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-transparent transition-colors duration-200"
                                 placeholder="Ej: 200"
                             />
                         </FormField>
@@ -140,7 +140,7 @@
                                 type="number"
                                 min="0"
                                 step="0.01"
-                                class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-transparent transition-colors duration-200"
                                 placeholder="Ej: 100"
                             />
                         </FormField>
@@ -150,7 +150,7 @@
                                 type="number"
                                 min="0"
                                 step="0.01"
-                                class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-transparent transition-colors duration-200"
                                 placeholder="Ej: 5"
                             />
                         </FormField>
@@ -163,7 +163,7 @@
                                 type="number"
                                 min="0"
                                 step="0.01"
-                                class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-transparent transition-colors duration-200"
                                 placeholder="Ej: 50"
                             />
                         </FormField>
@@ -177,7 +177,7 @@
                             <input
                                 v-model="form.ip_entrada"
                                 type="text"
-                                class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-transparent transition-colors duration-200"
                                 placeholder="Ej: 192.168.1.100"
                             />
                         </FormField>
@@ -188,7 +188,7 @@
                             <input
                                 v-model="form.ip_salida"
                                 type="text"
-                                class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-transparent transition-colors duration-200"
                                 placeholder="Ej: 192.168.1.101"
                             />
                         </FormField>
@@ -199,9 +199,9 @@
                             <img
                                 :src="`/storage/${puerta.imagen}`"
                                 :alt="puerta.nombre"
-                                class="w-32 h-32 object-cover rounded-lg border border-slate-200"
+                                class="w-32 h-32 object-cover rounded-lg border border-slate-200 dark:border-slate-700"
                             />
-                            <p class="mt-1 text-xs text-slate-500">
+                            <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
                                 Imagen actual
                             </p>
                         </div>
@@ -209,9 +209,9 @@
                             @input="form.imagen = $event.target.files[0]"
                             type="file"
                             accept="image/jpeg,image/jpg,image/png,image/gif"
-                            class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                            class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-transparent transition-colors duration-200"
                         />
-                        <p class="mt-1 text-xs text-slate-500">
+                        <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
                             Dejar vacío para mantener la imagen actual. Formatos: JPEG, JPG, PNG, GIF (máx. 2MB)
                         </p>
                     </FormField>
@@ -224,7 +224,7 @@
                             <input
                                 v-model="form.codigo_fisico"
                                 type="text"
-                                class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-transparent transition-colors duration-200"
                             />
                         </FormField>
                         <FormField
@@ -234,7 +234,7 @@
                             <input
                                 v-model="form.ubicacion"
                                 type="text"
-                                class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-transparent transition-colors duration-200"
                             />
                         </FormField>
                     </div>
@@ -246,7 +246,7 @@
                         <textarea
                             v-model="form.descripcion"
                             rows="3"
-                            class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                            class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-transparent transition-colors duration-200"
                         />
                     </FormField>
 
@@ -257,7 +257,7 @@
                                 type="checkbox"
                                 class="h-4 w-4"
                             />
-                            <span class="text-sm text-slate-700">Activa</span>
+                            <span class="text-sm text-slate-700 dark:text-slate-300">Activa</span>
                         </label>
                         <label class="inline-flex items-center gap-2">
                             <input
@@ -265,7 +265,7 @@
                                 type="checkbox"
                                 class="h-4 w-4"
                             />
-                            <span class="text-sm text-slate-700"
+                            <span class="text-sm text-slate-700 dark:text-slate-300"
                                 >Requiere discapacidad</span
                             >
                         </label>
@@ -275,14 +275,14 @@
                         <button
                             type="button"
                             @click="destroy"
-                            class="px-4 py-2 rounded-lg border border-red-200 text-red-700 hover:bg-red-50"
+                            class="px-4 py-2 rounded-lg border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors duration-200"
                         >
                             Eliminar
                         </button>
                         <button
                             type="submit"
                             :disabled="form.processing"
-                            class="px-4 py-2 rounded-lg bg-slate-900 text-white hover:bg-slate-800 disabled:opacity-50"
+                            class="px-4 py-2 rounded-lg bg-slate-900 dark:bg-slate-700 text-white hover:bg-slate-800 dark:hover:bg-slate-600 disabled:opacity-50 transition-colors duration-200"
                         >
                             {{ form.processing ? "Guardando..." : "Guardar" }}
                         </button>

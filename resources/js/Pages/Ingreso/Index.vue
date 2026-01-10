@@ -36,9 +36,9 @@
 
             <div
                 v-if="Object.keys($page.props.errors || {}).length > 0"
-                class="p-4 rounded-lg bg-red-50 border border-red-200"
+                class="p-4 rounded-lg bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 transition-colors duration-200"
             >
-                <ul class="list-disc list-inside text-sm text-red-800">
+                <ul class="list-disc list-inside text-sm text-red-800 dark:text-red-200">
                     <li v-for="(error, key) in $page.props.errors" :key="key">
                         <span v-if="Array.isArray(error)">{{ error[0] }}</span>
                         <span v-else>{{ error }}</span>
@@ -49,16 +49,16 @@
             <!-- Mostrar QR personal si existe y no puede crear para otros -->
             <div
                 v-if="qrPersonal && !puedeCrearParaOtros"
-                class="bg-white border border-slate-200 rounded-xl p-4 sm:p-6"
+                class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-4 sm:p-6 transition-colors duration-200"
             >
-                <h2 class="text-lg font-semibold text-slate-900 mb-4">
+                <h2 class="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4">
                     Tu Código QR de Acceso
                 </h2>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                         <div
                             v-if="qrPersonal.svg"
-                            class="bg-white rounded-xl p-3 sm:p-4 border border-slate-200 mb-4 w-full sm:w-auto"
+                            class="bg-white dark:bg-slate-900 rounded-xl p-3 sm:p-4 border border-slate-200 dark:border-slate-700 mb-4 w-full sm:w-auto transition-colors duration-200"
                         >
                             <div class="flex justify-center">
                                 <div
@@ -118,14 +118,14 @@
                             <button
                                 v-if="qrPersonal.token"
                                 @click="descargarQRPersonal"
-                                class="px-4 py-2 rounded-lg bg-green-600 text-white hover:bg-green-700 text-center"
+                                class="px-4 py-2 rounded-lg bg-green-600 dark:bg-green-700 text-white hover:bg-green-700 dark:hover:bg-green-600 text-center transition-colors duration-200"
                             >
                                 Descargar QR
                             </button>
                             <button
                                 v-if="!esVisitante"
                                 @click="mostrarFormulario = true"
-                                class="px-4 py-2 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-700"
+                                class="px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-colors duration-200"
                             >
                                 Generar Nuevo QR
                             </button>
@@ -137,12 +137,12 @@
             <!-- Visitante sin QR activo -->
             <div
                 v-if="esVisitante && !qrPersonal"
-                class="bg-white border border-slate-200 rounded-xl p-4 sm:p-6"
+                class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-4 sm:p-6 transition-colors duration-200"
             >
-                <h2 class="text-lg font-semibold text-slate-900 mb-2">
+                <h2 class="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-2">
                     Tu Código QR de Acceso
                 </h2>
-                <p class="text-sm text-slate-600">
+                <p class="text-sm text-slate-600 dark:text-slate-400">
                     No tienes un QR activo en este momento. Si necesitas acceso,
                     solicita que te generen un QR.
                 </p>
@@ -151,9 +151,9 @@
             <!-- Formulario de generación (solo mostrar si no tiene QR activo o si puede crear para otros o si quiere generar nuevo) -->
             <div
                 v-if="!esVisitante && (!qrPersonal || puedeCrearParaOtros || mostrarFormulario)"
-                class="bg-white border border-slate-200 rounded-xl p-4 sm:p-6"
+                class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-4 sm:p-6 transition-colors duration-200"
             >
-                <h2 class="text-lg font-semibold text-slate-900 mb-4">
+                <h2 class="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4">
                     {{ puedeCrearParaOtros ? 'Datos del QR' : 'Generar Nuevo Código QR' }}
                 </h2>
                 <form @submit.prevent="submit" class="grid grid-cols-1 gap-4">
@@ -161,7 +161,7 @@
                         <select
                             v-model="form.user_id"
                             :disabled="!puedeCrearParaOtros && usuarios.length === 1"
-                            class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent disabled:bg-slate-100 disabled:cursor-not-allowed"
+                            class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-transparent disabled:bg-slate-100 dark:disabled:bg-slate-600 disabled:cursor-not-allowed transition-colors duration-200"
                             required
                         >
                             <option v-if="puedeCrearParaOtros" :value="null">Selecciona un usuario</option>
@@ -179,7 +179,7 @@
                         </select>
                         <p
                             v-if="!puedeCrearParaOtros"
-                            class="mt-1 text-xs text-slate-500"
+                            class="mt-1 text-xs text-slate-500 dark:text-slate-400"
                         >
                             Solo puedes generar QR para ti mismo. Si necesitas generar QR para otros usuarios, solicita el permiso correspondiente.
                         </p>
@@ -197,7 +197,7 @@
                         >
                             <select
                                 v-model="form.departamento_id"
-                                class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-transparent transition-colors duration-200"
                                 required
                             >
                                 <option :value="null">Selecciona un departamento</option>
@@ -210,7 +210,7 @@
                                     <span v-if="d.piso"> - {{ d.piso.nombre }}</span>
                                 </option>
                             </select>
-                            <p class="mt-1 text-xs text-slate-500">
+                            <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
                                 Este dato se registra en el QR del visitante.
                             </p>
                         </FormField>
@@ -220,12 +220,12 @@
                             :error="form.errors.pisos"
                         >
                             <div
-                                class="space-y-2 max-h-48 overflow-y-auto border border-slate-200 rounded-lg p-3"
+                                class="space-y-2 max-h-48 overflow-y-auto border border-slate-200 dark:border-slate-700 rounded-lg p-3 bg-white dark:bg-slate-700 transition-colors duration-200"
                             >
                                 <label
                                     v-for="p in (pisos || [])"
                                     :key="p.id"
-                                    class="flex items-center gap-2 p-2 hover:bg-slate-50 rounded"
+                                    class="flex items-center gap-2 p-2 hover:bg-slate-50 dark:hover:bg-slate-600 rounded transition-colors duration-200"
                                 >
                                     <input
                                         type="checkbox"
@@ -238,18 +238,18 @@
                                     </div>
                                 </label>
                             </div>
-                            <p class="mt-1 text-xs text-slate-500">
+                            <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
                                 Selecciona al menos un piso. El sistema asignará automáticamente las puertas activas de esos pisos.
                             </p>
                         </FormField>
                     </div>
 
-                    <!-- Opciones avanzadas (horarios) - Solo para usuarios con permiso create_ingreso_otros -->
+                    <!-- Opciones avanzadas (horarios) - Solo para usuarios con permiso create_ingreso_otros Y que NO sea funcionario -->
                     <div
-                        v-if="puedeCrearParaOtros"
-                        class="border-t border-slate-200 pt-4"
+                        v-if="puedeCrearParaOtros && usuarioSeleccionado?.role?.name !== 'funcionario'"
+                        class="border-t border-slate-200 dark:border-slate-700 pt-4"
                     >
-                        <h3 class="text-sm font-semibold text-slate-700 mb-3">
+                        <h3 class="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">
                             Opciones de Horario (Opcional)
                         </h3>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -260,7 +260,7 @@
                                 <input
                                     v-model="form.hora_inicio"
                                     type="time"
-                                    class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                    class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-transparent transition-colors duration-200"
                                 />
                             </FormField>
                             <FormField
@@ -270,7 +270,7 @@
                                 <input
                                     v-model="form.hora_fin"
                                     type="time"
-                                    class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                    class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-transparent transition-colors duration-200"
                                 />
                             </FormField>
                         </div>
@@ -282,7 +282,7 @@
                                 <input
                                     v-model="form.fecha_inicio"
                                     type="date"
-                                    class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                    class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-transparent transition-colors duration-200"
                                 />
                             </FormField>
                             <FormField
@@ -292,7 +292,7 @@
                                 <input
                                     v-model="form.fecha_fin"
                                     type="date"
-                                    class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                    class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-transparent transition-colors duration-200"
                                 />
                             </FormField>
                         </div>
@@ -303,21 +303,33 @@
                             <input
                                 v-model="form.dias_semana"
                                 type="text"
-                                class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-transparent transition-colors duration-200"
                                 placeholder="Ej: 1,2,3,4,5 (1=Lunes, 7=Domingo)"
                             />
-                            <p class="mt-1 text-xs text-slate-500">
+                            <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
                                 Deja vacío para todos los días. Formato: números
                                 separados por comas (1-7)
                             </p>
                         </FormField>
                     </div>
 
+                    <!-- Mensaje informativo para funcionarios -->
+                    <div
+                        v-if="puedeCrearParaOtros && usuarioSeleccionado?.role?.name === 'funcionario'"
+                        class="border-t border-slate-200 dark:border-slate-700 pt-4"
+                    >
+                        <div class="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-lg p-3 transition-colors duration-200">
+                            <p class="text-sm text-blue-800 dark:text-blue-200">
+                                <strong>Nota:</strong> Para funcionarios, el código QR estará activo hasta la fecha de expiración del contrato del usuario o hasta que se marque como inactivo. No se requieren fechas ni horarios adicionales.
+                            </p>
+                        </div>
+                    </div>
+
                     <div class="flex items-center justify-end gap-2 pt-2">
                         <button
                             type="submit"
                             :disabled="form.processing"
-                            class="w-full sm:w-auto px-6 py-2 rounded-lg bg-green-600 text-white hover:bg-green-700 disabled:opacity-50 font-medium"
+                            class="w-full sm:w-auto px-6 py-2 rounded-lg bg-green-600 dark:bg-green-700 text-white hover:bg-green-700 dark:hover:bg-green-600 disabled:opacity-50 font-medium transition-colors duration-200"
                         >
                             {{
                                 form.processing ? "Generando..." : "Generar QR"
@@ -330,15 +342,15 @@
             <!-- Resultado: QR generado -->
             <div
                 v-if="qrGenerado"
-                class="bg-white border border-slate-200 rounded-xl p-4 sm:p-6"
+                class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-4 sm:p-6 transition-colors duration-200"
             >
-                <h2 class="text-lg font-semibold text-slate-900 mb-4">
+                <h2 class="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4">
                     QR Generado Exitosamente
                 </h2>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                         <div
-                            class="bg-white rounded-xl p-3 sm:p-4 border border-slate-200 w-full sm:w-auto"
+                            class="bg-white dark:bg-slate-900 rounded-xl p-3 sm:p-4 border border-slate-200 dark:border-slate-700 w-full sm:w-auto transition-colors duration-200"
                         >
                             <div v-if="typeof qrGenerado.svg === 'string'" class="flex justify-center">
                                 <div
@@ -395,7 +407,7 @@
                             <button
                                 @click="enviarCorreo"
                                 :disabled="enviandoCorreo"
-                                class="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                                class="px-4 py-2 rounded-lg bg-blue-600 dark:bg-blue-700 text-white hover:bg-blue-700 dark:hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
                             >
                                 {{
                                     enviandoCorreo
@@ -405,13 +417,13 @@
                             </button>
                             <button
                                 @click="descargarQR"
-                                class="px-4 py-2 rounded-lg bg-green-600 text-white hover:bg-green-700 text-center"
+                                class="px-4 py-2 rounded-lg bg-green-600 dark:bg-green-700 text-white hover:bg-green-700 dark:hover:bg-green-600 text-center transition-colors duration-200"
                             >
                                 Descargar QR
                             </button>
                             <button
                                 @click="generarNuevo"
-                                class="px-4 py-2 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-700"
+                                class="px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-colors duration-200"
                             >
                                 Generar Nuevo QR
                             </button>
@@ -507,6 +519,7 @@ const usuarioSeleccionado = computed(() => {
 
 // Si deja de ser visitante, limpiar departamento destino para evitar enviar basura
 // Si se selecciona un visitante, establecer valores por defecto de seguridad
+// Si se selecciona un funcionario, limpiar campos de fecha y horario
 watch(
     () => usuarioSeleccionado.value?.role?.name,
     (roleName) => {
@@ -544,6 +557,15 @@ watch(
                     }
                 }
             }
+        }
+
+        // Si se selecciona un funcionario, limpiar campos de fecha y horario
+        if (roleName === "funcionario") {
+            form.hora_inicio = null;
+            form.hora_fin = null;
+            form.fecha_inicio = null;
+            form.fecha_fin = null;
+            form.dias_semana = "1,2,3,4,5,6,7";
         }
     }
 );

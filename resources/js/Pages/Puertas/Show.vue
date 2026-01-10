@@ -6,8 +6,8 @@
                 v-for="t in toasts"
                 :key="t.id"
                 :class="[
-                    'rounded-xl border shadow-lg p-3 bg-white',
-                    t.type === 'success' ? 'border-green-200' : t.type === 'error' ? 'border-red-200' : 'border-slate-200',
+                    'rounded-xl border shadow-lg p-3 bg-white dark:bg-slate-800 transition-colors duration-200',
+                    t.type === 'success' ? 'border-green-200 dark:border-green-800' : t.type === 'error' ? 'border-red-200 dark:border-red-800' : 'border-slate-200 dark:border-slate-700',
                 ]"
             >
                 <div class="flex items-start justify-between gap-3">
@@ -15,18 +15,18 @@
                         <p
                             :class="[
                                 'text-sm font-semibold',
-                                t.type === 'success' ? 'text-green-700' : t.type === 'error' ? 'text-red-700' : 'text-slate-800',
+                                t.type === 'success' ? 'text-green-700 dark:text-green-400' : t.type === 'error' ? 'text-red-700 dark:text-red-400' : 'text-slate-800 dark:text-slate-200',
                             ]"
                         >
                             {{ t.title }}
                         </p>
-                        <p v-if="t.message" class="text-xs text-slate-600 mt-0.5 wrap-break-word">
+                        <p v-if="t.message" class="text-xs text-slate-600 dark:text-slate-400 mt-0.5 wrap-break-word">
                             {{ t.message }}
                         </p>
                     </div>
                     <button
                         type="button"
-                        class="shrink-0 text-slate-400 hover:text-slate-700"
+                        class="shrink-0 text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 transition-colors duration-200"
                         @click="dismissToast(t.id)"
                         aria-label="Cerrar"
                     >
@@ -34,8 +34,8 @@
                     </button>
                 </div>
                 <details v-if="t.details" class="mt-2">
-                    <summary class="text-xs text-slate-500 cursor-pointer select-none">Ver detalle</summary>
-                    <pre class="mt-2 text-[11px] leading-snug bg-slate-50 border border-slate-200 rounded-lg p-2 overflow-auto max-h-48">{{ t.details }}</pre>
+                    <summary class="text-xs text-slate-500 dark:text-slate-400 cursor-pointer select-none">Ver detalle</summary>
+                    <pre class="mt-2 text-[11px] leading-snug bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-700 rounded-lg p-2 overflow-auto max-h-48 text-slate-900 dark:text-slate-100 transition-colors duration-200">{{ t.details }}</pre>
                 </details>
             </div>
         </div>
@@ -43,26 +43,26 @@
         <div class="max-w-6xl mx-auto space-y-4">
             <div class="flex items-start justify-between flex-wrap gap-3">
                 <div>
-                    <h1 class="text-xl font-semibold text-slate-900">
+                    <h1 class="text-xl font-semibold text-slate-900 dark:text-slate-100">
                         {{ puerta.nombre }}
                     </h1>
-                    <p class="text-sm text-slate-600">
+                    <p class="text-sm text-slate-600 dark:text-slate-400">
                         {{ puerta.piso?.nombre || "Sin piso" }}
-                        <span class="text-slate-300">·</span>
+                        <span class="text-slate-300 dark:text-slate-600">·</span>
                         {{ puerta.zona?.nombre || "Sin zona" }}
                     </p>
                 </div>
                 <div class="flex gap-2 flex-wrap">
                     <Link
                         :href="route('puertas.index')"
-                        class="px-3 py-2 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-700"
+                        class="px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-colors duration-200"
                     >
                         Volver
                     </Link>
                     <Link
                         v-if="hasPermission('edit_puertas')"
                         :href="route('puertas.edit', { puerta: puerta.id })"
-                        class="px-3 py-2 rounded-lg bg-slate-900 text-white hover:bg-slate-800 font-medium"
+                        class="px-3 py-2 rounded-lg bg-slate-900 dark:bg-slate-700 text-white hover:bg-slate-800 dark:hover:bg-slate-600 font-medium transition-colors duration-200"
                     >
                         Editar
                     </Link>
@@ -70,7 +70,7 @@
                         v-if="hasPermission('delete_puertas')"
                         type="button"
                         @click="eliminarPuerta"
-                        class="px-3 py-2 rounded-lg border border-red-200 bg-red-50 hover:bg-red-100 text-red-700 font-medium"
+                        class="px-3 py-2 rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/30 hover:bg-red-100 dark:hover:bg-red-900/50 text-red-700 dark:text-red-400 font-medium transition-colors duration-200"
                     >
                         Eliminar
                     </button>
@@ -79,15 +79,15 @@
 
             <div
                 v-if="$page.props.flash?.message"
-                class="p-4 rounded-lg bg-green-50 border border-green-200 text-green-800"
+                class="p-4 rounded-lg bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 text-green-800 dark:text-green-200 transition-colors duration-200"
             >
                 {{ $page.props.flash.message }}
             </div>
 
             <!-- Hoja de vida -->
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                <div class="lg:col-span-2 bg-white border border-slate-200 rounded-2xl overflow-hidden">
-                    <div class="aspect-video bg-slate-100 relative overflow-hidden">
+                <div class="lg:col-span-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl overflow-hidden transition-colors duration-200">
+                    <div class="aspect-video bg-slate-100 dark:bg-slate-700 relative overflow-hidden transition-colors duration-200">
                         <img
                             v-if="puerta.imagen"
                             :src="storageUrl(puerta.imagen)"
@@ -96,7 +96,7 @@
                             loading="lazy"
                             decoding="async"
                         />
-                        <div v-else class="w-full h-full flex items-center justify-center text-slate-400">
+                        <div v-else class="w-full h-full flex items-center justify-center text-slate-400 dark:text-slate-500">
                             <div class="text-center">
                                 <div class="text-4xl leading-none">🚪</div>
                                 <div class="mt-2 text-sm">Sin foto</div>
@@ -106,21 +106,21 @@
                         <div class="absolute top-3 right-3 flex flex-col gap-2 items-end">
                             <span
                                 :class="[
-                                    'px-2.5 py-1 rounded-full text-xs font-semibold border shadow-sm bg-white/80 backdrop-blur',
-                                    puerta.activo ? 'text-green-700 border-green-200' : 'text-red-700 border-red-200',
+                                    'px-2.5 py-1 rounded-full text-xs font-semibold border shadow-sm bg-white/80 dark:bg-slate-800/80 backdrop-blur',
+                                    puerta.activo ? 'text-green-700 dark:text-green-400 border-green-200 dark:border-green-800' : 'text-red-700 dark:text-red-400 border-red-200 dark:border-red-800',
                                 ]"
                             >
                                 {{ puerta.activo ? "Activa" : "Inactiva" }}
                             </span>
                             <span
                                 v-if="puerta.estado_mantenimiento === 'programado'"
-                                class="px-2.5 py-1 rounded-full text-xs font-semibold border shadow-sm bg-yellow-50/90 text-yellow-700 border-yellow-200 backdrop-blur"
+                                class="px-2.5 py-1 rounded-full text-xs font-semibold border shadow-sm bg-yellow-50/90 dark:bg-yellow-900/50 text-yellow-700 dark:text-yellow-400 border-yellow-200 dark:border-yellow-800 backdrop-blur"
                             >
                                 ⚠️ Mantenimiento
                             </span>
                             <span
                                 v-else-if="puerta.estado_mantenimiento === 'vencido'"
-                                class="px-2.5 py-1 rounded-full text-xs font-semibold border shadow-sm bg-red-50/90 text-red-700 border-red-200 backdrop-blur"
+                                class="px-2.5 py-1 rounded-full text-xs font-semibold border shadow-sm bg-red-50/90 dark:bg-red-900/50 text-red-700 dark:text-red-400 border-red-200 dark:border-red-800 backdrop-blur"
                             >
                                 🔴 Vencido
                             </span>
@@ -130,58 +130,58 @@
                     <div class="p-6 space-y-4">
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
-                                <p class="text-xs text-slate-500">Tipo</p>
-                                <p class="text-sm text-slate-900 font-medium">
+                                <p class="text-xs text-slate-500 dark:text-slate-400">Tipo</p>
+                                <p class="text-sm text-slate-900 dark:text-slate-100 font-medium">
                                     {{ puerta.tipo_puerta?.nombre || "-" }}
                                 </p>
                             </div>
                             <div>
-                                <p class="text-xs text-slate-500">Material</p>
-                                <p class="text-sm text-slate-900 font-medium">
+                                <p class="text-xs text-slate-500 dark:text-slate-400">Material</p>
+                                <p class="text-sm text-slate-900 dark:text-slate-100 font-medium">
                                     {{ puerta.material?.nombre || "-" }}
                                 </p>
                             </div>
                             <div>
-                                <p class="text-xs text-slate-500">Ubicación</p>
-                                <p class="text-sm text-slate-700">
+                                <p class="text-xs text-slate-500 dark:text-slate-400">Ubicación</p>
+                                <p class="text-sm text-slate-700 dark:text-slate-300">
                                     {{ puerta.ubicacion || "-" }}
                                 </p>
                             </div>
                             <div>
-                                <p class="text-xs text-slate-500">Código físico</p>
-                                <p class="text-sm text-slate-700">
+                                <p class="text-xs text-slate-500 dark:text-slate-400">Código físico</p>
+                                <p class="text-sm text-slate-700 dark:text-slate-300">
                                     {{ puerta.codigo_fisico || "-" }}
                                 </p>
                             </div>
                             <div>
-                                <p class="text-xs text-slate-500">IP Entrada</p>
-                                <p class="text-sm text-slate-700 break-all">
+                                <p class="text-xs text-slate-500 dark:text-slate-400">IP Entrada</p>
+                                <p class="text-sm text-slate-700 dark:text-slate-300 break-all">
                                     {{ puerta.ip_entrada || "-" }}
                                 </p>
                             </div>
                             <div>
-                                <p class="text-xs text-slate-500">IP Salida</p>
-                                <p class="text-sm text-slate-700 break-all">
+                                <p class="text-xs text-slate-500 dark:text-slate-400">IP Salida</p>
+                                <p class="text-sm text-slate-700 dark:text-slate-300 break-all">
                                     {{ puerta.ip_salida || "-" }}
                                 </p>
                             </div>
                             <div v-if="puerta.tiempo_apertura">
-                                <p class="text-xs text-slate-500">Tiempo de Apertura</p>
-                                <p class="text-sm text-slate-700">
+                                <p class="text-xs text-slate-500 dark:text-slate-400">Tiempo de Apertura</p>
+                                <p class="text-sm text-slate-700 dark:text-slate-300">
                                     {{ puerta.tiempo_apertura }} segundos
                                 </p>
                             </div>
                             <div v-if="puerta.tiempo_discapacitados">
-                                <p class="text-xs text-slate-500">Tiempo Discapacitados</p>
-                                <p class="text-sm text-slate-700">
+                                <p class="text-xs text-slate-500 dark:text-slate-400">Tiempo Discapacitados</p>
+                                <p class="text-sm text-slate-700 dark:text-slate-300">
                                     {{ puerta.tiempo_discapacitados }} segundos
                                 </p>
                             </div>
                         </div>
 
-                        <div v-if="puerta.descripcion" class="pt-4 border-t border-slate-200">
-                            <p class="text-xs text-slate-500">Descripción</p>
-                            <p class="text-sm text-slate-700 whitespace-pre-wrap mt-1">
+                        <div v-if="puerta.descripcion" class="pt-4 border-t border-slate-200 dark:border-slate-700">
+                            <p class="text-xs text-slate-500 dark:text-slate-400">Descripción</p>
+                            <p class="text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap mt-1">
                                 {{ puerta.descripcion }}
                             </p>
                         </div>
@@ -189,14 +189,14 @@
                 </div>
 
                 <!-- Acciones -->
-                <div class="bg-white border border-slate-200 rounded-2xl p-6 space-y-4">
+                <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-6 space-y-4 transition-colors duration-200">
                     <div class="flex items-center justify-between">
-                        <h2 class="text-sm font-semibold text-slate-900">Acciones</h2>
+                        <h2 class="text-sm font-semibold text-slate-900 dark:text-slate-100">Acciones</h2>
                         <button
                             type="button"
                             @click="refrescarEstado({ silent: false })"
                             :disabled="cargandoEstado"
-                            class="px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-700 text-sm disabled:opacity-50"
+                            class="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-sm disabled:opacity-50 transition-colors duration-200"
                         >
                             {{ cargandoEstado ? "Verificando..." : "Verificar" }}
                         </button>
@@ -204,13 +204,13 @@
 
                     <div class="space-y-2 text-sm">
                         <div class="flex items-center justify-between">
-                            <span class="text-slate-600">Última verificación</span>
-                            <span class="text-slate-600 text-xs">
+                            <span class="text-slate-600 dark:text-slate-400">Última verificación</span>
+                            <span class="text-slate-600 dark:text-slate-400 text-xs">
                                 {{ lastConexionCheckedAt ? formatDateTime(lastConexionCheckedAt) : "—" }}
                             </span>
                         </div>
                         <div class="flex items-center justify-between">
-                            <span class="text-slate-600">Conexión entrada</span>
+                            <span class="text-slate-600 dark:text-slate-400">Conexión entrada</span>
                             <span class="font-medium" :class="badgeConexionClass(estadosConexion.entrada)">
                                 {{ badgeConexionText(estadosConexion.entrada) }}
                             </span>
@@ -219,28 +219,28 @@
                             v-if="puerta.ip_entrada && hasPermission('toggle_puertas')"
                             class="flex items-center justify-between"
                         >
-                            <span class="text-slate-600">Estado (Entrada)</span>
+                            <span class="text-slate-600 dark:text-slate-400">Estado (Entrada)</span>
                             <span class="font-medium" :class="badgeManualClass()">
                                 {{ badgeManualText() }}
                             </span>
                         </div>
                         <div class="flex items-center justify-between">
-                            <span class="text-slate-600">Conexión salida</span>
+                            <span class="text-slate-600 dark:text-slate-400">Conexión salida</span>
                             <span class="font-medium" :class="badgeConexionClass(estadosConexion.salida)">
                                 {{ badgeConexionText(estadosConexion.salida) }}
                             </span>
                         </div>
                     </div>
 
-                    <div class="pt-3 border-t border-slate-200 space-y-3">
+                    <div class="pt-3 border-t border-slate-200 dark:border-slate-700 space-y-3">
                         <div class="flex items-center justify-between gap-3">
-                            <label class="text-sm text-slate-700 select-none flex items-center gap-2">
-                                <input type="checkbox" v-model="autoRefreshEnabled" class="rounded border-slate-300" />
+                            <label class="text-sm text-slate-700 dark:text-slate-300 select-none flex items-center gap-2">
+                                <input type="checkbox" v-model="autoRefreshEnabled" class="rounded border-slate-300 dark:border-slate-600" />
                                 Auto-refrescar
                             </label>
                             <select
                                 v-model.number="autoRefreshSeconds"
-                                class="text-sm rounded-lg border border-slate-200 px-2 py-1 text-slate-700"
+                                class="text-sm rounded-lg border border-slate-200 dark:border-slate-700 px-2 py-1 text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-700 disabled:opacity-50 transition-colors duration-200"
                                 :disabled="!autoRefreshEnabled"
                             >
                                 <option :value="10">10s</option>
@@ -249,18 +249,18 @@
                                 <option :value="60">60s</option>
                             </select>
                         </div>
-                        <p class="text-xs text-slate-500">
+                        <p class="text-xs text-slate-500 dark:text-slate-400">
                             Actualiza en segundo plano (conexión + estado de entrada). No bloquea la navegación.
                         </p>
                     </div>
 
-                    <div class="pt-3 border-t border-slate-200 space-y-2">
+                    <div class="pt-3 border-t border-slate-200 dark:border-slate-700 space-y-2">
                         <button
                             v-if="hasPermission('toggle_puertas') && puerta.ip_entrada"
                             type="button"
                             @click="toggleEntrada()"
                             :disabled="toggling === 'entrada'"
-                            class="w-full px-4 py-2 rounded-xl bg-slate-900 text-white hover:bg-slate-800 font-semibold disabled:opacity-50"
+                            class="w-full px-4 py-2 rounded-xl bg-slate-900 dark:bg-slate-700 text-white hover:bg-slate-800 dark:hover:bg-slate-600 font-semibold disabled:opacity-50 transition-colors duration-200"
                         >
                             {{ toggling === 'entrada' ? "Enviando..." : "Abrir/Cerrar (Entrada)" }}
                         </button>
@@ -269,47 +269,40 @@
                             type="button"
                             @click="reiniciar"
                             :disabled="reiniciando"
-                            class="w-full px-4 py-2 rounded-xl border border-blue-200 bg-blue-50 hover:bg-blue-100 text-blue-700 font-semibold disabled:opacity-50"
+                            class="w-full px-4 py-2 rounded-xl border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-900/50 text-blue-700 dark:text-blue-400 font-semibold disabled:opacity-50 transition-colors duration-200"
                         >
                             {{ reiniciando ? "Reiniciando..." : "Reiniciar Raspberry" }}
                         </button>
                         <Link
                             v-if="hasPermission('create_mantenimientos')"
                             :href="route('mantenimientos.create', { puerta_id: puerta.id })"
-                            class="w-full block text-center px-4 py-2 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 font-semibold"
+                            class="w-full block text-center px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-semibold transition-colors duration-200"
                         >
                             Nuevo mantenimiento
                         </Link>
-                        <Link
-                            v-if="hasPermission('view_mantenimientos')"
-                            :href="route('mantenimientos.index', { puerta_id: puerta.id })"
-                            class="w-full block text-center px-4 py-2 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 font-semibold"
-                        >
-                            Ver mantenimientos
-                        </Link>
                     </div>
 
-                    <div v-if="lastAction" class="pt-3 border-t border-slate-200">
+                    <div v-if="lastAction" class="pt-3 border-t border-slate-200 dark:border-slate-700">
                         <details>
-                            <summary class="text-sm font-semibold text-slate-800 cursor-pointer select-none">
+                            <summary class="text-sm font-semibold text-slate-800 dark:text-slate-200 cursor-pointer select-none">
                                 Última respuesta ({{ lastAction.name }})
                             </summary>
-                            <div class="mt-2 text-xs text-slate-600 flex items-center justify-between">
+                            <div class="mt-2 text-xs text-slate-600 dark:text-slate-400 flex items-center justify-between">
                                 <span>Fecha</span>
                                 <span>{{ formatDateTime(lastAction.at) }}</span>
                             </div>
-                            <pre class="mt-2 text-[11px] leading-snug bg-slate-50 border border-slate-200 rounded-lg p-2 max-h-64 overflow-auto whitespace-pre-wrap wrap-break-word">{{ lastAction.details }}</pre>
+                            <pre class="mt-2 text-[11px] leading-snug bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-700 rounded-lg p-2 max-h-64 overflow-auto whitespace-pre-wrap wrap-break-word text-slate-900 dark:text-slate-100 transition-colors duration-200">{{ lastAction.details }}</pre>
                         </details>
                     </div>
                 </div>
             </div>
 
             <!-- Mantenimientos (resumen) -->
-            <div class="bg-white border border-slate-200 rounded-2xl p-6 space-y-4">
+            <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-6 space-y-4 transition-colors duration-200">
                 <div class="flex items-center justify-between flex-wrap gap-2">
                     <div>
-                        <h2 class="text-lg font-semibold text-slate-900">Mantenimientos</h2>
-                        <p class="text-sm text-slate-600">
+                        <h2 class="text-lg font-semibold text-slate-900 dark:text-slate-100">Mantenimientos</h2>
+                        <p class="text-sm text-slate-600 dark:text-slate-400">
                             Historial de mantenimientos asociados a esta puerta.
                         </p>
                     </div>
@@ -317,44 +310,44 @@
 
                 <div v-if="puerta.mantenimientos?.length" class="overflow-x-auto">
                     <table class="min-w-full text-sm">
-                        <thead class="bg-slate-50 border border-slate-200">
+                        <thead class="bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-700 transition-colors duration-200">
                             <tr>
-                                <th class="px-4 py-3 text-left font-semibold text-slate-700">Fecha</th>
-                                <th class="px-4 py-3 text-left font-semibold text-slate-700">Tipo</th>
-                                <th class="px-4 py-3 text-left font-semibold text-slate-700">Fecha límite</th>
-                                <th class="px-4 py-3 text-left font-semibold text-slate-700">Falla</th>
-                                <th class="px-4 py-3 text-right font-semibold text-slate-700">Acciones</th>
+                                <th class="px-4 py-3 text-left font-semibold text-slate-700 dark:text-slate-300">Fecha</th>
+                                <th class="px-4 py-3 text-left font-semibold text-slate-700 dark:text-slate-300">Tipo</th>
+                                <th class="px-4 py-3 text-left font-semibold text-slate-700 dark:text-slate-300">Fecha límite</th>
+                                <th class="px-4 py-3 text-left font-semibold text-slate-700 dark:text-slate-300">Falla</th>
+                                <th class="px-4 py-3 text-right font-semibold text-slate-700 dark:text-slate-300">Acciones</th>
                             </tr>
                         </thead>
                         <tbody>
                             <tr
                                 v-for="m in puerta.mantenimientos"
                                 :key="m.id"
-                                class="border-b border-slate-100"
+                                class="border-b border-slate-100 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors duration-200"
                             >
-                                <td class="px-4 py-3 text-slate-900">
+                                <td class="px-4 py-3 text-slate-900 dark:text-slate-100">
                                     {{ formatDate(m.fecha_mantenimiento) }}
                                 </td>
                                 <td class="px-4 py-3">
                                     <span
                                         :class="[
-                                            'px-2 py-1 rounded text-xs font-semibold',
+                                            'px-2 py-1 rounded text-xs font-semibold transition-colors duration-200',
                                             m.tipo === 'realizado'
-                                                ? 'bg-green-100 text-green-700'
-                                                : 'bg-yellow-100 text-yellow-700',
+                                                ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
+                                                : 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400',
                                         ]"
                                     >
                                         {{ m.tipo === "realizado" ? "Realizado" : "Programado" }}
                                     </span>
                                 </td>
-                                <td class="px-4 py-3 text-slate-700">
+                                <td class="px-4 py-3 text-slate-700 dark:text-slate-300">
                                     {{ m.tipo === 'programado' ? (m.fecha_fin_programada ? formatDate(m.fecha_fin_programada) : '-') : '-' }}
                                 </td>
-                                <td class="px-4 py-3 text-slate-700">
+                                <td class="px-4 py-3 text-slate-700 dark:text-slate-300">
                                     <span class="line-clamp-2">
                                         {{ m.falla || "-" }}
                                     </span>
-                                    <p v-if="(m.documentos?.length || 0) > 0" class="text-xs text-slate-500 mt-1">
+                                    <p v-if="(m.documentos?.length || 0) > 0" class="text-xs text-slate-500 dark:text-slate-400 mt-1">
                                         📄 {{ m.documentos.length }} documento(s)
                                     </p>
                                 </td>
@@ -362,15 +355,15 @@
                                     <div class="flex justify-end gap-2 flex-wrap">
                                         <Link
                                             v-if="hasPermission('view_mantenimientos')"
-                                            :href="route('mantenimientos.show', { mantenimiento: m.id })"
-                                            class="px-3 py-1.5 rounded-md border border-slate-200 hover:bg-white text-slate-700 text-sm font-medium"
+                                            :href="route('mantenimientos.show', { mantenimiento: m.id, from_puerta_id: puerta.id })"
+                                            class="px-3 py-1.5 rounded-md border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-sm font-medium transition-colors duration-200"
                                         >
                                             Ver
                                         </Link>
                                         <Link
                                             v-if="hasPermission('edit_mantenimientos')"
-                                            :href="route('mantenimientos.edit', { mantenimiento: m.id })"
-                                            class="px-3 py-1.5 rounded-md border border-slate-200 hover:bg-white text-slate-700 text-sm font-medium"
+                                            :href="route('mantenimientos.edit', { mantenimiento: m.id, from_puerta_id: puerta.id })"
+                                            class="px-3 py-1.5 rounded-md border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-sm font-medium transition-colors duration-200"
                                         >
                                             Editar
                                         </Link>
@@ -381,7 +374,7 @@
                     </table>
                 </div>
 
-                <div v-else class="text-sm text-slate-500 italic">
+                <div v-else class="text-sm text-slate-500 dark:text-slate-400 italic">
                     No hay mantenimientos registrados para esta puerta.
                 </div>
             </div>
@@ -464,9 +457,9 @@ const badgeConexionText = (value) => {
 };
 
 const badgeConexionClass = (value) => {
-    if (value === true) return "text-green-700";
-    if (value === false) return "text-red-700";
-    return "text-slate-500";
+    if (value === true) return "text-green-700 dark:text-green-400";
+    if (value === false) return "text-red-700 dark:text-red-400";
+    return "text-slate-500 dark:text-slate-400";
 };
 
 const badgeManualText = () => {
@@ -477,8 +470,8 @@ const badgeManualText = () => {
 
 const badgeManualClass = () => {
     const estado = estadosManual.value?.entrada;
-    if (!estado) return "text-slate-500";
-    return estado.manual_open ? "text-green-700" : "text-red-700";
+    if (!estado) return "text-slate-500 dark:text-slate-400";
+    return estado.manual_open ? "text-green-700 dark:text-green-400" : "text-red-700 dark:text-red-400";
 };
 
 const obtenerEstadoManualEntrada = async () => {

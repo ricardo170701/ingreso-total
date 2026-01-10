@@ -2,10 +2,10 @@
     <AppLayout>
         <div class="max-w-4xl mx-auto space-y-6">
             <div>
-                <h1 class="text-xl font-semibold text-slate-900">
+                <h1 class="text-xl font-semibold text-slate-900 dark:text-slate-100">
                     Centro de Soporte
                 </h1>
-                <p class="text-sm text-slate-600">
+                <p class="text-sm text-slate-600 dark:text-slate-400">
                     Encuentra respuestas a las preguntas más frecuentes sobre el uso del sistema.
                 </p>
             </div>
@@ -15,18 +15,18 @@
                 <!-- Pregunta 1: Registrar Usuarios -->
                 <div
                     v-if="!esVisitante && hasAnyPermission(['view_users', 'create_users'])"
-                    class="bg-white border border-slate-200 rounded-xl overflow-hidden"
+                    class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden transition-colors duration-200"
                 >
                     <button
                         @click="toggleFAQ('faq1')"
-                        class="w-full text-left p-6 flex items-center justify-between hover:bg-slate-50 transition-colors"
+                        class="w-full text-left p-6 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors duration-200"
                     >
-                        <h2 class="text-lg font-semibold text-slate-900 flex items-center gap-2">
+                        <h2 class="text-lg font-semibold text-slate-900 dark:text-slate-100 flex items-center gap-2">
                             <span>👤</span>
                             <span>¿Cómo registrar usuarios (enrollar)?</span>
                         </h2>
                         <svg
-                            class="w-5 h-5 text-slate-500 transition-transform duration-200"
+                            class="w-5 h-5 text-slate-500 dark:text-slate-400 transition-transform duration-200"
                             :class="{ 'rotate-180': isOpen('faq1') }"
                             fill="none"
                             stroke="currentColor"
@@ -37,7 +37,7 @@
                     </button>
                     <div
                         v-show="isOpen('faq1')"
-                        class="px-6 pb-6 space-y-3 text-sm text-slate-700 transition-all"
+                        class="px-6 pb-6 space-y-3 text-sm text-slate-700 dark:text-slate-300 transition-all"
                     >
                         <p>
                             Para registrar un nuevo usuario en el sistema, sigue estos pasos:
@@ -65,8 +65,8 @@
                                 <strong>Guardar:</strong> Haz clic en "Guardar" o "Crear Usuario" para completar el registro.
                             </li>
                         </ol>
-                        <div class="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                            <p class="text-xs text-blue-800">
+                        <div class="mt-4 p-3 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-lg transition-colors duration-200">
+                            <p class="text-xs text-blue-800 dark:text-blue-300">
                                 <strong>Nota:</strong> El usuario recibirá un correo con sus credenciales (si está configurado) o deberás proporcionarle manualmente el correo y contraseña para que pueda iniciar sesión.
                             </p>
                         </div>
@@ -76,18 +76,18 @@
                 <!-- Pregunta 2: Configurar Permisos -->
                 <div
                     v-if="!esVisitante && hasPermission('view_cargos')"
-                    class="bg-white border border-slate-200 rounded-xl overflow-hidden"
+                    class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden transition-colors duration-200"
                 >
                     <button
                         @click="toggleFAQ('faq2')"
-                        class="w-full text-left p-6 flex items-center justify-between hover:bg-slate-50 transition-colors"
+                        class="w-full text-left p-6 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors duration-200"
                     >
-                        <h2 class="text-lg font-semibold text-slate-900 flex items-center gap-2">
+                        <h2 class="text-lg font-semibold text-slate-900 dark:text-slate-100 flex items-center gap-2">
                             <span>🔐</span>
                             <span>¿Cómo configurar permisos?</span>
                         </h2>
                         <svg
-                            class="w-5 h-5 text-slate-500 transition-transform duration-200"
+                            class="w-5 h-5 text-slate-500 dark:text-slate-400 transition-transform duration-200"
                             :class="{ 'rotate-180': isOpen('faq2') }"
                             fill="none"
                             stroke="currentColor"
@@ -98,7 +98,7 @@
                     </button>
                     <div
                         v-show="isOpen('faq2')"
-                        class="px-6 pb-6 space-y-3 text-sm text-slate-700 transition-all"
+                        class="px-6 pb-6 space-y-3 text-sm text-slate-700 dark:text-slate-300 transition-all"
                     >
                         <p>
                             Los permisos se configuran a través de los <strong>Cargos</strong>. Cada cargo define qué puede hacer un usuario en el sistema:
@@ -133,8 +133,8 @@
                                 <strong>Asigna el cargo al usuario:</strong> Al crear o editar un usuario, selecciona el cargo que acabas de configurar.
                             </li>
                         </ol>
-                        <div class="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                            <p class="text-xs text-blue-800">
+                        <div class="mt-4 p-3 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-lg transition-colors duration-200">
+                            <p class="text-xs text-blue-800 dark:text-blue-300">
                                 <strong>Tip:</strong> Los permisos del sistema controlan qué secciones del menú puede ver el usuario. Los permisos físicos (puertas) controlan a qué puertas físicas puede acceder con su QR.
                             </p>
                         </div>
@@ -144,18 +144,18 @@
                 <!-- Pregunta 3: Subir Mantenimiento -->
                 <div
                     v-if="!esVisitante && hasAnyPermission(['view_mantenimientos', 'create_mantenimientos'])"
-                    class="bg-white border border-slate-200 rounded-xl overflow-hidden"
+                    class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden transition-colors duration-200"
                 >
                     <button
                         @click="toggleFAQ('faq3')"
-                        class="w-full text-left p-6 flex items-center justify-between hover:bg-slate-50 transition-colors"
+                        class="w-full text-left p-6 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors duration-200"
                     >
-                        <h2 class="text-lg font-semibold text-slate-900 flex items-center gap-2">
+                        <h2 class="text-lg font-semibold text-slate-900 dark:text-slate-100 flex items-center gap-2">
                             <span>🔧</span>
                             <span>¿Cómo subir un mantenimiento?</span>
                         </h2>
                         <svg
-                            class="w-5 h-5 text-slate-500 transition-transform duration-200"
+                            class="w-5 h-5 text-slate-500 dark:text-slate-400 transition-transform duration-200"
                             :class="{ 'rotate-180': isOpen('faq3') }"
                             fill="none"
                             stroke="currentColor"
@@ -166,7 +166,7 @@
                     </button>
                     <div
                         v-show="isOpen('faq3')"
-                        class="px-6 pb-6 space-y-3 text-sm text-slate-700 transition-all"
+                        class="px-6 pb-6 space-y-3 text-sm text-slate-700 dark:text-slate-300 transition-all"
                     >
                         <p>
                             Para registrar un mantenimiento de una puerta, sigue estos pasos:
@@ -224,8 +224,8 @@
                                 <strong>Guardar:</strong> Haz clic en "Guardar" o "Crear Mantenimiento" para completar el registro.
                             </li>
                         </ol>
-                        <div class="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                            <p class="text-xs text-blue-800">
+                        <div class="mt-4 p-3 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-lg transition-colors duration-200">
+                            <p class="text-xs text-blue-800 dark:text-blue-300">
                                 <strong>Nota:</strong> Si registras un mantenimiento programado, la puerta mostrará un indicador amarillo mientras esté en mantenimiento, y rojo si pasa la fecha programada sin realizarse.
                             </p>
                         </div>
@@ -235,18 +235,18 @@
                 <!-- Pregunta 4: Generar Códigos QR -->
                 <div
                     v-if="esVisitante || hasPermission('view_ingreso')"
-                    class="bg-white border border-slate-200 rounded-xl overflow-hidden"
+                    class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden transition-colors duration-200"
                 >
                     <button
                         @click="toggleFAQ('faq4')"
-                        class="w-full text-left p-6 flex items-center justify-between hover:bg-slate-50 transition-colors"
+                        class="w-full text-left p-6 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors duration-200"
                     >
-                        <h2 class="text-lg font-semibold text-slate-900 flex items-center gap-2">
+                        <h2 class="text-lg font-semibold text-slate-900 dark:text-slate-100 flex items-center gap-2">
                             <span>📱</span>
                             <span>¿Cómo generar códigos QR para acceso?</span>
                         </h2>
                         <svg
-                            class="w-5 h-5 text-slate-500 transition-transform duration-200"
+                            class="w-5 h-5 text-slate-500 dark:text-slate-400 transition-transform duration-200"
                             :class="{ 'rotate-180': isOpen('faq4') }"
                             fill="none"
                             stroke="currentColor"
@@ -257,7 +257,7 @@
                     </button>
                     <div
                         v-show="isOpen('faq4')"
-                        class="px-6 pb-6 space-y-3 text-sm text-slate-700 transition-all"
+                        class="px-6 pb-6 space-y-3 text-sm text-slate-700 dark:text-slate-300 transition-all"
                     >
                         <p>
                             Para generar un código QR que permita a un usuario acceder a las puertas, sigue estos pasos:
@@ -295,8 +295,8 @@
                                 </ul>
                             </li>
                         </ol>
-                        <div class="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                            <p class="text-xs text-blue-800">
+                        <div class="mt-4 p-3 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-lg transition-colors duration-200">
+                            <p class="text-xs text-blue-800 dark:text-blue-300">
                                 <strong>Nota:</strong> Para funcionarios, el QR permanece activo hasta la fecha de expiración del usuario. Para visitantes, el QR es válido por defecto durante 1 día laborable, aunque puede configurarse para un período mayor. Una vez vencido, el usuario necesitará generar uno nuevo. El QR solo funciona si el usuario tiene permisos en su cargo para acceder a las puertas seleccionadas.
                             </p>
                         </div>
@@ -306,18 +306,18 @@
                 <!-- Pregunta 5: Ver y Descargar PDF de Mantenimientos -->
                 <div
                     v-if="!esVisitante && hasPermission('view_mantenimientos')"
-                    class="bg-white border border-slate-200 rounded-xl overflow-hidden"
+                    class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden transition-colors duration-200"
                 >
                     <button
                         @click="toggleFAQ('faq5')"
-                        class="w-full text-left p-6 flex items-center justify-between hover:bg-slate-50 transition-colors"
+                        class="w-full text-left p-6 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors duration-200"
                     >
-                        <h2 class="text-lg font-semibold text-slate-900 flex items-center gap-2">
+                        <h2 class="text-lg font-semibold text-slate-900 dark:text-slate-100 flex items-center gap-2">
                             <span>📄</span>
                             <span>¿Cómo ver y descargar el PDF de un mantenimiento?</span>
                         </h2>
                         <svg
-                            class="w-5 h-5 text-slate-500 transition-transform duration-200"
+                            class="w-5 h-5 text-slate-500 dark:text-slate-400 transition-transform duration-200"
                             :class="{ 'rotate-180': isOpen('faq5') }"
                             fill="none"
                             stroke="currentColor"
@@ -328,7 +328,7 @@
                     </button>
                     <div
                         v-show="isOpen('faq5')"
-                        class="px-6 pb-6 space-y-3 text-sm text-slate-700 transition-all"
+                        class="px-6 pb-6 space-y-3 text-sm text-slate-700 dark:text-slate-300 transition-all"
                     >
                         <p>
                             Para ver los detalles de un mantenimiento y descargar su PDF:
@@ -347,8 +347,8 @@
                                 <strong>Descargar PDF:</strong> En la vista de detalle, haz clic en el botón "📄 Descargar PDF".
                             </li>
                         </ol>
-                        <div class="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                            <p class="text-xs text-blue-800">
+                        <div class="mt-4 p-3 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-lg transition-colors duration-200">
+                            <p class="text-xs text-blue-800 dark:text-blue-300">
                                 <strong>El PDF incluye:</strong> Información del equipo, datos del cliente, evaluación de defectos con niveles de gravedad, observaciones, evidencia fotográfica (referencia), resultado de la inspección y espacios para firmas.
                             </p>
                         </div>
@@ -358,18 +358,18 @@
                 <!-- Pregunta 6: Exportar Reportes CSV -->
                 <div
                     v-if="!esVisitante && hasPermission('view_reportes')"
-                    class="bg-white border border-slate-200 rounded-xl overflow-hidden"
+                    class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden transition-colors duration-200"
                 >
                     <button
                         @click="toggleFAQ('faq6')"
-                        class="w-full text-left p-6 flex items-center justify-between hover:bg-slate-50 transition-colors"
+                        class="w-full text-left p-6 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors duration-200"
                     >
-                        <h2 class="text-lg font-semibold text-slate-900 flex items-center gap-2">
+                        <h2 class="text-lg font-semibold text-slate-900 dark:text-slate-100 flex items-center gap-2">
                             <span>📊</span>
                             <span>¿Cómo exportar reportes en formato CSV?</span>
                         </h2>
                         <svg
-                            class="w-5 h-5 text-slate-500 transition-transform duration-200"
+                            class="w-5 h-5 text-slate-500 dark:text-slate-400 transition-transform duration-200"
                             :class="{ 'rotate-180': isOpen('faq6') }"
                             fill="none"
                             stroke="currentColor"
@@ -380,14 +380,14 @@
                     </button>
                     <div
                         v-show="isOpen('faq6')"
-                        class="px-6 pb-6 space-y-3 text-sm text-slate-700 transition-all"
+                        class="px-6 pb-6 space-y-3 text-sm text-slate-700 dark:text-slate-300 transition-all"
                     >
                         <p>
                             Para exportar datos del sistema en formato CSV compatible con Excel:
                         </p>
                         <ol class="list-decimal list-inside space-y-2 ml-2">
                             <li>
-                                <strong>Accede al módulo de Reportes:</strong> Haz clic en "Reportes" en el menú lateral (requiere permiso <code class="bg-slate-100 px-1 py-0.5 rounded">view_reportes</code>).
+                                <strong>Accede al módulo de Reportes:</strong> Haz clic en "Reportes" en el menú lateral (requiere permiso <code class="bg-slate-100 dark:bg-slate-700 px-1 py-0.5 rounded text-slate-900 dark:text-slate-100 transition-colors duration-200">view_reportes</code>).
                             </li>
                             <li>
                                 <strong>Selecciona el tipo de reporte:</strong> Hay 4 tipos disponibles:
@@ -408,8 +408,8 @@
                                 <strong>Abrir en Excel:</strong> El archivo CSV se descargará automáticamente. Ábrelo con Excel para ver los datos formateados.
                             </li>
                         </ol>
-                        <div class="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                            <p class="text-xs text-blue-800">
+                        <div class="mt-4 p-3 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-lg transition-colors duration-200">
+                            <p class="text-xs text-blue-800 dark:text-blue-300">
                                 <strong>Compatibilidad:</strong> Los archivos CSV están codificados en UTF-8 con BOM, por lo que los caracteres especiales (á, é, í, ó, ú, ñ) se verán correctamente en Excel. Si no se ven bien, abre Excel y selecciona "Datos" → "Obtener datos" → "Desde texto/CSV" y elige "65001: Unicode (UTF-8)" como origen de archivo.
                             </p>
                         </div>
@@ -419,18 +419,18 @@
                 <!-- Pregunta 7: Gestionar Departamentos -->
                 <div
                     v-if="!esVisitante && hasPermission('view_departamentos')"
-                    class="bg-white border border-slate-200 rounded-xl overflow-hidden"
+                    class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden transition-colors duration-200"
                 >
                     <button
                         @click="toggleFAQ('faq7')"
-                        class="w-full text-left p-6 flex items-center justify-between hover:bg-slate-50 transition-colors"
+                        class="w-full text-left p-6 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors duration-200"
                     >
-                        <h2 class="text-lg font-semibold text-slate-900 flex items-center gap-2">
+                        <h2 class="text-lg font-semibold text-slate-900 dark:text-slate-100 flex items-center gap-2">
                             <span>🏢</span>
                             <span>¿Cómo gestionar departamentos?</span>
                         </h2>
                         <svg
-                            class="w-5 h-5 text-slate-500 transition-transform duration-200"
+                            class="w-5 h-5 text-slate-500 dark:text-slate-400 transition-transform duration-200"
                             :class="{ 'rotate-180': isOpen('faq7') }"
                             fill="none"
                             stroke="currentColor"
@@ -441,7 +441,7 @@
                     </button>
                     <div
                         v-show="isOpen('faq7')"
-                        class="px-6 pb-6 space-y-3 text-sm text-slate-700 transition-all"
+                        class="px-6 pb-6 space-y-3 text-sm text-slate-700 dark:text-slate-300 transition-all"
                     >
                         <p>
                             Los departamentos organizan a los usuarios por área dentro de la organización:
@@ -463,8 +463,8 @@
                                 <strong>Asignar a usuarios:</strong> Al crear o editar un usuario, selecciona el departamento correspondiente en el campo "Departamento".
                             </li>
                         </ol>
-                        <div class="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                            <p class="text-xs text-blue-800">
+                        <div class="mt-4 p-3 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-lg transition-colors duration-200">
+                            <p class="text-xs text-blue-800 dark:text-blue-300">
                                 <strong>Tip:</strong> Los departamentos son útiles para organizar reportes y filtros. Un usuario puede pertenecer a un solo departamento.
                             </p>
                         </div>
@@ -474,18 +474,18 @@
                 <!-- Pregunta 8: Protocolo de Emergencia -->
                 <div
                     v-if="!esVisitante && hasPermission('view_protocolo')"
-                    class="bg-white border border-slate-200 rounded-xl overflow-hidden"
+                    class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden transition-colors duration-200"
                 >
                     <button
                         @click="toggleFAQ('faq8')"
-                        class="w-full text-left p-6 flex items-center justify-between hover:bg-slate-50 transition-colors"
+                        class="w-full text-left p-6 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors duration-200"
                     >
-                        <h2 class="text-lg font-semibold text-slate-900 flex items-center gap-2">
+                        <h2 class="text-lg font-semibold text-slate-900 dark:text-slate-100 flex items-center gap-2">
                             <span>🚨</span>
                             <span>¿Cómo usar el Protocolo de Emergencia?</span>
                         </h2>
                         <svg
-                            class="w-5 h-5 text-slate-500 transition-transform duration-200"
+                            class="w-5 h-5 text-slate-500 dark:text-slate-400 transition-transform duration-200"
                             :class="{ 'rotate-180': isOpen('faq8') }"
                             fill="none"
                             stroke="currentColor"
@@ -496,14 +496,14 @@
                     </button>
                     <div
                         v-show="isOpen('faq8')"
-                        class="px-6 pb-6 space-y-3 text-sm text-slate-700 transition-all"
+                        class="px-6 pb-6 space-y-3 text-sm text-slate-700 dark:text-slate-300 transition-all"
                     >
                         <p>
                             El Protocolo de Emergencia permite abrir todas las puertas del sistema simultáneamente en caso de emergencia:
                         </p>
                         <ol class="list-decimal list-inside space-y-2 ml-2">
                             <li>
-                                <strong>Requisito:</strong> Necesitas el permiso <code class="bg-slate-100 px-1 py-0.5 rounded">protocol_emergencia_open_all</code> para ejecutar el protocolo.
+                                <strong>Requisito:</strong> Necesitas el permiso <code class="bg-slate-100 dark:bg-slate-700 px-1 py-0.5 rounded text-slate-900 dark:text-slate-100 transition-colors duration-200">protocol_emergencia_open_all</code> para ejecutar el protocolo.
                             </li>
                             <li>
                                 <strong>Accede al módulo de Protocolo:</strong> Haz clic en "Protocolo" en el menú lateral (ícono 🚨).
@@ -518,13 +518,13 @@
                                 <strong>Confirmar:</strong> El sistema abrirá todas las puertas en paralelo y las mantendrá abiertas durante 15 minutos (configurable).
                             </li>
                         </ol>
-                        <div class="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                            <p class="text-xs text-yellow-800">
+                        <div class="mt-4 p-3 bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-800 rounded-lg transition-colors duration-200">
+                            <p class="text-xs text-yellow-800 dark:text-yellow-300">
                                 <strong>⚠️ IMPORTANTE:</strong> Esta acción se registra en el historial. Las puertas se mantendrán abiertas incluso si se corta la conexión de red. Solo usar en casos de emergencia real.
                             </p>
                         </div>
-                        <div class="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                            <p class="text-xs text-blue-800">
+                        <div class="mt-3 p-3 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-lg transition-colors duration-200">
+                            <p class="text-xs text-blue-800 dark:text-blue-300">
                                 <strong>Historial:</strong> Puedes ver las últimas ejecuciones del protocolo en la tabla inferior, incluyendo quién lo ejecutó, cuántas puertas se abrieron exitosamente y cuáles fallaron.
                             </p>
                         </div>

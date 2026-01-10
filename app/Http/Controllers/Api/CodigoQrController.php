@@ -126,7 +126,7 @@ class CodigoQrController extends Controller
                 $expiresAt = null;
             }
         } else {
-            $expiresAt = $now->copy()->addDays(15);
+        $expiresAt = $now->copy()->addDays(15);
         }
 
         // Token opaco (para QR) + hash (para BD)

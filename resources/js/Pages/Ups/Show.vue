@@ -3,24 +3,24 @@
         <div class="max-w-5xl mx-auto space-y-4">
             <div class="flex items-center justify-between flex-wrap gap-2">
                 <div>
-                    <h1 class="text-xl font-semibold text-slate-900">
+                    <h1 class="text-xl font-semibold text-slate-900 dark:text-slate-100">
                         {{ ups.codigo }} - {{ ups.nombre }}
                     </h1>
-                    <p class="text-sm text-slate-600">
+                    <p class="text-sm text-slate-600 dark:text-slate-400">
                         {{ ups.piso?.nombre || "Sin piso" }} · {{ ups.activo ? "Activo" : "Inactivo" }}
                     </p>
                 </div>
                 <div class="flex gap-2 flex-wrap">
                     <Link
                         :href="route('ups.index')"
-                        class="px-3 py-2 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-700"
+                        class="px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-colors duration-200"
                     >
                         Volver
                     </Link>
                     <Link
                         v-if="hasPermission('edit_ups')"
                         :href="route('ups.edit', { ups: ups.id })"
-                        class="px-3 py-2 rounded-lg bg-slate-900 text-white hover:bg-slate-800 font-medium"
+                        class="px-3 py-2 rounded-lg bg-slate-900 dark:bg-slate-700 text-white hover:bg-slate-800 dark:hover:bg-slate-600 font-medium transition-colors duration-200"
                     >
                         Editar
                     </Link>
@@ -29,15 +29,15 @@
 
             <div
                 v-if="$page.props.flash?.message"
-                class="p-4 rounded-lg bg-green-50 border border-green-200 text-green-800"
+                class="p-4 rounded-lg bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 text-green-800 dark:text-green-200 transition-colors duration-200"
             >
                 {{ $page.props.flash.message }}
             </div>
 
             <!-- Detalles -->
-            <div class="bg-white border border-slate-200 rounded-xl p-6 space-y-4">
+            <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-6 space-y-4 transition-colors duration-200">
                 <div v-if="ups.foto" class="flex justify-center">
-                    <div class="w-full max-w-2xl aspect-video bg-slate-100 rounded-2xl border border-slate-200 overflow-hidden">
+                    <div class="w-full max-w-2xl aspect-video bg-slate-100 dark:bg-slate-700 rounded-2xl border border-slate-200 dark:border-slate-600 overflow-hidden transition-colors duration-200">
                         <img
                             :src="storageUrl(ups.foto)"
                             alt="Foto UPS"
@@ -49,49 +49,49 @@
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                        <label class="text-sm font-medium text-slate-500">Ubicación</label>
-                        <p class="text-sm text-slate-900">{{ ups.ubicacion || "-" }}</p>
+                        <label class="text-sm font-medium text-slate-500 dark:text-slate-400">Ubicación</label>
+                        <p class="text-sm text-slate-900 dark:text-slate-100">{{ ups.ubicacion || "-" }}</p>
                     </div>
                     <div>
-                        <label class="text-sm font-medium text-slate-500">Serial</label>
-                        <p class="text-sm text-slate-900">{{ ups.serial || "-" }}</p>
+                        <label class="text-sm font-medium text-slate-500 dark:text-slate-400">Serial</label>
+                        <p class="text-sm text-slate-900 dark:text-slate-100">{{ ups.serial || "-" }}</p>
                     </div>
                     <div>
-                        <label class="text-sm font-medium text-slate-500">Marca / Modelo</label>
-                        <p class="text-sm text-slate-900">
+                        <label class="text-sm font-medium text-slate-500 dark:text-slate-400">Marca / Modelo</label>
+                        <p class="text-sm text-slate-900 dark:text-slate-100">
                             {{ ups.marca || "-" }}{{ ups.modelo ? ` / ${ups.modelo}` : "" }}
                         </p>
                     </div>
                     <div>
-                        <label class="text-sm font-medium text-slate-500">Potencia</label>
-                        <p class="text-sm text-slate-900">
+                        <label class="text-sm font-medium text-slate-500 dark:text-slate-400">Potencia</label>
+                        <p class="text-sm text-slate-900 dark:text-slate-100">
                             {{ ups.potencia_va ? `${ups.potencia_va} VA` : "-" }}
-                            <span class="text-slate-500">·</span>
+                            <span class="text-slate-500 dark:text-slate-400">·</span>
                             {{ ups.potencia_w ? `${ups.potencia_w} W` : "-" }}
                         </p>
                     </div>
                 </div>
 
-                <div v-if="ups.observaciones" class="pt-4 border-t border-slate-200">
-                    <label class="text-sm font-medium text-slate-500">Observaciones</label>
-                    <p class="text-sm text-slate-700 whitespace-pre-wrap mt-1">
+                <div v-if="ups.observaciones" class="pt-4 border-t border-slate-200 dark:border-slate-700">
+                    <label class="text-sm font-medium text-slate-500 dark:text-slate-400">Observaciones</label>
+                    <p class="text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap mt-1">
                         {{ ups.observaciones }}
                     </p>
                 </div>
             </div>
 
             <!-- Bitácora -->
-            <div class="bg-white border border-slate-200 rounded-xl p-6 space-y-4">
+            <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-6 space-y-4 transition-colors duration-200">
                 <div class="flex items-center justify-between flex-wrap gap-2">
                     <div>
-                        <h2 class="text-lg font-semibold text-slate-900">Bitácora</h2>
-                        <p class="text-sm text-slate-600">
+                        <h2 class="text-lg font-semibold text-slate-900 dark:text-slate-100">Bitácora</h2>
+                        <p class="text-sm text-slate-600 dark:text-slate-400">
                             Registro de estados del UPS mediante análisis de imágenes del panel frontal.
                         </p>
                     </div>
                     <Link
                         :href="route('ups.vitacora.index', { ups: ups.id })"
-                        class="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 font-medium text-sm"
+                        class="px-4 py-2 rounded-lg bg-blue-600 dark:bg-blue-700 text-white hover:bg-blue-700 dark:hover:bg-blue-600 font-medium text-sm transition-colors duration-200"
                     >
                         Ver Bitácora
                     </Link>
@@ -99,11 +99,11 @@
             </div>
 
             <!-- Mantenimientos -->
-            <div class="bg-white border border-slate-200 rounded-xl p-6 space-y-4">
+            <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-6 space-y-4 transition-colors duration-200">
                 <div class="flex items-center justify-between flex-wrap gap-2">
                     <div>
-                        <h2 class="text-lg font-semibold text-slate-900">Mantenimientos</h2>
-                        <p class="text-sm text-slate-600">
+                        <h2 class="text-lg font-semibold text-slate-900 dark:text-slate-100">Mantenimientos</h2>
+                        <p class="text-sm text-slate-600 dark:text-slate-400">
                             Historial de mantenimientos de esta UPS.
                         </p>
                     </div>
@@ -112,20 +112,20 @@
                 <form
                     v-if="hasPermission('create_ups_mantenimientos')"
                     @submit.prevent="crearMantenimiento"
-                    class="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-3"
+                    class="p-4 rounded-xl bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-700 space-y-3 transition-colors duration-200"
                 >
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
                         <FormField label="Fecha" :error="mForm.errors.fecha_mantenimiento">
                             <input
                                 v-model="mForm.fecha_mantenimiento"
                                 type="date"
-                                class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-transparent transition-colors duration-200"
                             />
                         </FormField>
                         <FormField label="Tipo" :error="mForm.errors.tipo">
                             <select
                                 v-model="mForm.tipo"
-                                class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-transparent transition-colors duration-200"
                             >
                                 <option value="realizado">Realizado</option>
                                 <option value="programado">Programado</option>
@@ -139,7 +139,7 @@
                             <input
                                 v-model="mForm.fecha_fin_programada"
                                 type="date"
-                                class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-transparent transition-colors duration-200"
                             />
                         </FormField>
                     </div>
@@ -147,7 +147,7 @@
                         <textarea
                             v-model="mForm.descripcion"
                             rows="3"
-                            class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                            class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-transparent transition-colors duration-200"
                             placeholder="Detalle del mantenimiento..."
                         />
                     </FormField>
@@ -159,9 +159,9 @@
                                 accept="image/*"
                                 multiple
                                 @change="onFotosChange"
-                                class="block w-full text-sm text-slate-700 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-slate-900 file:text-white hover:file:bg-slate-800"
+                                class="block w-full text-sm text-slate-700 dark:text-slate-300 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-slate-900 dark:file:bg-slate-700 file:text-white hover:file:bg-slate-800 dark:hover:file:bg-slate-600 transition-colors duration-200"
                             />
-                            <p class="mt-1 text-xs text-slate-500">
+                            <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
                                 Existentes: 0 · Seleccionadas: {{ fotosSeleccionadasCount }}/{{ MAX_FOTOS }} · Restantes: {{ fotosRestantes }}
                             </p>
                         </FormField>
@@ -171,9 +171,9 @@
                                 accept="application/pdf"
                                 multiple
                                 @change="onDocumentosChange"
-                                class="block w-full text-sm text-slate-700 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-slate-900 file:text-white hover:file:bg-slate-800"
+                                class="block w-full text-sm text-slate-700 dark:text-slate-300 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-slate-900 dark:file:bg-slate-700 file:text-white hover:file:bg-slate-800 dark:hover:file:bg-slate-600 transition-colors duration-200"
                             />
-                            <p class="mt-1 text-xs text-slate-500">
+                            <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
                                 Existentes: 0 · Seleccionados: {{ docsSeleccionadosCount }}/{{ MAX_PDFS }} · Restantes: {{ docsRestantes }}
                             </p>
                         </FormField>
@@ -183,7 +183,7 @@
                         <button
                             type="submit"
                             :disabled="mForm.processing"
-                            class="px-4 py-2 rounded-lg bg-slate-900 text-white hover:bg-slate-800 font-medium disabled:opacity-50"
+                            class="px-4 py-2 rounded-lg bg-slate-900 dark:bg-slate-700 text-white hover:bg-slate-800 dark:hover:bg-slate-600 font-medium disabled:opacity-50 transition-colors duration-200"
                         >
                             {{ mForm.processing ? "Guardando..." : "Registrar mantenimiento" }}
                         </button>
@@ -192,42 +192,42 @@
 
                 <div class="overflow-x-auto">
                     <table class="min-w-full text-sm">
-                        <thead class="bg-slate-50 border border-slate-200">
+                        <thead class="bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-700 transition-colors duration-200">
                             <tr>
-                                <th class="px-4 py-3 text-left font-semibold text-slate-700">Fecha</th>
-                                <th class="px-4 py-3 text-left font-semibold text-slate-700">Tipo</th>
-                                <th class="px-4 py-3 text-left font-semibold text-slate-700">Fecha límite</th>
-                                <th class="px-4 py-3 text-left font-semibold text-slate-700">Descripción</th>
-                                <th class="px-4 py-3 text-right font-semibold text-slate-700">Acciones</th>
+                                <th class="px-4 py-3 text-left font-semibold text-slate-700 dark:text-slate-300">Fecha</th>
+                                <th class="px-4 py-3 text-left font-semibold text-slate-700 dark:text-slate-300">Tipo</th>
+                                <th class="px-4 py-3 text-left font-semibold text-slate-700 dark:text-slate-300">Fecha límite</th>
+                                <th class="px-4 py-3 text-left font-semibold text-slate-700 dark:text-slate-300">Descripción</th>
+                                <th class="px-4 py-3 text-right font-semibold text-slate-700 dark:text-slate-300">Acciones</th>
                             </tr>
                         </thead>
                         <tbody>
                             <tr
                                 v-for="m in ups.mantenimientos"
                                 :key="m.id"
-                                class="border-b border-slate-100"
+                                class="border-b border-slate-100 dark:border-slate-700 transition-colors duration-200"
                             >
-                                <td class="px-4 py-3 text-slate-900">
+                                <td class="px-4 py-3 text-slate-900 dark:text-slate-100">
                                     {{ formatDate(m.fecha_mantenimiento) }}
                                 </td>
                                 <td class="px-4 py-3">
                                     <span
                                         :class="[
-                                            'px-2 py-1 rounded text-xs font-semibold',
+                                            'px-2 py-1 rounded text-xs font-semibold transition-colors duration-200',
                                             m.tipo === 'realizado'
-                                                ? 'bg-green-100 text-green-700'
-                                                : 'bg-yellow-100 text-yellow-700',
+                                                ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
+                                                : 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400',
                                         ]"
                                     >
                                         {{ m.tipo === "realizado" ? "Realizado" : "Programado" }}
                                     </span>
                                 </td>
-                                <td class="px-4 py-3 text-slate-700">
+                                <td class="px-4 py-3 text-slate-700 dark:text-slate-300">
                                     {{ m.tipo === 'programado' ? (m.fecha_fin_programada ? formatDate(m.fecha_fin_programada) : '-') : '-' }}
                                 </td>
-                                <td class="px-4 py-3 text-slate-700 whitespace-pre-wrap">
+                                <td class="px-4 py-3 text-slate-700 dark:text-slate-300 whitespace-pre-wrap">
                                     {{ m.descripcion || "-" }}
-                                    <div class="mt-2 text-xs text-slate-500 space-y-0.5">
+                                    <div class="mt-2 text-xs text-slate-500 dark:text-slate-400 space-y-0.5">
                                         <p>
                                             <span class="font-medium">Creado:</span>
                                             {{ m.creado_por?.name || m.creado_por?.email || "N/A" }}
@@ -248,7 +248,7 @@
                                             class="block"
                                             title="Ver imagen"
                                         >
-                                            <span class="block w-16 aspect-square rounded-lg border border-slate-200 overflow-hidden bg-slate-100">
+                                            <span class="block w-16 aspect-square rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden bg-slate-100 dark:bg-slate-700 transition-colors duration-200">
                                                 <img
                                                     :src="storageUrl(img.ruta_imagen)"
                                                     class="w-full h-full object-cover object-center"
@@ -265,7 +265,7 @@
                                             :key="doc.id"
                                             :href="storageUrl(doc.ruta_documento)"
                                             target="_blank"
-                                            class="text-sm text-blue-700 hover:underline inline-flex items-center gap-2"
+                                            class="text-sm text-blue-700 dark:text-blue-400 hover:underline inline-flex items-center gap-2 transition-colors duration-200"
                                         >
                                             <span>📄</span>
                                             <span>{{ doc.nombre_original || "Documento PDF" }}</span>
@@ -281,7 +281,7 @@
                                         >
                                             <button
                                                 type="submit"
-                                                class="px-3 py-1.5 rounded-md border border-green-200 bg-green-50 hover:bg-green-100 text-green-700 text-sm font-medium"
+                                                class="px-3 py-1.5 rounded-md border border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/30 hover:bg-green-100 dark:hover:bg-green-900/50 text-green-700 dark:text-green-400 text-sm font-medium transition-colors duration-200"
                                             >
                                                 ✅ Completar
                                             </button>
@@ -289,14 +289,14 @@
                                         <a
                                             v-if="(m.imagenes?.length || 0) + (m.documentos?.length || 0) > 0"
                                             :href="route('ups.mantenimientos.zip', { ups: ups.id, mantenimiento: m.id })"
-                                            class="px-3 py-1.5 rounded-md border border-slate-200 hover:bg-white text-slate-700 text-sm font-medium"
+                                            class="px-3 py-1.5 rounded-md border border-slate-200 dark:border-slate-700 hover:bg-white dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-sm font-medium transition-colors duration-200"
                                         >
                                             ZIP
                                         </a>
                                         <Link
                                             v-if="hasPermission('edit_ups_mantenimientos')"
                                             :href="route('ups.mantenimientos.edit', { ups: ups.id, mantenimiento: m.id })"
-                                            class="px-3 py-1.5 rounded-md border border-slate-200 hover:bg-white text-slate-700 text-sm font-medium"
+                                            class="px-3 py-1.5 rounded-md border border-slate-200 dark:border-slate-700 hover:bg-white dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-sm font-medium transition-colors duration-200"
                                         >
                                             Editar
                                         </Link>
@@ -304,7 +304,7 @@
                                             v-if="hasPermission('delete_ups_mantenimientos')"
                                             type="button"
                                             @click="eliminarMantenimiento(m.id)"
-                                            class="px-3 py-1.5 rounded-md border border-red-200 bg-red-50 hover:bg-red-100 text-red-700 text-sm font-medium"
+                                            class="px-3 py-1.5 rounded-md border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/30 hover:bg-red-100 dark:hover:bg-red-900/50 text-red-700 dark:text-red-400 text-sm font-medium transition-colors duration-200"
                                         >
                                             Eliminar
                                         </button>
@@ -312,7 +312,7 @@
                                 </td>
                             </tr>
                             <tr v-if="!ups.mantenimientos || ups.mantenimientos.length === 0">
-                                <td colspan="5" class="px-4 py-6 text-center text-slate-500">
+                                <td colspan="5" class="px-4 py-6 text-center text-slate-500 dark:text-slate-400">
                                     No hay mantenimientos registrados.
                                 </td>
                             </tr>

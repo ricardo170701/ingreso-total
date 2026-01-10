@@ -2,17 +2,17 @@
     <AppLayout>
         <div class="max-w-7xl mx-auto space-y-6">
             <div>
-                <h1 class="text-xl font-semibold text-slate-900">
+                <h1 class="text-xl font-semibold text-slate-900 dark:text-slate-100">
                     Reportes y Exportaciones
                 </h1>
-                <p class="text-sm text-slate-600">
+                <p class="text-sm text-slate-600 dark:text-slate-400">
                     Genera reportes personalizados y exporta los datos en formato CSV.
                 </p>
             </div>
 
             <!-- Reporte de Usuarios -->
-            <div class="bg-white border border-slate-200 rounded-xl p-6">
-                <h2 class="text-lg font-semibold text-slate-900 mb-4">
+            <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-6 transition-colors duration-200">
+                <h2 class="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4">
                     📊 Reporte de Usuarios
                 </h2>
                 <form
@@ -22,7 +22,7 @@
                     <FormField label="Rol" :error="formUsuarios.errors.role_id">
                         <select
                             v-model="formUsuarios.role_id"
-                            class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-green-500"
+                            class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 transition-colors duration-200"
                         >
                             <option :value="null">Todos</option>
                             <option
@@ -38,7 +38,7 @@
                     <FormField label="Cargo" :error="formUsuarios.errors.cargo_id">
                         <select
                             v-model="formUsuarios.cargo_id"
-                            class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-green-500"
+                            class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 transition-colors duration-200"
                         >
                             <option :value="null">Todos</option>
                             <option
@@ -57,7 +57,7 @@
                     >
                         <select
                             v-model="formUsuarios.departamento_id"
-                            class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-green-500"
+                            class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 transition-colors duration-200"
                         >
                             <option :value="null">Todos</option>
                             <option
@@ -73,7 +73,7 @@
                     <FormField label="Estado" :error="formUsuarios.errors.activo">
                         <select
                             v-model="formUsuarios.activo"
-                            class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-green-500"
+                            class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 transition-colors duration-200"
                         >
                             <option :value="null">Todos</option>
                             <option :value="true">Activos</option>
@@ -85,7 +85,7 @@
                         <button
                             type="submit"
                             :disabled="formUsuarios.processing"
-                            class="px-4 py-2 rounded-lg bg-slate-900 text-white hover:bg-slate-800 disabled:opacity-50 font-medium"
+                            class="px-4 py-2 rounded-lg bg-slate-900 dark:bg-slate-700 text-white hover:bg-slate-800 dark:hover:bg-slate-600 disabled:opacity-50 font-medium transition-colors duration-200"
                         >
                             {{
                                 formUsuarios.processing
@@ -98,8 +98,8 @@
             </div>
 
             <!-- Reporte de Accesos -->
-            <div class="bg-white border border-slate-200 rounded-xl p-6">
-                <h2 class="text-lg font-semibold text-slate-900 mb-4">
+            <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-6 transition-colors duration-200">
+                <h2 class="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4">
                     🚪 Reporte de Accesos
                 </h2>
                 <form
@@ -113,7 +113,7 @@
                         <input
                             v-model="formAccesos.fecha_desde"
                             type="date"
-                            class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-green-500"
+                            class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 transition-colors duration-200"
                         />
                     </FormField>
 
@@ -124,14 +124,14 @@
                         <input
                             v-model="formAccesos.fecha_hasta"
                             type="date"
-                            class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-green-500"
+                            class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 transition-colors duration-200"
                         />
                     </FormField>
 
                     <FormField label="Usuario" :error="formAccesos.errors.user_id">
                         <select
                             v-model="formAccesos.user_id"
-                            class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-green-500"
+                            class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 transition-colors duration-200"
                         >
                             <option :value="null">Todos</option>
                             <option
@@ -147,7 +147,7 @@
                     <FormField label="Puerta" :error="formAccesos.errors.puerta_id">
                         <select
                             v-model="formAccesos.puerta_id"
-                            class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-green-500"
+                            class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 transition-colors duration-200"
                         >
                             <option :value="null">Todas</option>
                             <option
@@ -163,7 +163,7 @@
                     <FormField label="Permitido" :error="formAccesos.errors.permitido">
                         <select
                             v-model="formAccesos.permitido"
-                            class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-green-500"
+                            class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 transition-colors duration-200"
                         >
                             <option :value="null">Todos</option>
                             <option :value="true">Permitidos</option>
@@ -175,7 +175,7 @@
                         <button
                             type="submit"
                             :disabled="formAccesos.processing"
-                            class="px-4 py-2 rounded-lg bg-slate-900 text-white hover:bg-slate-800 disabled:opacity-50 font-medium"
+                            class="px-4 py-2 rounded-lg bg-slate-900 dark:bg-slate-700 text-white hover:bg-slate-800 dark:hover:bg-slate-600 disabled:opacity-50 font-medium transition-colors duration-200"
                         >
                             {{
                                 formAccesos.processing
@@ -188,8 +188,8 @@
             </div>
 
             <!-- Reporte de Mantenimientos -->
-            <div class="bg-white border border-slate-200 rounded-xl p-6">
-                <h2 class="text-lg font-semibold text-slate-900 mb-4">
+            <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-6 transition-colors duration-200">
+                <h2 class="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4">
                     🔧 Reporte de Mantenimientos
                 </h2>
                 <form
@@ -203,7 +203,7 @@
                         <input
                             v-model="formMantenimientos.fecha_desde"
                             type="date"
-                            class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-green-500"
+                            class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 transition-colors duration-200"
                         />
                     </FormField>
 
@@ -214,7 +214,7 @@
                         <input
                             v-model="formMantenimientos.fecha_hasta"
                             type="date"
-                            class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-green-500"
+                            class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 transition-colors duration-200"
                         />
                     </FormField>
 
@@ -224,7 +224,7 @@
                     >
                         <select
                             v-model="formMantenimientos.puerta_id"
-                            class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-green-500"
+                            class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 transition-colors duration-200"
                         >
                             <option :value="null">Todas</option>
                             <option
@@ -240,7 +240,7 @@
                     <FormField label="Tipo" :error="formMantenimientos.errors.tipo">
                         <select
                             v-model="formMantenimientos.tipo"
-                            class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-green-500"
+                            class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 transition-colors duration-200"
                         >
                             <option :value="null">Todos</option>
                             <option value="realizado">Realizado</option>
@@ -254,7 +254,7 @@
                     >
                         <select
                             v-model="formMantenimientos.usuario_id"
-                            class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-green-500"
+                            class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 transition-colors duration-200"
                         >
                             <option :value="null">Todos</option>
                             <option
@@ -271,7 +271,7 @@
                         <button
                             type="submit"
                             :disabled="formMantenimientos.processing"
-                            class="px-4 py-2 rounded-lg bg-slate-900 text-white hover:bg-slate-800 disabled:opacity-50 font-medium"
+                            class="px-4 py-2 rounded-lg bg-slate-900 dark:bg-slate-700 text-white hover:bg-slate-800 dark:hover:bg-slate-600 disabled:opacity-50 font-medium transition-colors duration-200"
                         >
                             {{
                                 formMantenimientos.processing
@@ -284,8 +284,8 @@
             </div>
 
             <!-- Reporte de Puertas -->
-            <div class="bg-white border border-slate-200 rounded-xl p-6">
-                <h2 class="text-lg font-semibold text-slate-900 mb-4">
+            <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-6 transition-colors duration-200">
+                <h2 class="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4">
                     🚪 Reporte de Puertas
                 </h2>
                 <form
@@ -295,7 +295,7 @@
                     <FormField label="Piso" :error="formPuertas.errors.piso_id">
                         <select
                             v-model="formPuertas.piso_id"
-                            class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-green-500"
+                            class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 transition-colors duration-200"
                         >
                             <option :value="null">Todos</option>
                             <option
@@ -314,7 +314,7 @@
                     >
                         <select
                             v-model="formPuertas.tipo_puerta_id"
-                            class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-green-500"
+                            class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 transition-colors duration-200"
                         >
                             <option :value="null">Todos</option>
                             <option
@@ -333,7 +333,7 @@
                     >
                         <select
                             v-model="formPuertas.material_id"
-                            class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-green-500"
+                            class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 transition-colors duration-200"
                         >
                             <option :value="null">Todos</option>
                             <option
@@ -349,7 +349,7 @@
                     <FormField label="Estado" :error="formPuertas.errors.activo">
                         <select
                             v-model="formPuertas.activo"
-                            class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-green-500"
+                            class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 transition-colors duration-200"
                         >
                             <option :value="null">Todas</option>
                             <option :value="true">Activas</option>
@@ -361,7 +361,7 @@
                         <button
                             type="submit"
                             :disabled="formPuertas.processing"
-                            class="px-4 py-2 rounded-lg bg-slate-900 text-white hover:bg-slate-800 disabled:opacity-50 font-medium"
+                            class="px-4 py-2 rounded-lg bg-slate-900 dark:bg-slate-700 text-white hover:bg-slate-800 dark:hover:bg-slate-600 disabled:opacity-50 font-medium transition-colors duration-200"
                         >
                             {{
                                 formPuertas.processing

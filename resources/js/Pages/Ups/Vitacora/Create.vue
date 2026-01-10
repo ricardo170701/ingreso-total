@@ -3,17 +3,17 @@
         <div class="max-w-4xl mx-auto space-y-4">
             <div class="flex items-center justify-between flex-wrap gap-2">
                 <div>
-                    <h1 class="text-xl font-semibold text-slate-900">
+                    <h1 class="text-xl font-semibold text-slate-900 dark:text-slate-100">
                         Nueva Bitácora - {{ ups.codigo }} - {{ ups.nombre }}
                     </h1>
-                    <p class="text-sm text-slate-600">
+                    <p class="text-sm text-slate-600 dark:text-slate-400">
                         Sube una imagen del panel frontal del UPS para analizar
                         su estado automáticamente.
                     </p>
                 </div>
                 <Link
                     :href="route('ups.vitacora.index', { ups: ups.id })"
-                    class="px-3 py-2 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-700"
+                    class="px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-colors duration-200"
                 >
                     Volver
                 </Link>
@@ -21,18 +21,18 @@
 
             <div
                 v-if="$page.props.flash?.message"
-                class="p-4 rounded-lg bg-green-50 border border-green-200 text-green-800"
+                class="p-4 rounded-lg bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 text-green-800 dark:text-green-200 transition-colors duration-200"
             >
                 {{ $page.props.flash.message }}
             </div>
 
             <!-- Formulario de carga -->
             <div
-                class="bg-white border border-slate-200 rounded-xl p-6 space-y-4"
+                class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-6 space-y-4 transition-colors duration-200"
             >
                 <div>
                     <label
-                        class="block text-sm font-medium text-slate-700 mb-2"
+                        class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2"
                     >
                         Imágenes del Panel Frontal (hasta 5)
                     </label>
@@ -42,16 +42,16 @@
                         accept="image/jpeg,image/jpg,image/png"
                         multiple
                         @change="handleFileSelect"
-                        class="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-slate-900 file:text-white hover:file:bg-slate-800"
+                        class="block w-full text-sm text-slate-500 dark:text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-slate-900 dark:file:bg-slate-700 file:text-white hover:file:bg-slate-800 dark:hover:file:bg-slate-600 transition-colors duration-200"
                     />
-                    <p class="mt-1 text-xs text-slate-500">
+                    <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
                         Formatos: JPEG, JPG, PNG. Tamaño máximo: 10MB por imagen. Puedes seleccionar hasta 5 imágenes.
                     </p>
                 </div>
 
                 <!-- Vista previa de imágenes seleccionadas -->
                 <div v-if="selectedFiles.length > 0" class="mt-4">
-                    <p class="text-sm font-medium text-slate-700 mb-2">
+                    <p class="text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                         Imágenes seleccionadas ({{ selectedFiles.length }}/5):
                     </p>
                     <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
@@ -60,7 +60,7 @@
                             :key="index"
                             class="relative group"
                         >
-                            <div class="aspect-square bg-slate-100 rounded-lg border-2 border-slate-200 overflow-hidden">
+                            <div class="aspect-square bg-slate-100 dark:bg-slate-700 rounded-lg border-2 border-slate-200 dark:border-slate-600 overflow-hidden transition-colors duration-200">
                                 <img
                                     :src="previewImages[index]"
                                     :alt="file.name"
@@ -69,15 +69,15 @@
                             </div>
                             <button
                                 @click="removeImage(index)"
-                                class="absolute -top-2 -right-2 bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-700 transition-colors shadow-lg"
+                                class="absolute -top-2 -right-2 bg-red-600 dark:bg-red-700 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-700 dark:hover:bg-red-600 transition-colors shadow-lg"
                                 title="Eliminar imagen"
                             >
                                 ×
                             </button>
-                            <p class="mt-1 text-xs text-slate-600 truncate" :title="file.name">
+                            <p class="mt-1 text-xs text-slate-600 dark:text-slate-400 truncate" :title="file.name">
                                 {{ file.name }}
                             </p>
-                            <p class="text-xs text-slate-500">
+                            <p class="text-xs text-slate-500 dark:text-slate-500">
                                 {{ formatFileSize(file.size) }}
                             </p>
                         </div>
@@ -88,14 +88,14 @@
                     v-if="selectedFiles.length > 0 && !analyzing && !previewData"
                     @click="analyzeImage"
                     :disabled="analyzing"
-                    class="w-full px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
+                    class="w-full px-4 py-2 rounded-lg bg-blue-600 dark:bg-blue-700 text-white hover:bg-blue-700 dark:hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 font-medium"
                 >
                     {{ analyzing ? `Analizando ${analyzingProgress} de ${selectedFiles.length}...` : `Analizar ${selectedFiles.length} Imagen${selectedFiles.length > 1 ? 'es' : ''}` }}
                 </button>
 
                 <div
                     v-if="analyzing"
-                    class="flex items-center justify-center gap-2 text-blue-600"
+                    class="flex items-center justify-center gap-2 text-blue-600 dark:text-blue-400"
                 >
                     <span class="animate-spin">⏳</span>
                     <span>Analizando imagen con IA...</span>
@@ -103,10 +103,10 @@
 
                 <div
                     v-if="error"
-                    class="p-4 rounded-lg bg-red-50 border border-red-200 text-red-800"
+                    class="p-4 rounded-lg bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-800 dark:text-red-200 transition-colors duration-200"
                 >
                     <p class="mb-2">{{ error }}</p>
-                    <p v-if="previewData" class="text-sm text-red-700 mt-2">
+                    <p v-if="previewData" class="text-sm text-red-700 dark:text-red-300 mt-2">
                         💡 Puedes ingresar los datos manualmente en el formulario de abajo.
                     </p>
                 </div>
@@ -115,9 +115,9 @@
             <!-- Vista previa de datos extraídos -->
             <div
                 v-if="previewData"
-                class="bg-white border border-slate-200 rounded-xl p-6 space-y-4"
+                class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-6 space-y-4 transition-colors duration-200"
             >
-                <h2 class="text-lg font-semibold text-slate-900">
+                <h2 class="text-lg font-semibold text-slate-900 dark:text-slate-100">
                     Vista Previa - Datos Extraídos
                 </h2>
 
@@ -125,71 +125,71 @@
                     <!-- Indicadores -->
                     <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
                         <div
-                            class="p-4 rounded-lg border"
+                            class="p-4 rounded-lg border transition-colors duration-200"
                             :class="
                                 previewData.indicador_normal
-                                    ? 'bg-green-50 border-green-200'
-                                    : 'bg-slate-50 border-slate-200'
+                                    ? 'bg-green-50 dark:bg-green-900/30 border-green-200 dark:border-green-800'
+                                    : 'bg-slate-50 dark:bg-slate-700/50 border-slate-200 dark:border-slate-700'
                             "
                         >
                             <label class="flex items-center gap-2">
                                 <input
                                     type="checkbox"
                                     v-model="previewData.indicador_normal"
-                                    class="rounded"
+                                    class="rounded border-slate-300 dark:border-slate-600 text-green-600 dark:text-green-400 focus:ring-green-500 dark:focus:ring-green-400"
                                 />
-                                <span class="font-medium">NORMAL</span>
+                                <span class="font-medium text-slate-900 dark:text-slate-100">NORMAL</span>
                             </label>
                         </div>
                         <div
-                            class="p-4 rounded-lg border"
+                            class="p-4 rounded-lg border transition-colors duration-200"
                             :class="
                                 previewData.indicador_battery
-                                    ? 'bg-yellow-50 border-yellow-200'
-                                    : 'bg-slate-50 border-slate-200'
+                                    ? 'bg-yellow-50 dark:bg-yellow-900/30 border-yellow-200 dark:border-yellow-800'
+                                    : 'bg-slate-50 dark:bg-slate-700/50 border-slate-200 dark:border-slate-700'
                             "
                         >
                             <label class="flex items-center gap-2">
                                 <input
                                     type="checkbox"
                                     v-model="previewData.indicador_battery"
-                                    class="rounded"
+                                    class="rounded border-slate-300 dark:border-slate-600 text-yellow-600 dark:text-yellow-400 focus:ring-yellow-500 dark:focus:ring-yellow-400"
                                 />
-                                <span class="font-medium">BATTERY</span>
+                                <span class="font-medium text-slate-900 dark:text-slate-100">BATTERY</span>
                             </label>
                         </div>
                         <div
-                            class="p-4 rounded-lg border"
+                            class="p-4 rounded-lg border transition-colors duration-200"
                             :class="
                                 previewData.indicador_bypass
-                                    ? 'bg-yellow-50 border-yellow-200'
-                                    : 'bg-slate-50 border-slate-200'
+                                    ? 'bg-yellow-50 dark:bg-yellow-900/30 border-yellow-200 dark:border-yellow-800'
+                                    : 'bg-slate-50 dark:bg-slate-700/50 border-slate-200 dark:border-slate-700'
                             "
                         >
                             <label class="flex items-center gap-2">
                                 <input
                                     type="checkbox"
                                     v-model="previewData.indicador_bypass"
-                                    class="rounded"
+                                    class="rounded border-slate-300 dark:border-slate-600 text-yellow-600 dark:text-yellow-400 focus:ring-yellow-500 dark:focus:ring-yellow-400"
                                 />
-                                <span class="font-medium">BYPASS</span>
+                                <span class="font-medium text-slate-900 dark:text-slate-100">BYPASS</span>
                             </label>
                         </div>
                         <div
-                            class="p-4 rounded-lg border"
+                            class="p-4 rounded-lg border transition-colors duration-200"
                             :class="
                                 previewData.indicador_fault
-                                    ? 'bg-red-50 border-red-200'
-                                    : 'bg-slate-50 border-slate-200'
+                                    ? 'bg-red-50 dark:bg-red-900/30 border-red-200 dark:border-red-800'
+                                    : 'bg-slate-50 dark:bg-slate-700/50 border-slate-200 dark:border-slate-700'
                             "
                         >
                             <label class="flex items-center gap-2">
                                 <input
                                     type="checkbox"
                                     v-model="previewData.indicador_fault"
-                                    class="rounded"
+                                    class="rounded border-slate-300 dark:border-slate-600 text-red-600 dark:text-red-400 focus:ring-red-500 dark:focus:ring-red-400"
                                 />
-                                <span class="font-medium">FAULT</span>
+                                <span class="font-medium text-slate-900 dark:text-slate-100">FAULT</span>
                             </label>
                         </div>
                     </div>
@@ -198,26 +198,26 @@
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <label
-                                class="block text-sm font-medium text-slate-700 mb-1"
+                                class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1"
                                 >Input - Voltaje (V)</label
                             >
                             <input
                                 type="number"
                                 step="0.01"
                                 v-model="previewData.input_voltage"
-                                class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 transition-colors duration-200"
                             />
                         </div>
                         <div>
                             <label
-                                class="block text-sm font-medium text-slate-700 mb-1"
+                                class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1"
                                 >Input - Frecuencia (Hz)</label
                             >
                             <input
                                 type="number"
                                 step="0.01"
                                 v-model="previewData.input_frequency"
-                                class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 transition-colors duration-200"
                             />
                         </div>
                     </div>
@@ -226,38 +226,38 @@
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div>
                             <label
-                                class="block text-sm font-medium text-slate-700 mb-1"
+                                class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1"
                                 >Output - Voltaje (V)</label
                             >
                             <input
                                 type="number"
                                 step="0.01"
                                 v-model="previewData.output_voltage"
-                                class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 transition-colors duration-200"
                             />
                         </div>
                         <div>
                             <label
-                                class="block text-sm font-medium text-slate-700 mb-1"
+                                class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1"
                                 >Output - Frecuencia (Hz)</label
                             >
                             <input
                                 type="number"
                                 step="0.01"
                                 v-model="previewData.output_frequency"
-                                class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 transition-colors duration-200"
                             />
                         </div>
                         <div>
                             <label
-                                class="block text-sm font-medium text-slate-700 mb-1"
+                                class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1"
                                 >Output - Potencia (W)</label
                             >
                             <input
                                 type="number"
                                 step="0.01"
                                 v-model="previewData.output_power"
-                                class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 transition-colors duration-200"
                             />
                         </div>
                     </div>
@@ -266,19 +266,19 @@
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         <div>
                             <label
-                                class="block text-sm font-medium text-slate-700 mb-1"
+                                class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1"
                                 >Battery - Voltaje (V)</label
                             >
                             <input
                                 type="number"
                                 step="0.01"
                                 v-model="previewData.battery_voltage"
-                                class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 transition-colors duration-200"
                             />
                         </div>
                         <div>
                             <label
-                                class="block text-sm font-medium text-slate-700 mb-1"
+                                class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1"
                                 >Battery - Porcentaje (%)</label
                             >
                             <input
@@ -287,12 +287,12 @@
                                 min="0"
                                 max="100"
                                 v-model="previewData.battery_percentage"
-                                class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 transition-colors duration-200"
                             />
                         </div>
                         <div>
                             <label
-                                class="block text-sm font-medium text-slate-700 mb-1"
+                                class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1"
                                 >Battery - Tiempo Respaldo (Min)</label
                             >
                             <input
@@ -300,12 +300,12 @@
                                 step="1"
                                 min="0"
                                 v-model="previewData.battery_tiempo_respaldo"
-                                class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 transition-colors duration-200"
                             />
                         </div>
                         <div>
                             <label
-                                class="block text-sm font-medium text-slate-700 mb-1"
+                                class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1"
                                 >Battery - Tiempo Descarga (Min)</label
                             >
                             <input
@@ -313,17 +313,17 @@
                                 step="1"
                                 min="0"
                                 v-model="previewData.battery_tiempo_descarga"
-                                class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 transition-colors duration-200"
                             />
                         </div>
                         <div>
                             <label
-                                class="block text-sm font-medium text-slate-700 mb-1"
+                                class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1"
                                 >Battery - Estado</label
                             >
                             <select
                                 v-model="previewData.battery_estado"
-                                class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 transition-colors duration-200"
                             >
                                 <option value="">Seleccionar...</option>
                                 <option value="charging">Charging</option>
@@ -333,14 +333,14 @@
                         </div>
                         <div>
                             <label
-                                class="block text-sm font-medium text-slate-700 mb-1"
+                                class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1"
                                 >Temperatura (°C)</label
                             >
                             <input
                                 type="number"
                                 step="0.01"
                                 v-model="previewData.temperatura"
-                                class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 transition-colors duration-200"
                             />
                         </div>
                     </div>
@@ -348,13 +348,13 @@
                     <!-- Observaciones -->
                     <div>
                         <label
-                            class="block text-sm font-medium text-slate-700 mb-1"
+                            class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1"
                             >Observaciones (opcional)</label
                         >
                         <textarea
                             v-model="previewData.observaciones"
                             rows="3"
-                            class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 transition-colors duration-200"
                             placeholder="Agregar observaciones adicionales..."
                         ></textarea>
                     </div>
@@ -364,14 +364,14 @@
                         <button
                             type="submit"
                             :disabled="saving"
-                            class="flex-1 px-4 py-2 rounded-lg bg-green-600 text-white hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
+                            class="flex-1 px-4 py-2 rounded-lg bg-green-600 dark:bg-green-700 text-white hover:bg-green-700 dark:hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 font-medium"
                         >
                             {{ saving ? "Guardando..." : "Guardar Registro" }}
                         </button>
                         <button
                             type="button"
                             @click="resetForm"
-                            class="px-4 py-2 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-700"
+                            class="px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-colors duration-200"
                         >
                             Cancelar
                         </button>

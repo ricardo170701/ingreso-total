@@ -3,28 +3,28 @@
         <div class="max-w-3xl mx-auto space-y-4">
             <div class="flex items-center justify-between">
                 <div>
-                    <h1 class="text-xl font-semibold text-slate-900">
+                    <h1 class="text-xl font-semibold text-slate-900 dark:text-slate-100">
                         Crear cargo
                     </h1>
-                    <p class="text-sm text-slate-600">
+                    <p class="text-sm text-slate-600 dark:text-slate-400">
                         Registra un nuevo cargo en el sistema.
                     </p>
                 </div>
                 <Link
                     :href="route('cargos.index')"
-                    class="px-3 py-2 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-700"
+                    class="px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-colors duration-200"
                 >
                     Volver
                 </Link>
             </div>
 
-            <div class="bg-white border border-slate-200 rounded-xl p-6">
+            <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-6 transition-colors duration-200">
                 <form @submit.prevent="submit" class="grid grid-cols-1 gap-4">
                     <FormField label="Nombre" :error="form.errors.name">
                         <input
                             v-model="form.name"
                             type="text"
-                            class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                            class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-transparent transition-colors duration-200"
                             placeholder="Ej: Funcionario Medio"
                             required
                         />
@@ -37,7 +37,7 @@
                         <textarea
                             v-model="form.description"
                             rows="3"
-                            class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                            class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-transparent transition-colors duration-200"
                             placeholder="Descripción del cargo y sus responsabilidades"
                         />
                     </FormField>
@@ -47,9 +47,9 @@
                             <input
                                 v-model="form.activo"
                                 type="checkbox"
-                                class="h-4 w-4"
+                                class="h-4 w-4 rounded border-slate-300 dark:border-slate-600 text-green-600 dark:text-green-400 focus:ring-green-500 dark:focus:ring-green-400"
                             />
-                            <span class="text-sm text-slate-700">Activo</span>
+                            <span class="text-sm text-slate-700 dark:text-slate-300">Activo</span>
                         </label>
                     </div>
 
@@ -57,7 +57,7 @@
                         <button
                             type="submit"
                             :disabled="form.processing"
-                            class="px-4 py-2 rounded-lg bg-slate-900 text-white hover:bg-slate-800 disabled:opacity-50"
+                            class="px-4 py-2 rounded-lg bg-slate-900 dark:bg-slate-700 text-white hover:bg-slate-800 dark:hover:bg-slate-600 disabled:opacity-50 transition-colors duration-200"
                         >
                             {{ form.processing ? "Guardando..." : "Crear" }}
                         </button>

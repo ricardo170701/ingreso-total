@@ -3,29 +3,29 @@
         <div class="max-w-3xl mx-auto space-y-4">
             <div class="flex items-center justify-between">
                 <div>
-                    <h1 class="text-xl font-semibold text-slate-900">
+                    <h1 class="text-xl font-semibold text-slate-900 dark:text-slate-100">
                         Editar usuario #{{ user.id }}
                     </h1>
-                    <p class="text-sm text-slate-600">
+                    <p class="text-sm text-slate-600 dark:text-slate-400">
                         Actualiza los datos del usuario.
                     </p>
                 </div>
                 <Link
                     :href="route('usuarios.index')"
-                    class="px-3 py-2 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-700"
+                    class="px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-colors duration-200"
                 >
                     Volver
                 </Link>
             </div>
 
-            <div class="bg-white border border-slate-200 rounded-xl p-6">
+            <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-6 transition-colors duration-200">
                 <form @submit.prevent="submit" class="grid grid-cols-1 gap-4">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <FormField label="Email" :error="form.errors.email">
                             <input
                                 v-model="form.email"
                                 type="email"
-                                class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-transparent transition-colors duration-200"
                             />
                         </FormField>
                         <FormField
@@ -35,7 +35,7 @@
                             <input
                                 v-model="form.password"
                                 type="password"
-                                class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-transparent transition-colors duration-200"
                                 placeholder="(dejar vacío para no cambiar)"
                             />
                         </FormField>
@@ -46,7 +46,7 @@
                             <input
                                 v-model="form.nombre"
                                 type="text"
-                                class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-transparent transition-colors duration-200"
                             />
                         </FormField>
                         <FormField
@@ -56,7 +56,7 @@
                             <input
                                 v-model="form.apellido"
                                 type="text"
-                                class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-transparent transition-colors duration-200"
                             />
                         </FormField>
                     </div>
@@ -69,7 +69,7 @@
                             <input
                                 v-model="form.n_identidad"
                                 type="text"
-                                class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-transparent transition-colors duration-200"
                             />
                         </FormField>
                     </div>
@@ -82,7 +82,7 @@
                         >
                             <select
                                 v-model="form.departamento_id"
-                                class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-transparent transition-colors duration-200"
                             >
                                 <option :value="null">Sin departamento</option>
                                 <option
@@ -103,7 +103,7 @@
                                 <img
                                     :src="fotoPreviewUrl || fotoActualUrl"
                                     alt="Foto de perfil"
-                                    class="h-24 w-24 rounded-full object-cover border border-slate-200"
+                                    class="h-24 w-24 rounded-full object-cover border border-slate-200 dark:border-slate-700"
                                 />
                             </div>
                             <input
@@ -112,7 +112,7 @@
                                 @change="onFotoChange"
                                 class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900"
                             />
-                            <p class="mt-1 text-xs text-slate-500">
+                            <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
                                 JPG/PNG/WebP. Máx 4MB.
                             </p>
                         </FormField>
@@ -124,12 +124,12 @@
                             :error="form.errors.contratos"
                         >
                             <div class="mb-2">
-                                <label class="block text-sm font-medium text-slate-700 mb-1">
+                                <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                                     Tipo de contrato
                                 </label>
                                 <select
                                     v-model="form.tipo_contrato"
-                                    class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                    class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-transparent transition-colors duration-200"
                                 >
                                     <option :value="null">-</option>
                                     <option value="prestacion_servicios">Prestación de servicios</option>
@@ -142,14 +142,14 @@
                                 accept="application/pdf"
                                 multiple
                                 @change="onContratosChange"
-                                class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900"
+                                class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 transition-colors duration-200"
                             />
-                            <p class="mt-1 text-xs text-slate-500">
+                            <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
                                 Puedes subir hasta 5 PDFs (máx 10MB cada uno).
                             </p>
                             <ul
                                 v-if="contratosSeleccionados.length > 0"
-                                class="mt-2 text-sm text-slate-700 list-disc list-inside"
+                                class="mt-2 text-sm text-slate-700 dark:text-slate-300 list-disc list-inside"
                             >
                                 <li v-for="(f, idx) in contratosSeleccionados" :key="idx">
                                     {{ f.name }}
@@ -160,32 +160,32 @@
 
                     <div
                         v-if="(documentos || []).length > 0"
-                        class="bg-slate-50 border border-slate-200 rounded-xl p-4"
+                        class="bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-700 rounded-xl p-4 transition-colors duration-200"
                     >
-                        <h3 class="text-sm font-semibold text-slate-900 mb-2">
+                        <h3 class="text-sm font-semibold text-slate-900 dark:text-slate-100 mb-2">
                             Contratos cargados
                         </h3>
                         <div class="space-y-2">
                             <div
                                 v-for="doc in documentos"
                                 :key="doc.id"
-                                class="flex items-center justify-between gap-3 bg-white border border-slate-200 rounded-lg p-3"
+                                class="flex items-center justify-between gap-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-3 transition-colors duration-200"
                             >
                                 <div class="min-w-0">
-                                    <p class="text-sm font-medium text-slate-900 truncate">
+                                    <p class="text-sm font-medium text-slate-900 dark:text-slate-100 truncate">
                                         {{ doc.nombre || ('Contrato #' + doc.id) }}
                                     </p>
-                                    <p v-if="doc.tipo_contrato" class="text-xs text-slate-600">
+                                    <p v-if="doc.tipo_contrato" class="text-xs text-slate-600 dark:text-slate-400">
                                         Tipo: {{ formatTipoContrato(doc.tipo_contrato) }}
                                     </p>
-                                    <p class="text-xs text-slate-500">
+                                    <p class="text-xs text-slate-500 dark:text-slate-400">
                                         {{ doc.created_at }}
                                     </p>
                                 </div>
                                 <div class="flex items-center gap-2 shrink-0">
                                     <a
                                         :href="route('usuarios.documentos.download', { user: props.user.id, documento: doc.id })"
-                                        class="px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-700 text-sm"
+                                        class="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-sm transition-colors duration-200"
                                         target="_blank"
                                     >
                                         Descargar
@@ -193,7 +193,7 @@
                                     <button
                                         type="button"
                                         @click="eliminarDocumento(doc)"
-                                        class="px-3 py-1.5 rounded-lg border border-red-200 hover:bg-red-50 text-red-700 text-sm"
+                                        class="px-3 py-1.5 rounded-lg border border-red-200 dark:border-red-800 hover:bg-red-50 dark:hover:bg-red-900/30 text-red-700 dark:text-red-400 text-sm transition-colors duration-200"
                                     >
                                         Eliminar
                                     </button>
@@ -206,7 +206,7 @@
                         <FormField label="Rol" :error="form.errors.role_id">
                             <select
                                 v-model="form.role_id"
-                                class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-transparent transition-colors duration-200"
                             >
                                 <option :value="null">-</option>
                                 <option
@@ -221,7 +221,7 @@
                         <FormField v-if="!esVisitante" label="Cargo" :error="form.errors.cargo_id">
                             <select
                                 v-model="form.cargo_id"
-                                class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-transparent transition-colors duration-200"
                             >
                                 <option :value="null">-</option>
                                 <option
@@ -244,7 +244,7 @@
                             <input
                                 v-model="form.fecha_expiracion"
                                 type="date"
-                                class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-transparent transition-colors duration-200"
                             />
                         </FormField>
 
@@ -255,7 +255,7 @@
                                     type="checkbox"
                                     class="h-4 w-4"
                                 />
-                                <span class="text-sm text-slate-700"
+                                <span class="text-sm text-slate-700 dark:text-slate-300"
                                     >Activo</span
                                 >
                             </label>
@@ -265,7 +265,7 @@
                                     type="checkbox"
                                     class="h-4 w-4"
                                 />
-                                <span class="text-sm text-slate-700"
+                                <span class="text-sm text-slate-700 dark:text-slate-300"
                                     >Discapacitado</span
                                 >
                             </label>
@@ -276,14 +276,14 @@
                         <button
                             type="button"
                             @click="destroy"
-                            class="px-4 py-2 rounded-lg border border-red-200 text-red-700 hover:bg-red-50"
+                            class="px-4 py-2 rounded-lg border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors duration-200"
                         >
                             Eliminar
                         </button>
                         <button
                             type="submit"
                             :disabled="form.processing"
-                            class="px-4 py-2 rounded-lg bg-slate-900 text-white hover:bg-slate-800 disabled:opacity-50"
+                            class="px-4 py-2 rounded-lg bg-slate-900 dark:bg-slate-700 text-white hover:bg-slate-800 dark:hover:bg-slate-600 disabled:opacity-50 transition-colors duration-200"
                         >
                             {{ form.processing ? "Guardando..." : "Guardar" }}
                         </button>

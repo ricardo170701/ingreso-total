@@ -114,6 +114,14 @@ class MantenimientosController extends Controller
             }
         }
 
+        // Si viene desde una puerta, redirigir a la puerta, si no, a mantenimientos.index
+        $redirectToPuertaId = $request->input('redirect_to_puerta_id');
+        if ($redirectToPuertaId) {
+            return redirect()
+                ->route('puertas.show', ['puerta' => $redirectToPuertaId])
+                ->with('message', 'Mantenimiento registrado exitosamente.');
+        }
+
         return redirect()
             ->route('mantenimientos.index')
             ->with('message', 'Mantenimiento registrado exitosamente.');
@@ -122,21 +130,23 @@ class MantenimientosController extends Controller
     /**
      * Mostrar mantenimiento
      */
-    public function show(Mantenimiento $mantenimiento): Response
+    public function show(Request $request, Mantenimiento $mantenimiento): Response
     {
         $this->authorize('view', $mantenimiento);
 
         $mantenimiento->load(['puerta.piso', 'documentos', 'creadoPor', 'editadoPor']);
+        $fromPuertaId = $request->query('from_puerta_id');
 
         return Inertia::render('Mantenimientos/Show', [
             'mantenimiento' => $mantenimiento,
+            'fromPuertaId' => $fromPuertaId ? (int) $fromPuertaId : null,
         ]);
     }
 
     /**
      * Mostrar formulario de edición
      */
-    public function edit(Mantenimiento $mantenimiento): Response
+    public function edit(Request $request, Mantenimiento $mantenimiento): Response
     {
         $this->authorize('update', $mantenimiento);
 
@@ -146,10 +156,12 @@ class MantenimientosController extends Controller
             ->with('piso')
             ->orderBy('nombre')
             ->get();
+        $fromPuertaId = $request->query('from_puerta_id');
 
         return Inertia::render('Mantenimientos/Edit', [
             'mantenimiento' => $mantenimiento,
             'puertas' => $puertas,
+            'fromPuertaId' => $fromPuertaId ? (int) $fromPuertaId : null,
         ]);
     }
 
@@ -213,6 +225,14 @@ class MantenimientosController extends Controller
             }
         }
 
+        // Si viene desde una puerta, redirigir a la puerta, si no, a mantenimientos.index
+        $fromPuertaId = $request->input('from_puerta_id');
+        if ($fromPuertaId) {
+            return redirect()
+                ->route('puertas.show', ['puerta' => $fromPuertaId])
+                ->with('message', 'Mantenimiento actualizado exitosamente.');
+        }
+
         return redirect()
             ->route('mantenimientos.index')
             ->with('message', 'Mantenimiento actualizado exitosamente.');
@@ -256,6 +276,14 @@ class MantenimientosController extends Controller
             'tipo' => 'realizado',
             'updated_by' => $request->user()->id,
         ]);
+
+        // Si viene desde una puerta, redirigir a la puerta, si no, a mantenimientos.index
+        $fromPuertaId = $request->input('from_puerta_id');
+        if ($fromPuertaId) {
+            return redirect()
+                ->route('puertas.show', ['puerta' => $fromPuertaId])
+                ->with('message', 'Mantenimiento marcado como completado exitosamente.');
+        }
 
         return redirect()
             ->route('mantenimientos.index')

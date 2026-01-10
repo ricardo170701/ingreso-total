@@ -85,7 +85,7 @@ class EnsureUserHasPermission
 
         // Protocolo
         'protocolo.index' => 'view_protocolo',
-        'protocolo.emergencia.activate' => 'protocol_emergency_open_all',
+        'protocolo.emergencia.activate' => 'protocol_emergencia_open_all',
 
         // Mantenimientos
         'mantenimientos.index' => 'view_mantenimientos',

@@ -596,7 +596,9 @@ class PuertasController extends Controller
      */
     private function enviarComandoToggle(string $ip): array
     {
-        $url = "http://{$ip}:8000/api/door/toggle";
+        $port = (int) (config('app.door_emergency_port') ?? env('DOOR_EMERGENCY_PORT', 8000));
+        $apiKey = (string) (config('app.door_api_key') ?? env('DOOR_API_KEY', ''));
+        $url = "http://{$ip}:{$port}/api/door/toggle";
 
         $ch = curl_init($url);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
@@ -606,8 +608,9 @@ class PuertasController extends Controller
         curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode([]));
         curl_setopt($ch, CURLOPT_HTTPHEADER, [
             'Content-Type: application/json',
-            'X-API-KEY: ' . (config('app.access_device_key', '')),
-            'X-Device-Key: ' . (config('app.access_device_key', '')),
+            'Accept: application/json',
+            'X-API-KEY: ' . $apiKey,
+            'X-DEVICE-KEY: ' . $apiKey, // Compatibilidad con ingreso.py
         ]);
 
         $response = curl_exec($ch);
@@ -644,7 +647,9 @@ class PuertasController extends Controller
      */
     private function obtenerEstadoPuerta(string $ip): array
     {
-        $url = "http://{$ip}:8000/api/door/status";
+        $port = (int) (config('app.door_emergency_port') ?? env('DOOR_EMERGENCY_PORT', 8000));
+        $apiKey = (string) (config('app.door_api_key') ?? env('DOOR_API_KEY', ''));
+        $url = "http://{$ip}:{$port}/api/door/status";
 
         $ch = curl_init($url);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
@@ -652,8 +657,8 @@ class PuertasController extends Controller
         curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 2);
         curl_setopt($ch, CURLOPT_HTTPHEADER, [
             'Accept: application/json',
-            'X-API-KEY: ' . (config('app.access_device_key', '')),
-            'X-Device-Key: ' . (config('app.access_device_key', '')),
+            'X-API-KEY: ' . $apiKey,
+            'X-DEVICE-KEY: ' . $apiKey, // Compatibilidad con ingreso.py
         ]);
 
         $response = curl_exec($ch);
@@ -682,7 +687,9 @@ class PuertasController extends Controller
     {
         // Intentar enviar comando por HTTP (asumiendo que hay un servicio en la Raspberry Pi)
         // Si la Raspberry Pi tiene un endpoint que acepta comandos, lo usamos
-        $url = "http://{$ip}:8000/reboot";
+        $port = (int) (config('app.door_emergency_port') ?? env('DOOR_EMERGENCY_PORT', 8000));
+        $apiKey = (string) (config('app.door_api_key') ?? env('DOOR_API_KEY', ''));
+        $url = "http://{$ip}:{$port}/reboot";
 
         $ch = curl_init($url);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
@@ -692,8 +699,9 @@ class PuertasController extends Controller
         curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode(['command' => 'reboot']));
         curl_setopt($ch, CURLOPT_HTTPHEADER, [
             'Content-Type: application/json',
-            'X-API-KEY: ' . (config('app.access_device_key', '')),
-            'X-Device-Key: ' . (config('app.access_device_key', '')), // Compatibilidad
+            'Accept: application/json',
+            'X-API-KEY: ' . $apiKey,
+            'X-DEVICE-KEY: ' . $apiKey, // Compatibilidad con ingreso.py
         ]);
 
         $response = curl_exec($ch);

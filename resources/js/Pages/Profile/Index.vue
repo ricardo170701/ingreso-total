@@ -4,8 +4,8 @@
             <!-- Header -->
             <div class="flex items-center justify-between">
                 <div>
-                    <h1 class="text-2xl font-semibold text-slate-900">Mi Perfil</h1>
-                    <p class="text-sm text-slate-600 mt-1">
+                    <h1 class="text-2xl font-semibold text-slate-900 dark:text-slate-100">Mi Perfil</h1>
+                    <p class="text-sm text-slate-600 dark:text-slate-400 mt-1">
                         Gestiona tu información personal y configuración de cuenta
                     </p>
                 </div>
@@ -14,29 +14,29 @@
             <!-- Mensajes de éxito/error -->
             <div
                 v-if="$page.props.flash?.success"
-                class="p-4 rounded-lg bg-green-50 border border-green-200 text-green-800"
+                class="p-4 rounded-lg bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-green-800 dark:text-green-200"
             >
                 {{ $page.props.flash.success }}
             </div>
             <div
                 v-if="$page.props.flash?.error"
-                class="p-4 rounded-lg bg-red-50 border border-red-200 text-red-800"
+                class="p-4 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-800 dark:text-red-200"
             >
                 {{ $page.props.flash.error }}
             </div>
 
             <!-- Formulario de perfil -->
-            <div class="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
+            <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-6 shadow-sm">
                 <form @submit.prevent="submit" class="space-y-6">
                     <!-- Foto de perfil -->
                     <div>
-                        <label class="block text-sm font-medium text-slate-700 mb-2">
+                        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                             Foto de Perfil
                         </label>
                         <div class="flex items-start gap-6">
                             <!-- Foto actual -->
                             <div class="flex-shrink-0">
-                                <div class="w-32 h-32 rounded-full overflow-hidden bg-slate-100 border-2 border-slate-200">
+                                <div class="w-32 h-32 rounded-full overflow-hidden bg-slate-100 dark:bg-slate-700 border-2 border-slate-200 dark:border-slate-600">
                                     <img
                                         v-if="fotoPreview || user.foto_perfil"
                                         :src="fotoPreview || storageUrl(user.foto_perfil)"
@@ -45,7 +45,7 @@
                                     />
                                     <div
                                         v-else
-                                        class="w-full h-full flex items-center justify-center text-slate-400 text-4xl"
+                                        class="w-full h-full flex items-center justify-center text-slate-400 dark:text-slate-500 text-4xl"
                                     >
                                         👤
                                     </div>
@@ -58,9 +58,9 @@
                                     ref="fotoInput"
                                     @change="handleFotoChange"
                                     accept="image/jpeg,image/png,image/jpg,image/gif"
-                                    class="block w-full text-sm text-slate-700 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-slate-50 file:text-slate-700 hover:file:bg-slate-100"
+                                    class="block w-full text-sm text-slate-700 dark:text-slate-300 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-slate-50 dark:file:bg-slate-700 file:text-slate-700 dark:file:text-slate-200 hover:file:bg-slate-100 dark:hover:file:bg-slate-600"
                                 />
-                                <p class="mt-2 text-xs text-slate-500">
+                                <p class="mt-2 text-xs text-slate-500 dark:text-slate-400">
                                     Formatos permitidos: JPEG, PNG, JPG, GIF. Tamaño máximo: 2MB
                                 </p>
                                 <div v-if="form.errors.foto" class="mt-1 text-sm text-red-600">
@@ -76,7 +76,7 @@
                             <input
                                 v-model="form.nombre"
                                 type="text"
-                                class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-transparent"
                                 placeholder="Tu nombre"
                             />
                         </FormField>
@@ -85,7 +85,7 @@
                             <input
                                 v-model="form.apellido"
                                 type="text"
-                                class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-transparent"
                                 placeholder="Tu apellido"
                             />
                         </FormField>
@@ -97,52 +97,80 @@
                             :value="user.email"
                             type="email"
                             disabled
-                            class="w-full px-3 py-2 rounded-lg border border-slate-200 bg-slate-50 text-slate-500 cursor-not-allowed"
+                            class="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 text-slate-500 dark:text-slate-400 cursor-not-allowed"
                         />
-                        <p class="mt-1 text-xs text-slate-500">
+                        <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
                             El email no puede ser modificado desde aquí
                         </p>
                     </FormField>
 
                     <!-- Información adicional (solo lectura) -->
-                    <div class="pt-6 border-t border-slate-200">
-                        <h3 class="text-sm font-semibold text-slate-900 mb-4">
+                    <div class="pt-6 border-t border-slate-200 dark:border-slate-700">
+                        <h3 class="text-sm font-semibold text-slate-900 dark:text-slate-100 mb-4">
                             Información de Cuenta
                         </h3>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
-                                <p class="text-xs text-slate-500 mb-1">Rol</p>
-                                <p class="text-sm text-slate-900 font-medium">
+                                <p class="text-xs text-slate-500 dark:text-slate-400 mb-1">Rol</p>
+                                <p class="text-sm text-slate-900 dark:text-slate-100 font-medium">
                                     {{ user.role?.name || "-" }}
                                 </p>
                             </div>
                             <div v-if="user.cargo">
-                                <p class="text-xs text-slate-500 mb-1">Cargo</p>
-                                <p class="text-sm text-slate-900 font-medium">
+                                <p class="text-xs text-slate-500 dark:text-slate-400 mb-1">Cargo</p>
+                                <p class="text-sm text-slate-900 dark:text-slate-100 font-medium">
                                     {{ user.cargo?.name || "-" }}
                                 </p>
                             </div>
                             <div v-if="user.gerencia">
-                                <p class="text-xs text-slate-500 mb-1">Secretaría / Gerencia</p>
-                                <p class="text-sm text-slate-900 font-medium">
+                                <p class="text-xs text-slate-500 dark:text-slate-400 mb-1">Secretaría / Gerencia</p>
+                                <p class="text-sm text-slate-900 dark:text-slate-100 font-medium">
                                     <span class="font-medium">{{ user.gerencia.secretaria?.nombre || "-" }}</span>
-                                    <span v-if="user.gerencia.secretaria?.piso" class="text-slate-500">
+                                    <span v-if="user.gerencia.secretaria?.piso" class="text-slate-500 dark:text-slate-400">
                                         · {{ user.gerencia.secretaria.piso.nombre }}
                                     </span>
                                 </p>
-                                <p class="text-xs text-slate-600 mt-1">
+                                <p class="text-xs text-slate-600 dark:text-slate-400 mt-1">
                                     Gerencia: {{ user.gerencia.nombre }}
                                 </p>
                             </div>
                         </div>
                     </div>
 
+                    <!-- Configuración de apariencia -->
+                    <div class="pt-6 border-t border-slate-200 dark:border-slate-700">
+                        <h3 class="text-sm font-semibold text-slate-900 dark:text-slate-100 mb-4">
+                            Configuración de Apariencia
+                        </h3>
+                        <div class="flex items-center justify-between py-3">
+                            <div>
+                                <p class="text-sm font-medium text-slate-900 dark:text-slate-100">
+                                    Modo Oscuro
+                                </p>
+                                <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                                    Cambia entre tema claro y oscuro
+                                </p>
+                            </div>
+                            <button
+                                @click="toggleDarkMode"
+                                type="button"
+                                class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 dark:focus:ring-offset-slate-800"
+                                :class="isDark ? 'bg-green-600' : 'bg-slate-200'"
+                            >
+                                <span
+                                    class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-200"
+                                    :class="isDark ? 'translate-x-6' : 'translate-x-1'"
+                                />
+                            </button>
+                        </div>
+                    </div>
+
                     <!-- Cambio de contraseña -->
-                    <div class="pt-6 border-t border-slate-200">
-                        <h3 class="text-sm font-semibold text-slate-900 mb-4">
+                    <div class="pt-6 border-t border-slate-200 dark:border-slate-700">
+                        <h3 class="text-sm font-semibold text-slate-900 dark:text-slate-100 mb-4">
                             Cambiar Contraseña
                         </h3>
-                        <p class="text-xs text-slate-500 mb-4">
+                        <p class="text-xs text-slate-500 dark:text-slate-400 mb-4">
                             Deja estos campos vacíos si no deseas cambiar tu contraseña
                         </p>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -153,7 +181,7 @@
                                 <input
                                     v-model="form.password"
                                     type="password"
-                                    class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                    class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-transparent"
                                     placeholder="••••••••"
                                 />
                             </FormField>
@@ -165,7 +193,7 @@
                                 <input
                                     v-model="form.password_confirmation"
                                     type="password"
-                                    class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                    class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-transparent"
                                     placeholder="••••••••"
                                 />
                             </FormField>
@@ -173,17 +201,17 @@
                     </div>
 
                     <!-- Botones de acción -->
-                    <div class="flex items-center justify-end gap-3 pt-6 border-t border-slate-200">
+                    <div class="flex items-center justify-end gap-3 pt-6 border-t border-slate-200 dark:border-slate-700">
                         <Link
                             :href="route('dashboard')"
-                            class="px-4 py-2 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-700 font-medium"
+                            class="px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-medium transition-colors duration-200"
                         >
                             Cancelar
                         </Link>
                         <button
                             type="submit"
                             :disabled="form.processing"
-                            class="px-4 py-2 rounded-lg bg-green-600 hover:bg-green-700 text-white font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                            class="px-4 py-2 rounded-lg bg-green-600 hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600 text-white font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
                         >
                             <span v-if="form.processing">Guardando...</span>
                             <span v-else>Guardar Cambios</span>
@@ -201,6 +229,9 @@ import { useForm, Link } from "@inertiajs/vue3";
 import AppLayout from "@/Layouts/AppLayout.vue";
 import FormField from "@/Components/FormField.vue";
 import { submitUploadForm } from "@/Support/inertiaUploads";
+import { useDarkMode } from "@/composables/useDarkMode";
+
+const { isDark, toggleDarkMode } = useDarkMode();
 
 const props = defineProps({
     user: {

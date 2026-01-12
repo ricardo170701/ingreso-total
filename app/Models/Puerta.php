@@ -31,7 +31,8 @@ class Puerta extends Model
         'ubicacion',
         'descripcion',
         // Identificador físico del lector/puerta (si aplica)
-        'codigo_fisico',
+        'codigo_fisico', // Raspberry/lector de entrada
+        'codigo_fisico_salida', // Raspberry/lector de salida
         // Puerta especial (ej: discapacitados)
         'requiere_discapacidad',
         'activo',

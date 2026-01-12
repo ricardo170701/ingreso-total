@@ -77,7 +77,10 @@ class AccessController extends Controller
 
         $puerta = Puerta::query()
             ->with('piso')
-            ->where('codigo_fisico', $data['codigo_fisico'])
+            ->where(function ($q) use ($data) {
+                $q->where('codigo_fisico', $data['codigo_fisico'])
+                    ->orWhere('codigo_fisico_salida', $data['codigo_fisico']);
+            })
             ->first();
 
         if (!$puerta) {

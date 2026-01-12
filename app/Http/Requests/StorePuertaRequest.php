@@ -39,6 +39,7 @@ class StorePuertaRequest extends FormRequest
             'ubicacion' => ['nullable', 'string', 'max:255'],
             'descripcion' => ['nullable', 'string'],
             'codigo_fisico' => ['nullable', 'string', 'max:50', 'unique:puertas,codigo_fisico'],
+            'codigo_fisico_salida' => ['nullable', 'string', 'max:50', 'unique:puertas,codigo_fisico_salida'],
             'requiere_discapacidad' => ['nullable', 'boolean'],
             'activo' => ['nullable', 'boolean'],
         ];

@@ -218,11 +218,21 @@
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <FormField
-                            label="Código Físico"
+                            label="Código Físico (Entrada)"
                             :error="form.errors.codigo_fisico"
                         >
                             <input
                                 v-model="form.codigo_fisico"
+                                type="text"
+                                class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-transparent transition-colors duration-200"
+                            />
+                        </FormField>
+                        <FormField
+                            label="Código Físico (Salida)"
+                            :error="form.errors.codigo_fisico_salida"
+                        >
+                            <input
+                                v-model="form.codigo_fisico_salida"
                                 type="text"
                                 class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-transparent transition-colors duration-200"
                             />
@@ -323,6 +333,7 @@ const form = useForm({
     ancho: props.puerta.ancho ?? null,
     peso: props.puerta.peso ?? null,
     codigo_fisico: props.puerta.codigo_fisico || "",
+    codigo_fisico_salida: props.puerta.codigo_fisico_salida || "",
     ubicacion: props.puerta.ubicacion || "",
     descripcion: props.puerta.descripcion || "",
     activo: !!props.puerta.activo,

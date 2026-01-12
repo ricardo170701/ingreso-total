@@ -84,6 +84,7 @@ class PuertaSeeder extends Seeder
                 // Generar código físico más descriptivo
                 $prefijoPiso = strtoupper(preg_replace('/[^A-Z0-9]/', '', substr($piso->nombre, 0, 3)));
                 $codigoFisico = $prefijoPiso . '-P' . str_pad($ipCounter, 3, '0', STR_PAD_LEFT);
+                $codigoFisicoSalida = $prefijoPiso . '-S' . str_pad($ipCounter, 3, '0', STR_PAD_LEFT);
 
                 // Generar IPs consecutivas para entrada y salida
                 $ipEntrada = $ipBase . '.' . $ipCounter;
@@ -127,6 +128,7 @@ class PuertaSeeder extends Seeder
                         'ubicacion' => $ubicaciones[array_rand($ubicaciones)],
                         'descripcion' => "Puerta de acceso ubicada en {$piso->nombre}",
                         'codigo_fisico' => $codigoFisico,
+                        'codigo_fisico_salida' => $codigoFisicoSalida,
                         'requiere_discapacidad' => $requiereDiscapacidad,
                         'activo' => $activo,
                     ]

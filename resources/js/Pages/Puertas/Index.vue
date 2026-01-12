@@ -364,9 +364,18 @@
                                         v-if="puerta.codigo_fisico"
                                         class="flex items-center gap-2"
                                     >
-                                        <span class="font-medium text-slate-700 dark:text-slate-300 min-w-[100px]">Código Físico:</span>
+                                        <span class="font-medium text-slate-700 dark:text-slate-300 min-w-[100px]">Código Físico (Ent):</span>
                                         <code class="px-1.5 py-0.5 bg-slate-100 dark:bg-slate-700 rounded text-xs text-slate-900 dark:text-slate-100">
                                             {{ puerta.codigo_fisico }}
+                                        </code>
+                                    </div>
+                                    <div
+                                        v-if="puerta.codigo_fisico_salida"
+                                        class="flex items-center gap-2"
+                                    >
+                                        <span class="font-medium text-slate-700 dark:text-slate-300 min-w-[100px]">Código Físico (Sal):</span>
+                                        <code class="px-1.5 py-0.5 bg-slate-100 dark:bg-slate-700 rounded text-xs text-slate-900 dark:text-slate-100">
+                                            {{ puerta.codigo_fisico_salida }}
                                         </code>
                                     </div>
                                     <div

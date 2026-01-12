@@ -51,12 +51,14 @@ class BuildingSeeder extends Seeder
                     [
                         'nombre' => "Entrada {$z['codigo']}",
                         'codigo_fisico' => "{$z['codigo']}-ENT",
+                        'codigo_fisico_salida' => "{$z['codigo']}-SAL",
                         'requiere_discapacidad' => false,
                         'activo' => true,
                     ],
                     [
                         'nombre' => "Puerta Discapacitados {$z['codigo']}",
                         'codigo_fisico' => "{$z['codigo']}-DIS",
+                        'codigo_fisico_salida' => "{$z['codigo']}-DIS-SAL",
                         'requiere_discapacidad' => true,
                         'activo' => true,
                     ],
@@ -70,6 +72,7 @@ class BuildingSeeder extends Seeder
                             'nombre' => $p['nombre'],
                             'ubicacion' => $zona->nombre,
                             'descripcion' => null,
+                            'codigo_fisico_salida' => $p['codigo_fisico_salida'] ?? null,
                             'requiere_discapacidad' => $p['requiere_discapacidad'],
                             'activo' => $p['activo'],
                         ]

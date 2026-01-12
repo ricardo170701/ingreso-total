@@ -148,9 +148,15 @@
                                 </p>
                             </div>
                             <div>
-                                <p class="text-xs text-slate-500 dark:text-slate-400">Código físico</p>
+                                <p class="text-xs text-slate-500 dark:text-slate-400">Código físico (entrada)</p>
                                 <p class="text-sm text-slate-700 dark:text-slate-300">
                                     {{ puerta.codigo_fisico || "-" }}
+                                </p>
+                            </div>
+                            <div>
+                                <p class="text-xs text-slate-500 dark:text-slate-400">Código físico (salida)</p>
+                                <p class="text-sm text-slate-700 dark:text-slate-300">
+                                    {{ puerta.codigo_fisico_salida || "-" }}
                                 </p>
                             </div>
                             <div>

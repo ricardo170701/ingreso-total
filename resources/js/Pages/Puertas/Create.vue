@@ -274,6 +274,16 @@
                                 >Requiere discapacidad</span
                             >
                         </label>
+                        <label class="inline-flex items-center gap-2">
+                            <input
+                                v-model="form.es_oculta"
+                                type="checkbox"
+                                class="h-4 w-4"
+                            />
+                            <span class="text-sm text-slate-700 dark:text-slate-300"
+                                >Puerta oculta (requiere permiso especial para ver)</span
+                            >
+                        </label>
                     </div>
 
                     <div class="flex items-center justify-end gap-2 pt-2">
@@ -324,6 +334,7 @@ const form = useForm({
     descripcion: "",
     activo: true,
     requiere_discapacidad: false,
+    es_oculta: false,
 });
 
 const submit = () => {

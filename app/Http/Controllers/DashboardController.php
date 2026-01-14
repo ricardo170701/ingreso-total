@@ -145,9 +145,17 @@ class DashboardController extends Controller
             ->count();
 
         // Puertas (tarjetas del dashboard)
-        $puertasDashboard = Puerta::query()
+        $queryPuertas = Puerta::query()
             ->where('activo', true)
-            ->with(['piso'])
+            ->with(['piso']);
+
+        // Filtrar puertas ocultas: solo mostrarlas si el usuario tiene el permiso
+        $user = $request->user();
+        if (!$user || !$user->hasPermission('view_puertas_ocultas')) {
+            $queryPuertas->where('es_oculta', false);
+        }
+
+        $puertasDashboard = $queryPuertas
             ->orderBy('nombre')
             ->limit(9)
             ->get()

@@ -1,0 +1,45 @@
+Pasillo,Operación,Perfil de Usuario,Dirección IP,Habilitada,Nombre ,zona,piso,tipo_puerta,material,alto,largo,ancho,peso,descripcion,codigo fisico
+Pasillo 1,Entrada,Funcionarios,172.22.40.2,TRUE,GMET-MPF1,,Piso 1,Molinete,Vidrio ,,,,,#REF!,GMET-MPF1
+Pasillo 1,Salida,Funcionarios,172.22.40.1,TRUE,GMET-MPF1,,Piso 1,Molinete,Vidrio ,,,,,#REF!,GMET-MPF1
+Pasillo 1,Entrada,Visitantes,172.22.40.16,TRUE,GMET-MPV5,,Piso 1,Molinete,Vidrio ,,,,,#REF!,GMET-MPV5
+Pasillo 1,Salida,Visitantes,172.22.40.4,TRUE,GMET-MPV5,,Piso 1,Molinete,Vidrio ,,,,,#REF!,GMET-MPV5
+Pasillo 2,Entrada,Funcionarios,172.22.40.15,TRUE,GMET-MPF2,,Piso 1,Molinete,Vidrio ,,,,,#REF!,GMET-MPF2
+Pasillo 2,Salida,Funcionarios,172.22.40.3,TRUE,GMET-MPF2,,Piso 1,Molinete,Vidrio ,,,,,#REF!,GMET-MPF2
+Pasillo 2,Entrada,Visitantes,172.22.40.13,TRUE,GMET-MPV6,,Piso 1,Molinete,Vidrio ,,,,,#REF!,GMET-MPV6
+Pasillo 2,Salida,Visitantes,172.22.40.14,TRUE,GMET-MPV6,,Piso 1,Molinete,Vidrio ,,,,,#REF!,GMET-MPV6
+Pasillo 3,Entrada,Funcionarios,172.22.40.6,TRUE,GMET-MPF3,,Piso 1,Molinete,Vidrio ,,,,,#REF!,GMET-MPF3
+Pasillo 3,Salida,Funcionarios,172.22.40.5,TRUE,GMET-MPF3,,Piso 1,Molinete,Vidrio ,,,,,#REF!,GMET-MPF3
+Pasillo 3,Entrada,Visitantes,172.22.40.11,TRUE,GMET-MPV7,,Piso 1,Molinete,Vidrio ,,,,,#REF!,GMET-MPV7
+Pasillo 3,Salida,Visitantes,172.22.40.12,TRUE,GMET-MPV7,,Piso 1,Molinete,Vidrio ,,,,,#REF!,GMET-MPV7
+Pasillo 4,Entrada,Funcionarios Disc,172.22.40.8,TRUE,GMET-MPF4,,Piso 1,Molinete,Vidrio ,,,,,#REF!,GMET-MPF4
+Pasillo 4,Salida,Funcionarios Disc,172.22.40.7,TRUE,GMET-MPF4,,Piso 1,Molinete,Vidrio ,,,,,#REF!,GMET-MPF4
+Pasillo 4,Entrada,Visitantes Disc,172.22.40.9,TRUE,GMET-MPV8,,Piso 1,Molinete,Vidrio ,,,,,#REF!,GMET-MPV8
+Pasillo 4,Salida,Visitantes Disc,172.22.40.10,TRUE,GMET-MPV8,,Piso 1,Molinete,Vidrio ,,,,,#REF!,GMET-MPV8
+Sub -1,Entrada,Data Center Tic,172.22.40.43,TRUE,GMET-S1-DT,,Sub -1,Puerta,Hierro,,,,,#REF!,GMET-S1-DT
+Mezzanine,Entrada,1 Funcionarios,172.22.40.42,TRUE,GMET-M-PF1,,Mezanine,Puerta,Aluminio,"2,44","1,1","0,1",,#REF!,GMET-M-PF1
+Mezzanine,Entrada,2 Pasaportes,172.22.40.44,FALSE,,,Mezanine,Puerta,Aluminio,,,,,,
+Piso 2,Entrada,1 Funcionarios, 172.22.40.17,TRUE,GMET-P2-PF1,,Piso 2 ,Puerta,Aluminio,"2,44","1,5","0,1",,#REF!,GMET-P2-PF1
+Piso 2,Entrada,2 Visitantes, 172.22.40.18,TRUE,GMET-P2-PV2,,Piso 2 ,Puerta,Aluminio,"2,44","1,5","0,1",,#REF!,GMET-P2-PV2
+Piso 2,Entrada,3 Visitantes Aux, 172.22.40.19,TRUE,GMET-P2-PV3,,Piso 2 ,Puerta,Aluminio,"2,44","0,7","0,1",,#REF!,GMET-P2-PV3
+Piso 3,Entrada,1 Funcionarios, 172.22.40.20,TRUE,GMET-P3-PF1,,Piso 3,Puerta,Aluminio,"2,44","1,5","0,1",,#REF!,GMET-P3-PF1
+Piso 3,Entrada,2 Visitantes,172.22.40.21,TRUE,GMET-P3-PV2,,Piso 3,Puerta,Aluminio,"2,44","1,5","0,1",,#REF!,GMET-P3-PV2
+Piso 3,Entrada,3 Visitantes Aux, 172.22.40.21,TRUE,GMET-P3-PV3,,Piso 3,Puerta,Aluminio,"2,44","0,7","0,1",,#REF!,GMET-P3-PV3
+Piso 4,Entrada,1 Funcionarios,172.22.40.23,TRUE,GMET-P4-PF1,,Piso 4,Puerta,Aluminio,"2,44","1,5","0,1",,#REF!,GMET-P4-PF1
+Piso 4,Entrada,2 Visitantes,172.22.40.24,TRUE,GMET-P4-PV2,,Piso 4,Puerta,Aluminio,"2,44","1,5","0,1",,#REF!,GMET-P4-PV2
+Piso 4,Entrada,3 Visitantes Aux,172.22.40.25,TRUE,GMET-P4-PV3,,Piso 4,Puerta,Aluminio,"2,44","0,7","0,1",,#REF!,GMET-P4-PV3
+Piso 5,Entrada,1 Funcionarios, 172.22.40.26,TRUE,GMET-P5-PF1,,Piso 5,Puerta,Aluminio,"2,44","1,5","0,1",,#REF!,GMET-P5-PF1
+Piso 5,Entrada,2 Visitantes,172.22.40.27,TRUE,GMET-P5-PV2,,Piso 5,Puerta,Aluminio,"2,44","1,5","0,1",,#REF!,GMET-P5-PV2
+Piso 5,Entrada,3 Visitantes Aux, 172.22.40.28,TRUE,GMET-P5-PV3,,Piso 5,Puerta,Aluminio,"2,44","0,7","0,1",,#REF!,GMET-P5-PV3
+Piso 6,Entrada,1 Funcionarios, 172.22.40.29,TRUE,GMET-P6-PF1,,Piso 6,Puerta,Aluminio,"2,44","1,5","0,1",,#REF!,GMET-P6-PF1
+Piso 6,Entrada,2 Visitantes,172.22.40.30,TRUE,GMET-P6-PV2,,Piso 6,Puerta,Aluminio,"2,44","1,5","0,1",,#REF!,GMET-P6-PV2
+Piso 6,Entrada,3 Visitantes Aux,172.22.40.31,TRUE,GMET-P6-PV3,,Piso 6,Puerta,Aluminio,"2,44","0,7","0,1",,#REF!,GMET-P6-PV3
+Piso 7,Entrada,1 Funcionarios Escaleras Emer,172.22.40.35,TRUE,GMET-P7-PEF1,,Piso 7,Puerta,Hierro,"2,44","0,7","0,1",,#REF!,GMET-P7-PEF1
+Piso 7,Entrada,2 Funcionarios , 172.22.40.36,TRUE,GMET-P7-PF2,,Piso 7,Puerta,Aluminio,"2,44","1,5","0,1",,#REF!,GMET-P7-PF2
+Piso 7,Entrada,3 Funcionarios, 172.22.40.37,TRUE,GMET-P7-PF3,,Piso 7,Puerta,Vidrio ,"2,44","0,7","0,1",,#REF!,GMET-P7-PF3
+Piso 7,Entrada,4 corrediza visitantes, 172.22.40.38,TRUE,GMET-P7-PC4,,Piso 7,Puerta,Aluminio,"2,44",2,"0,1",,#REF!,GMET-P7-PC4
+Piso 7,Entrada,5 visitantes,172.22.40.39,TRUE,GMET-P7-PV5,,Piso 7,Puerta,Aluminio,"2,44","1,5","0,1",,#REF!,GMET-P7-PV5
+Piso 7,Entrada,6 Escaleras Visitantes, 172.22.40.40,TRUE,GMET-P7-PEV6,,Piso 7,Puerta,Hierro,"2,44","0,7","0,1",,#REF!,GMET-P7-PEV6
+Piso 7,Entrada,7 Escalera emergencia visitantes,172.22.40.41,TRUE,GMET-P7-PEV7,,Piso 7,Puerta,Hierro,"2,44","0,7","0,1",,#REF!,GMET-P7-PEV7
+Piso 8,Entrada,1 Funcionarios,172.22.40.32,TRUE,GMET-P8-PEF1,,Piso 8,Puerta,Hierro,"2,44","0,7","0,1",,#REF!,GMET-P8-PEF1
+Piso 8,Entrada,2 Visitantes,172.22.40.33,TRUE,GMET-P8-PEV2,,Piso 8,Puerta,Hierro,"2,44","1,5","0,1",,#REF!,GMET-P8-PEV2
+Piso 8,Entrada,3 Visitantes Emerg,172.22.40.34,TRUE,GMET-P8-PEV3,,Piso 8,Puerta,Hierro,"2,44","1,5","0,1",,#REF!,GMET-P8-PEV3

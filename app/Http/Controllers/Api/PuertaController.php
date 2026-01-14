@@ -33,7 +33,15 @@ class PuertaController extends Controller
         $perPage = (int) ($request->query('per_page', 15));
         $perPage = max(1, min(100, $perPage));
 
-        return response()->json(Puerta::query()->with('zona')->orderBy('id')->paginate($perPage));
+        $query = Puerta::query()->with('zona');
+
+        // Filtrar puertas ocultas: solo mostrarlas si el usuario tiene el permiso
+        $user = $request->user();
+        if (!$user || !$user->hasPermission('view_puertas_ocultas')) {
+            $query->where('es_oculta', false);
+        }
+
+        return response()->json($query->orderBy('id')->paginate($perPage));
     }
 
     /**

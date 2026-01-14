@@ -316,7 +316,7 @@ const menuItems = [
         label: "Reportes",
         href: "/reportes",
         icon: "📊",
-        permission: "view_users", // Mismo permiso que usuarios
+        permission: "view_reportes",
     },
     {
         name: "protocolo",
@@ -324,12 +324,13 @@ const menuItems = [
         href: "/protocolo",
         icon: "🚨",
         permission: "view_protocolo",
-    },{
+    },
+    {
         name: "soporte",
         label: "Soporte",
         href: "/soporte",
         icon: "❓",
-        permission: null, // Accesible para todos los usuarios autenticados
+        permission: "view_soporte",
     },
 ];
 
@@ -426,12 +427,14 @@ const formatPermissionName = (permission) => {
         create_tarjetas_nfc: "Crear Tarjetas NFC",
         edit_tarjetas_nfc: "Editar Tarjetas NFC",
         delete_tarjetas_nfc: "Eliminar Tarjetas NFC",
+        view_reportes: "Ver Reportes",
         view_mantenimientos: "Ver Mantenimientos",
         create_mantenimientos: "Crear Mantenimientos",
         edit_mantenimientos: "Editar Mantenimientos",
         delete_mantenimientos: "Eliminar Mantenimientos",
         view_protocolo: "Ver Protocolo de Emergencia",
         protocol_emergencia_open_all: "Ejecutar Protocolo de Emergencia",
+        view_soporte: "Ver Soporte/FAQs",
     };
     return names[permission] || permission;
 };

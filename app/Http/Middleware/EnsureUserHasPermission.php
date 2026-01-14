@@ -100,6 +100,9 @@ class EnsureUserHasPermission
         'protocolo.index' => 'view_protocolo',
         'protocolo.emergencia.activate' => 'protocol_emergencia_open_all',
 
+        // Soporte
+        'soporte.index' => 'view_soporte',
+
         // Mantenimientos
         'mantenimientos.index' => 'view_mantenimientos',
         'mantenimientos.show' => 'view_mantenimientos',

@@ -48,6 +48,12 @@ class PuertasController extends Controller
             $query->where('piso_id', $pisoId);
         }
 
+        // Filtrar puertas ocultas: solo mostrarlas si el usuario tiene el permiso
+        $user = $request->user();
+        if (!$user || !$user->hasPermission('view_puertas_ocultas')) {
+            $query->where('es_oculta', false);
+        }
+
         $puertas = $query->orderBy('nombre')->paginate($perPage);
 
         // Agregar estado de mantenimiento a cada puerta

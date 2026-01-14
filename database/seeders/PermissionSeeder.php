@@ -30,6 +30,7 @@ class PermissionSeeder extends Seeder
             ['name' => 'delete_puertas', 'description' => 'Eliminar Puertas', 'group' => 'puertas'],
             ['name' => 'toggle_puertas', 'description' => 'Abrir/Cerrar Puertas Manualmente', 'group' => 'puertas'],
             ['name' => 'reboot_puertas', 'description' => 'Reiniciar Raspberry Pi de Puertas', 'group' => 'puertas'],
+            ['name' => 'view_puertas_ocultas', 'description' => 'Ver Puertas Ocultas', 'group' => 'puertas'],
 
             // Zonas
             ['name' => 'view_zonas', 'description' => 'Ver Zonas', 'group' => 'zonas'],

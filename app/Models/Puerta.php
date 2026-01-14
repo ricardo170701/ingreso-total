@@ -35,12 +35,14 @@ class Puerta extends Model
         'codigo_fisico_salida', // Raspberry/lector de salida
         // Puerta especial (ej: discapacitados)
         'requiere_discapacidad',
+        'es_oculta', // Puerta oculta (solo visible con permiso)
         'activo',
     ];
 
     protected $casts = [
         'activo' => 'boolean',
         'requiere_discapacidad' => 'boolean',
+        'es_oculta' => 'boolean',
         'tiempo_apertura' => 'integer',
         'tiempo_discapacitados' => 'integer',
         'alto' => 'decimal:2',

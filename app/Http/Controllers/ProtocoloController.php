@@ -28,13 +28,10 @@ class ProtocoloController extends Controller
             abort(403, 'No tienes permiso para acceder a esta sección.');
         }
 
-        // Obtener puertas activas con IPs
+        // Obtener puertas activas con IP de entrada (solo entrada para protocolo de emergencia)
         $puertas = Puerta::query()
             ->where('activo', true)
-            ->where(function ($query) {
-                $query->whereNotNull('ip_entrada')
-                    ->orWhereNotNull('ip_salida');
-            })
+            ->whereNotNull('ip_entrada')
             ->orderBy('nombre')
             ->get()
             ->map(function ($puerta) {
@@ -42,7 +39,6 @@ class ProtocoloController extends Controller
                     'id' => $puerta->id,
                     'nombre' => $puerta->nombre,
                     'ip_entrada' => $puerta->ip_entrada,
-                    'ip_salida' => $puerta->ip_salida,
                 ];
             });
 
@@ -91,17 +87,14 @@ class ProtocoloController extends Controller
 
         $durationSeconds = $request->input('duration_seconds', 900); // 15 minutos por defecto
 
-        // Obtener todas las puertas activas con IPs
+        // Obtener todas las puertas activas con IP de entrada (solo entrada para protocolo de emergencia)
         $puertas = Puerta::query()
             ->where('activo', true)
-            ->where(function ($query) {
-                $query->whereNotNull('ip_entrada')
-                    ->orWhereNotNull('ip_salida');
-            })
+            ->whereNotNull('ip_entrada')
             ->get();
 
         if ($puertas->isEmpty()) {
-            return back()->withErrors(['error' => 'No hay puertas activas con IPs configuradas.']);
+            return back()->withErrors(['error' => 'No hay puertas activas con IP de entrada configurada.']);
         }
 
         DB::beginTransaction();
@@ -120,14 +113,12 @@ class ProtocoloController extends Controller
             $jobs = [];
             $totalPuertas = 0;
 
-            // Crear items y jobs para cada puerta
+            // Crear items y jobs para cada puerta (solo usando IP de entrada)
             foreach ($puertas as $puerta) {
-                // Priorizar ip_entrada, si no existe usar ip_salida
-                $ip = $puerta->ip_entrada ?? $puerta->ip_salida;
-                $tipoIp = $puerta->ip_entrada ? 'entrada' : 'salida';
+                $ip = $puerta->ip_entrada;
 
                 if (!$ip) {
-                    continue; // Saltar si no tiene IP
+                    continue; // Saltar si no tiene IP de entrada
                 }
 
                 // Crear el item
@@ -135,7 +126,7 @@ class ProtocoloController extends Controller
                     'protocol_run_id' => $protocolRun->id,
                     'puerta_id' => $puerta->id,
                     'ip' => $ip,
-                    'tipo_ip' => $tipoIp,
+                    'tipo_ip' => 'entrada',
                     'estado' => 'pendiente',
                 ]);
 

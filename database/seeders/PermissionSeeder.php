@@ -57,6 +57,15 @@ class PermissionSeeder extends Seeder
             ['name' => 'view_ingreso', 'description' => 'Ver Ingreso/QR', 'group' => 'ingreso'],
             ['name' => 'create_ingreso', 'description' => 'Generar Códigos QR', 'group' => 'ingreso'],
             ['name' => 'create_ingreso_otros', 'description' => 'Generar QR para otros usuarios', 'group' => 'ingreso'],
+            ['name' => 'view_ingreso_funcionarios', 'description' => 'Ver Funcionarios en selector de Ingreso', 'group' => 'ingreso'],
+            ['name' => 'create_ingreso_visitantes', 'description' => 'Crear usuarios visitantes desde Ingreso', 'group' => 'ingreso'],
+
+            // Tarjetas NFC
+            ['name' => 'view_tarjetas_nfc', 'description' => 'Ver Tarjetas NFC', 'group' => 'tarjetas_nfc'],
+            ['name' => 'create_tarjetas_nfc', 'description' => 'Crear Tarjetas NFC', 'group' => 'tarjetas_nfc'],
+            ['name' => 'edit_tarjetas_nfc', 'description' => 'Editar Tarjetas NFC', 'group' => 'tarjetas_nfc'],
+            ['name' => 'delete_tarjetas_nfc', 'description' => 'Eliminar Tarjetas NFC', 'group' => 'tarjetas_nfc'],
+            ['name' => 'asignar_tarjetas_nfc', 'description' => 'Asignar Tarjetas NFC desde Ingreso', 'group' => 'ingreso'],
 
             // Mantenimientos
             ['name' => 'view_mantenimientos', 'description' => 'Ver Mantenimientos', 'group' => 'mantenimientos'],

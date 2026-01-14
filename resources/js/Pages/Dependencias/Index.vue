@@ -32,6 +32,33 @@
                 {{ $page.props.errors.error }}
             </div>
 
+            <!-- Buscador -->
+            <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-4 transition-colors duration-200">
+                <form @submit.prevent="applySearch" class="flex flex-col sm:flex-row gap-2 sm:items-center">
+                    <input
+                        v-model="searchForm.search"
+                        type="text"
+                        class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 transition-colors duration-200"
+                        placeholder="Buscar por nombre de secretaría o piso…"
+                    />
+                    <div class="flex gap-2">
+                        <button
+                            type="submit"
+                            class="px-4 py-2 rounded-lg bg-green-600 dark:bg-green-700 text-white hover:bg-green-700 dark:hover:bg-green-600 font-medium transition-colors duration-200"
+                        >
+                            Buscar
+                        </button>
+                        <button
+                            type="button"
+                            @click="clearSearch"
+                            class="px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-colors duration-200"
+                        >
+                            Limpiar
+                        </button>
+                    </div>
+                </form>
+            </div>
+
             <div
                 class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden transition-colors duration-200"
             >
@@ -148,20 +175,20 @@
                     class="px-4 py-3 border-t border-slate-200 dark:border-slate-700 flex items-center justify-between"
                 >
                     <div class="text-sm text-slate-600 dark:text-slate-400">
-                        Mostrando {{ secretarias.from }} a {{ secretarias.to }} de
-                        {{ secretarias.total }} resultados
+                        Mostrando {{ secretarias.from || 0 }} - {{ secretarias.to || 0 }} de
+                        {{ secretarias.total || 0 }}
                     </div>
-                    <div class="flex gap-2">
+                    <div class="flex gap-1 flex-wrap justify-end">
                         <Link
-                            v-for="link in secretarias.links"
-                            :key="link.label"
+                            v-for="(link, idx) in secretarias.links"
+                            :key="idx"
                             :href="link.url || '#'"
                             :class="[
-                                'px-3 py-1 rounded border text-sm transition-colors duration-200',
+                                'px-3 py-1.5 rounded-md text-sm border transition-colors duration-200',
                                 link.active
                                     ? 'bg-slate-900 dark:bg-blue-600 text-white border-slate-900 dark:border-blue-600'
-                                    : 'bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-600',
-                                !link.url && 'opacity-50 cursor-not-allowed',
+                                    : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700',
+                                !link.url ? 'opacity-40 pointer-events-none' : '',
                             ]"
                             v-html="link.label"
                         />
@@ -174,11 +201,29 @@
 
 <script setup>
 import AppLayout from "@/Layouts/AppLayout.vue";
-import { Link, router } from "@inertiajs/vue3";
+import { Link, router, useForm } from "@inertiajs/vue3";
 
-defineProps({
+const props = defineProps({
     secretarias: Object,
+    filters: Object,
 });
+
+const searchForm = useForm({
+    search: props.filters?.search || "",
+});
+
+const applySearch = () => {
+    searchForm.get(route("dependencias.index"), {
+        preserveState: true,
+        preserveScroll: true,
+        replace: true,
+    });
+};
+
+const clearSearch = () => {
+    searchForm.search = "";
+    applySearch();
+};
 
 const eliminarSecretaria = (secretaria) => {
     if (

@@ -12,6 +12,7 @@ use App\Models\User;
 use App\Models\UserDocumento;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -22,10 +23,26 @@ class UsersController extends Controller
     {
         $this->authorize('viewAny', User::class);
 
-        $users = User::query()
+        $search = trim((string) request()->query('search', ''));
+        $search = Str::of($search)->limit(100)->toString();
+
+        $q = User::query()
             ->with(['role', 'cargo', 'gerencia.secretaria.piso', 'createdBy', 'updatedBy', 'creadoPor'])
-            ->orderByDesc('id')
-            ->paginate(10)
+            ->orderByDesc('id');
+
+        // Buscador (nombre, email, nombre/apellido, identidad, caso)
+        if ($search !== '') {
+            $q->where(function ($sub) use ($search) {
+                $sub->where('email', 'like', '%' . $search . '%')
+                    ->orWhere('name', 'like', '%' . $search . '%')
+                    ->orWhere('nombre', 'like', '%' . $search . '%')
+                    ->orWhere('apellido', 'like', '%' . $search . '%')
+                    ->orWhere('n_identidad', 'like', '%' . $search . '%')
+                    ->orWhere('numero_caso', 'like', '%' . $search . '%');
+            });
+        }
+
+        $users = $q->paginate(10)->withQueryString()
             ->through(fn(User $u) => [
                 'id' => $u->id,
                 'email' => $u->email,
@@ -37,6 +54,7 @@ class UsersController extends Controller
                 'fecha_expiracion' => $u->fecha_expiracion?->format('Y-m-d'),
                 'role' => $u->role ? ['id' => $u->role->id, 'name' => $u->role->name] : null,
                 'cargo' => $u->cargo ? ['id' => $u->cargo->id, 'name' => $u->cargo->name] : null,
+                'foto_perfil' => $u->foto_perfil,
                 'gerencia' => $u->gerencia ? [
                     'id' => $u->gerencia->id,
                     'nombre' => $u->gerencia->nombre,
@@ -62,6 +80,9 @@ class UsersController extends Controller
 
         return Inertia::render('Users/Index', [
             'users' => $users,
+            'filters' => [
+                'search' => $search,
+            ],
         ]);
     }
 

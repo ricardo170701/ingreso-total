@@ -11,18 +11,18 @@
             <div class="flex items-center justify-between">
                 <div>
                     <h1 class="text-xl font-semibold text-slate-900 dark:text-slate-100">
-                        Usuarios
+                        Tarjetas NFC
                     </h1>
                     <p class="text-sm text-slate-600 dark:text-slate-400">
-                        Lista de usuarios y administración básica.
+                        Gestiona las tarjetas NFC asignadas a visitantes.
                     </p>
                 </div>
                 <Link
-                    :href="route('usuarios.create')"
+                    :href="route('tarjetas-nfc.create')"
                     class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-900 dark:bg-slate-700 text-white hover:bg-slate-800 dark:hover:bg-slate-600 transition-colors duration-200"
                 >
                     <span>➕</span>
-                    <span>Nuevo</span>
+                    <span>Nueva Tarjeta</span>
                 </Link>
             </div>
 
@@ -33,7 +33,7 @@
                         v-model="searchForm.search"
                         type="text"
                         class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 transition-colors duration-200"
-                        placeholder="Buscar por nombre, email, identidad o caso…"
+                        placeholder="Buscar por código, nombre, usuario o cédula…"
                     />
                     <div class="flex gap-2">
                         <button
@@ -61,12 +61,12 @@
                         <thead class="bg-slate-50 dark:bg-slate-700">
                             <tr class="text-left text-slate-600 dark:text-slate-300">
                                 <th class="px-4 py-3 font-semibold">ID</th>
+                                <th class="px-4 py-3 font-semibold">Código</th>
                                 <th class="px-4 py-3 font-semibold">Nombre</th>
-                                <th class="px-4 py-3 font-semibold">Email</th>
-                                <th class="px-4 py-3 font-semibold">Rol</th>
-                                <th class="px-4 py-3 font-semibold">Cargo</th>
-                                <th class="px-4 py-3 font-semibold">Secretaría / Gerencia</th>
-                                <th class="px-4 py-3 font-semibold">Activo</th>
+                                <th class="px-4 py-3 font-semibold">Usuario Asignado</th>
+                                <th class="px-4 py-3 font-semibold">Gerencia</th>
+                                <th class="px-4 py-3 font-semibold">Fecha Expiración</th>
+                                <th class="px-4 py-3 font-semibold">Estado</th>
                                 <th class="px-4 py-3 font-semibold text-right">
                                     Acciones
                                 </th>
@@ -74,83 +74,70 @@
                         </thead>
                         <tbody class="divide-y divide-slate-100 dark:divide-slate-700">
                             <tr
-                                v-for="u in users.data"
-                                :key="u.id"
+                                v-for="t in tarjetas.data"
+                                :key="t.id"
                                 class="text-slate-800 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors duration-200"
                             >
-                                <td class="px-4 py-3">{{ u.id }}</td>
+                                <td class="px-4 py-3">{{ t.id }}</td>
                                 <td class="px-4 py-3">
-                                    <div class="flex items-center gap-2">
-                                        <div class="w-8 h-8 rounded-full overflow-hidden bg-slate-200 dark:bg-slate-600 shrink-0">
-                                            <img
-                                                v-if="u.foto_perfil"
-                                                :src="storageUrl(u.foto_perfil)"
-                                                alt="Foto"
-                                                class="w-full h-full object-cover"
-                                                loading="lazy"
-                                                decoding="async"
-                                            />
-                                            <div v-else class="w-full h-full flex items-center justify-center text-xs font-semibold text-slate-700 dark:text-slate-200">
-                                                {{ initials(u.name || u.email) }}
-                                            </div>
-                                        </div>
-                                        <div class="min-w-0">
-                                            <div class="font-medium text-slate-900 dark:text-slate-100 truncate">
-                                                {{ u.name || "-" }}
-                                            </div>
-                                            <div v-if="u.nombre || u.apellido" class="text-xs text-slate-500 dark:text-slate-400 truncate">
-                                                {{ [u.nombre, u.apellido].filter(Boolean).join(' ') }}
-                                            </div>
+                                    <code class="px-2 py-1 bg-slate-100 dark:bg-slate-700 text-slate-900 dark:text-slate-100 rounded text-xs font-mono">
+                                        {{ t.codigo }}
+                                    </code>
+                                </td>
+                                <td class="px-4 py-3 text-slate-700 dark:text-slate-300">
+                                    {{ t.nombre || "-" }}
+                                </td>
+                                <td class="px-4 py-3 text-slate-700 dark:text-slate-300">
+                                    <div v-if="t.user">
+                                        <div class="font-medium">{{ t.user.name }}</div>
+                                        <div class="text-xs text-slate-500 dark:text-slate-400">
+                                            {{ t.user.email }}
+                                            <span v-if="t.user.n_identidad"> · CC: {{ t.user.n_identidad }}</span>
                                         </div>
                                     </div>
-                                </td>
-                                <td class="px-4 py-3 text-slate-700 dark:text-slate-300">{{ u.email }}</td>
-                                <td class="px-4 py-3 text-slate-700 dark:text-slate-300">
-                                    {{ u.role?.name || "-" }}
+                                    <span v-else class="text-slate-400 dark:text-slate-500">Sin asignar</span>
                                 </td>
                                 <td class="px-4 py-3 text-slate-700 dark:text-slate-300">
-                                    {{ u.cargo?.name || "-" }}
-                                </td>
-                                <td class="px-4 py-3 text-slate-700 dark:text-slate-300">
-                                    <div v-if="u.gerencia">
-                                        <div class="font-medium">{{ u.gerencia.secretaria?.nombre || "-" }}</div>
+                                    <div v-if="t.gerencia">
+                                        <div class="font-medium">{{ t.gerencia.secretaria?.nombre || "-" }}</div>
                                         <div class="text-xs text-slate-500 dark:text-slate-400">
-                                            {{ u.gerencia.nombre }}
+                                            {{ t.gerencia.nombre }}
                                         </div>
                                     </div>
                                     <span v-else>-</span>
+                                </td>
+                                <td class="px-4 py-3 text-slate-700 dark:text-slate-300">
+                                    {{ t.fecha_expiracion || "-" }}
                                 </td>
                                 <td class="px-4 py-3">
                                     <span
                                         :class="[
                                             'inline-flex px-2 py-0.5 rounded-full text-xs font-semibold',
-                                            u.activo
+                                            t.activo
                                                 ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400'
                                                 : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300',
                                         ]"
                                     >
-                                        {{ u.activo ? "Sí" : "No" }}
+                                        {{ t.activo ? "Activa" : "Inactiva" }}
                                     </span>
                                 </td>
                                 <td class="px-4 py-3 text-right">
-                                    <Link
-                                        :href="
-                                            route('usuarios.show', {
-                                                user: u.id,
-                                            })
-                                        "
-                                        class="inline-flex items-center px-3 py-1.5 rounded-md border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-colors duration-200"
-                                    >
-                                        Ver
-                                    </Link>
+                                    <div class="flex items-center justify-end gap-2">
+                                        <Link
+                                            :href="route('tarjetas-nfc.show', { tarjetaNfc: t.id })"
+                                            class="inline-flex items-center px-3 py-1.5 rounded-md border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-colors duration-200"
+                                        >
+                                            Ver
+                                        </Link>
+                                    </div>
                                 </td>
                             </tr>
-                            <tr v-if="users.data.length === 0">
+                            <tr v-if="tarjetas.data.length === 0">
                                 <td
                                     class="px-4 py-10 text-center text-slate-500 dark:text-slate-400"
                                     colspan="8"
                                 >
-                                    No hay usuarios.
+                                    No hay tarjetas NFC registradas.
                                 </td>
                             </tr>
                         </tbody>
@@ -158,16 +145,16 @@
                 </div>
 
                 <div
-                    v-if="users.links?.length"
+                    v-if="tarjetas.links?.length"
                     class="flex items-center justify-between px-4 py-3 border-t border-slate-200 dark:border-slate-700 transition-colors duration-200"
                 >
                     <div class="text-sm text-slate-600 dark:text-slate-400">
-                        Mostrando {{ users.from || 0 }} - {{ users.to || 0 }} de
-                        {{ users.total || 0 }}
+                        Mostrando {{ tarjetas.from || 0 }} - {{ tarjetas.to || 0 }} de
+                        {{ tarjetas.total || 0 }}
                     </div>
                     <div class="flex gap-1 flex-wrap justify-end">
                         <Link
-                            v-for="(l, idx) in users.links"
+                            v-for="(l, idx) in tarjetas.links"
                             :key="idx"
                             :href="l.url || '#'"
                             :class="[
@@ -192,7 +179,7 @@ import { Link, usePage, useForm } from "@inertiajs/vue3";
 import { computed } from "vue";
 
 const props = defineProps({
-    users: Object,
+    tarjetas: Object,
     filters: Object,
 });
 
@@ -204,7 +191,7 @@ const searchForm = useForm({
 });
 
 const applySearch = () => {
-    searchForm.get(route("usuarios.index"), {
+    searchForm.get(route("tarjetas-nfc.index"), {
         preserveState: true,
         preserveScroll: true,
         replace: true,
@@ -214,19 +201,5 @@ const applySearch = () => {
 const clearSearch = () => {
     searchForm.search = "";
     applySearch();
-};
-
-const storageUrl = (path) => {
-    if (!path) return "";
-    if (String(path).startsWith("http")) return path;
-    return `/storage/${path}`;
-};
-
-const initials = (text) => {
-    const t = String(text || "").trim();
-    if (!t) return "U";
-    const parts = t.split(/\s+/).filter(Boolean);
-    if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
-    return (parts[0][0] || "U").toUpperCase();
 };
 </script>

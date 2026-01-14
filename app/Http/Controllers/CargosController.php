@@ -22,14 +22,25 @@ class CargosController extends Controller
 
         $perPage = (int) ($request->query('per_page', 15));
         $perPage = max(1, min(100, $perPage));
+        $search = trim((string) $request->query('search', ''));
 
-        $cargos = Cargo::query()
-            ->withCount('users')
-            ->orderBy('name')
-            ->paginate($perPage);
+        $query = Cargo::query()
+            ->withCount('users');
+
+        if ($search !== '') {
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', '%' . $search . '%')
+                    ->orWhere('description', 'like', '%' . $search . '%');
+            });
+        }
+
+        $cargos = $query->orderBy('name')->paginate($perPage)->withQueryString();
 
         return Inertia::render('Cargos/Index', [
             'cargos' => $cargos,
+            'filters' => [
+                'search' => $search,
+            ],
         ]);
     }
 

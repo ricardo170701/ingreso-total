@@ -97,6 +97,14 @@ class User extends Authenticatable
     }
 
     /**
+     * Relación: Un usuario tiene muchas tarjetas NFC
+     */
+    public function tarjetasNfc()
+    {
+        return $this->hasMany(TarjetaNfc::class);
+    }
+
+    /**
      * Relación: Un usuario tiene muchos accesos
      */
     public function accesos()

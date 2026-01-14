@@ -161,24 +161,28 @@ class ReportesController extends Controller
     }
 
     /**
-     * Exportar reporte de accesos
+     * Mostrar reporte de accesos con filtros
      */
-    public function exportarAccesos(Request $request): StreamedResponse
+    public function accesos(Request $request): Response
     {
         if (!$request->user()->hasPermission('view_reportes')) {
-            abort(403, 'No tienes permiso para exportar reportes.');
+            abort(403, 'No tienes permiso para ver reportes.');
         }
+
+        $perPage = (int) ($request->query('per_page', 20));
+        $perPage = max(1, min(100, $perPage));
 
         $filtros = $request->only([
             'fecha_desde',
             'fecha_hasta',
             'user_id',
-            'puerta_id',
+            'piso_id',
+            'tipo_evento',
             'permitido',
         ]);
 
         $query = Acceso::query()
-            ->with(['user', 'puerta']);
+            ->with(['user.role', 'puerta.piso']);
 
         if (!empty($filtros['fecha_desde'])) {
             $query->whereDate('fecha_acceso', '>=', $filtros['fecha_desde']);
@@ -192,8 +196,102 @@ class ReportesController extends Controller
             $query->where('user_id', $filtros['user_id']);
         }
 
-        if (!empty($filtros['puerta_id'])) {
-            $query->where('puerta_id', $filtros['puerta_id']);
+        if (!empty($filtros['piso_id'])) {
+            $query->whereHas('puerta', function ($q) use ($filtros) {
+                $q->where('piso_id', $filtros['piso_id']);
+            });
+        }
+
+        if (!empty($filtros['tipo_evento'])) {
+            $query->where('tipo_evento', $filtros['tipo_evento']);
+        }
+
+        if (isset($filtros['permitido']) && $filtros['permitido'] !== '') {
+            $query->where('permitido', (bool) $filtros['permitido']);
+        }
+
+        $accesos = $query->orderByDesc('fecha_acceso')->paginate($perPage)->withQueryString()
+            ->through(fn(Acceso $a) => [
+                'id' => $a->id,
+                'fecha_acceso' => $a->fecha_acceso?->format('d/m/Y H:i:s'),
+                'user' => $a->user ? [
+                    'id' => $a->user->id,
+                    'name' => $a->user->name,
+                    'email' => $a->user->email,
+                ] : null,
+                'puerta' => $a->puerta ? [
+                    'id' => $a->puerta->id,
+                    'nombre' => $a->puerta->nombre,
+                    'piso' => $a->puerta->piso ? [
+                        'id' => $a->puerta->piso->id,
+                        'nombre' => $a->puerta->piso->nombre,
+                    ] : null,
+                ] : null,
+                'tipo_evento' => $a->tipo_evento,
+                'permitido' => (bool) $a->permitido,
+                'motivo_denegacion' => $a->motivo_denegacion,
+            ]);
+
+        // Datos para filtros
+        $usuarios = User::query()
+            ->where('activo', true)
+            ->orderBy('name')
+            ->get(['id', 'name', 'email']);
+
+        $pisos = Piso::query()
+            ->where('activo', true)
+            ->orderBy('orden')
+            ->get(['id', 'nombre']);
+
+        return Inertia::render('Reportes/Accesos', [
+            'accesos' => $accesos,
+            'usuarios' => $usuarios,
+            'pisos' => $pisos,
+            'filters' => $filtros,
+        ]);
+    }
+
+    /**
+     * Exportar reporte de accesos
+     */
+    public function exportarAccesos(Request $request): StreamedResponse
+    {
+        if (!$request->user()->hasPermission('view_reportes')) {
+            abort(403, 'No tienes permiso para exportar reportes.');
+        }
+
+        $filtros = $request->only([
+            'fecha_desde',
+            'fecha_hasta',
+            'user_id',
+            'piso_id',
+            'tipo_evento',
+            'permitido',
+        ]);
+
+        $query = Acceso::query()
+            ->with(['user', 'puerta.piso']);
+
+        if (!empty($filtros['fecha_desde'])) {
+            $query->whereDate('fecha_acceso', '>=', $filtros['fecha_desde']);
+        }
+
+        if (!empty($filtros['fecha_hasta'])) {
+            $query->whereDate('fecha_acceso', '<=', $filtros['fecha_hasta']);
+        }
+
+        if (!empty($filtros['user_id'])) {
+            $query->where('user_id', $filtros['user_id']);
+        }
+
+        if (!empty($filtros['piso_id'])) {
+            $query->whereHas('puerta', function ($q) use ($filtros) {
+                $q->where('piso_id', $filtros['piso_id']);
+            });
+        }
+
+        if (!empty($filtros['tipo_evento'])) {
+            $query->where('tipo_evento', $filtros['tipo_evento']);
         }
 
         if (isset($filtros['permitido']) && $filtros['permitido'] !== '') {
@@ -216,6 +314,7 @@ class ReportesController extends Controller
                 'Fecha y Hora',
                 'Usuario',
                 'Email Usuario',
+                'Piso',
                 'Puerta',
                 'Tipo Evento',
                 'Permitido',
@@ -230,6 +329,7 @@ class ReportesController extends Controller
                     $acceso->fecha_acceso?->format('Y-m-d H:i:s') ?? '',
                     $acceso->user?->name ?? 'N/A',
                     $acceso->user?->email ?? 'N/A',
+                    $acceso->puerta?->piso?->nombre ?? 'N/A',
                     $acceso->puerta?->nombre ?? 'N/A',
                     $acceso->tipo_evento ?? '',
                     $acceso->permitido ? 'Sí' : 'No',

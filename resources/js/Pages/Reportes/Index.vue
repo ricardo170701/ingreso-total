@@ -169,19 +169,31 @@
                         </select>
                     </FormField>
 
-                    <FormField label="Puerta" :error="formAccesos.errors.puerta_id">
+                    <FormField label="Piso" :error="formAccesos.errors.piso_id">
                         <select
-                            v-model="formAccesos.puerta_id"
+                            v-model="formAccesos.piso_id"
                             class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 transition-colors duration-200"
                         >
-                            <option :value="null">Todas</option>
+                            <option :value="null">Todos</option>
                             <option
-                                v-for="puerta in puertas"
-                                :key="puerta.id"
-                                :value="puerta.id"
+                                v-for="piso in pisos"
+                                :key="piso.id"
+                                :value="piso.id"
                             >
-                                {{ puerta.nombre }}
+                                {{ piso.nombre }}
                             </option>
+                        </select>
+                    </FormField>
+
+                    <FormField label="Tipo de Evento" :error="formAccesos.errors.tipo_evento">
+                        <select
+                            v-model="formAccesos.tipo_evento"
+                            class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 transition-colors duration-200"
+                        >
+                            <option :value="null">Todos</option>
+                            <option value="entrada">Entrada</option>
+                            <option value="salida">Salida</option>
+                            <option value="denegado">Denegado</option>
                         </select>
                     </FormField>
 
@@ -196,7 +208,13 @@
                         </select>
                     </FormField>
 
-                    <div class="md:col-span-2 lg:col-span-4">
+                    <div class="md:col-span-2 lg:col-span-4 flex items-center gap-2">
+                        <Link
+                            :href="route('reportes.accesos')"
+                            class="px-4 py-2 rounded-lg bg-blue-600 dark:bg-blue-700 text-white hover:bg-blue-700 dark:hover:bg-blue-600 font-medium transition-colors duration-200"
+                        >
+                            📊 Ver Reporte de Accesos
+                        </Link>
                         <button
                             type="submit"
                             :disabled="formAccesos.processing"
@@ -404,7 +422,7 @@
 <script setup>
 import AppLayout from "@/Layouts/AppLayout.vue";
 import FormField from "@/Components/FormField.vue";
-import { useForm } from "@inertiajs/vue3";
+import { Link, useForm } from "@inertiajs/vue3";
 import { computed } from "vue";
 
 const props = defineProps({
@@ -446,7 +464,8 @@ const formAccesos = useForm({
     fecha_desde: null,
     fecha_hasta: null,
     user_id: null,
-    puerta_id: null,
+    piso_id: null,
+    tipo_evento: null,
     permitido: null,
 });
 

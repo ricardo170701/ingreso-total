@@ -116,6 +116,23 @@ class Puerta extends Model
     }
 
     /**
+     * Relación: Una puerta puede estar asociada a muchas tarjetas NFC (reglas específicas por tarjeta)
+     */
+    public function tarjetasNfc(): BelongsToMany
+    {
+        return $this->belongsToMany(TarjetaNfc::class, 'tarjeta_nfc_puerta_acceso', 'puerta_id', 'tarjeta_nfc_id')
+            ->withPivot([
+                'hora_inicio',
+                'hora_fin',
+                'dias_semana',
+                'fecha_inicio',
+                'fecha_fin',
+                'activo',
+            ])
+            ->withTimestamps();
+    }
+
+    /**
      * Relación: Una puerta tiene muchos accesos
      */
     public function accesos(): HasMany

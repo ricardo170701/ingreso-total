@@ -9,9 +9,13 @@ use App\Models\Secretaria;
 use App\Models\Gerencia;
 use App\Models\Piso;
 use App\Models\Puerta;
+use App\Models\Role;
+use App\Models\TarjetaNfc;
+use App\Models\TarjetaNfcAsignacion;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Inertia\Inertia;
@@ -19,6 +23,7 @@ use Inertia\Response;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
 use Symfony\Component\HttpFoundation\Response as HttpResponse;
 use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Str;
 
 class IngresoController extends Controller
 {
@@ -32,14 +37,21 @@ class IngresoController extends Controller
         // Si no tiene permiso para crear QR de otros, solo mostrar el usuario actual
         $esVisitante = ($actor?->role?->name ?? null) === 'visitante';
         $puedeCrearParaOtros = !$esVisitante && $actor && $actor->hasPermission('create_ingreso_otros');
+        $puedeVerFuncionariosEnIngreso = !$esVisitante && $actor && $actor->hasPermission('view_ingreso_funcionarios');
 
         if ($puedeCrearParaOtros) {
-            // Obtener todos los usuarios activos
-            $usuarios = User::query()
+            // Por defecto, en Ingreso se listan solo visitantes.
+            // Solo si tiene permiso extra, se listan también funcionarios.
+            $usuariosQ = User::query()
                 ->where('activo', true)
                 ->with(['role', 'cargo'])
-                ->orderBy('name')
-                ->get();
+                ->orderBy('name');
+
+            if (!$puedeVerFuncionariosEnIngreso) {
+                $usuariosQ->whereHas('role', fn ($r) => $r->where('name', 'visitante'));
+            }
+
+            $usuarios = $usuariosQ->get();
         } else {
             // Solo mostrar el usuario actual
             $usuarios = collect([$actor])->filter();
@@ -69,9 +81,9 @@ class IngresoController extends Controller
             ->orderBy('nombre')
             ->get(['id', 'nombre', 'secretaria_id']);
 
-        // Si no tiene permiso para crear para otros, buscar QR activo del usuario actual
+        // Buscar QR activo del usuario actual (si existe)
         $qrPersonal = null;
-        if (!$puedeCrearParaOtros && $actor) {
+        if ($actor) {
             $qrPersonal = CodigoQr::query()
                 ->where('user_id', $actor->id)
                 ->activos()
@@ -115,6 +127,30 @@ class IngresoController extends Controller
             ];
         }
 
+        // Tarjetas NFC disponibles para asignar desde Ingreso
+        // Solo mostrar tarjetas activas que NO estén asignadas (user_id IS NULL)
+        $tarjetasNfcDisponibles = TarjetaNfc::query()
+            ->where('activo', true)
+            ->whereNull('user_id')
+            ->orderBy('codigo')
+            ->get(['id', 'codigo', 'nombre']);
+
+        // Agregar información de tarjeta NFC asignada a cada usuario (si tiene)
+        $usuarios = $usuarios->map(function ($usuario) {
+            $tarjetaAsignada = TarjetaNfc::query()
+                ->where('activo', true)
+                ->where('user_id', $usuario->id)
+                ->first(['id', 'codigo', 'nombre']);
+            
+            $usuario->tarjeta_nfc_asignada = $tarjetaAsignada ? [
+                'id' => $tarjetaAsignada->id,
+                'codigo' => $tarjetaAsignada->codigo,
+                'nombre' => $tarjetaAsignada->nombre,
+            ] : null;
+            
+            return $usuario;
+        });
+
         return Inertia::render('Ingreso/Index', [
             'usuarios' => $usuarios,
             'puertas' => $puertas,
@@ -123,6 +159,7 @@ class IngresoController extends Controller
             'gerencias' => $gerencias,
             'puedeCrearParaOtros' => $puedeCrearParaOtros,
             'qrPersonal' => $qrPersonalData,
+            'tarjetasNfcDisponibles' => $tarjetasNfcDisponibles,
         ]);
     }
 
@@ -207,7 +244,7 @@ class IngresoController extends Controller
 
         $qr = null;
 
-        DB::transaction(function () use (&$qr, $targetUser, $actor, $tokenHash, $now, $expiresAt, $data, $plainToken) {
+        DB::transaction(function () use (&$qr, $targetUser, $actor, $tokenHash, $now, $expiresAt, $data, $plainToken, $targetRole) {
             // Regla: al generar uno nuevo, desactivar cualquier QR activo previo del usuario destino
             CodigoQr::query()
                 ->where('user_id', $targetUser->id)
@@ -298,13 +335,21 @@ class IngresoController extends Controller
 
         // Obtener usuarios y puertas para el formulario
         $puedeCrearParaOtros = $actor && $actor->hasPermission('create_ingreso_otros');
+        $esVisitanteActor = ($actor?->role?->name ?? null) === 'visitante';
+        $puedeVerFuncionariosEnIngreso = !$esVisitanteActor && $actor && $actor->hasPermission('view_ingreso_funcionarios');
 
         if ($puedeCrearParaOtros) {
-            $usuarios = User::query()
+            $usuariosQ = User::query()
                 ->where('activo', true)
                 ->with(['role', 'cargo'])
                 ->orderBy('name')
-                ->get();
+                ;
+
+            if (!$puedeVerFuncionariosEnIngreso) {
+                $usuariosQ->whereHas('role', fn ($r) => $r->where('name', 'visitante'));
+            }
+
+            $usuarios = $usuariosQ->get();
         } else {
             $usuarios = collect([$actor])->filter();
         }
@@ -430,6 +475,271 @@ class IngresoController extends Controller
         return response($qrPng, 200)
             ->header('Content-Type', 'image/png')
             ->header('Content-Disposition', 'attachment; filename="' . $fileName . '"');
+    }
+
+    /**
+     * Crear un usuario visitante desde la pantalla de Ingreso.
+     * Requiere permiso: create_ingreso_visitantes
+     */
+    public function storeVisitante(Request $request): JsonResponse
+    {
+        $actor = $request->user();
+        if (!$actor) {
+            return response()->json(['message' => 'No autenticado.'], 401);
+        }
+
+        // Visitante no puede crear visitantes
+        if (($actor?->role?->name ?? null) === 'visitante') {
+            return response()->json(['message' => 'No autorizado.'], 403);
+        }
+
+        if (!$actor->hasPermission('create_ingreso_visitantes')) {
+            return response()->json(['message' => 'No autorizado.'], 403);
+        }
+
+        $data = $request->validate([
+            'nombre' => ['required', 'string', 'max:100'],
+            'apellido' => ['required', 'string', 'max:100'],
+            'email' => ['required', 'email', 'max:255', 'unique:users,email'],
+            'n_identidad' => ['nullable', 'string', 'max:50', 'unique:users,n_identidad'],
+            'numero_caso' => ['nullable', 'string', 'max:100'],
+            'foto' => ['nullable', 'file', 'image', 'max:4096'],
+        ]);
+
+        $roleVisitanteId = Role::query()->where('name', 'visitante')->value('id');
+        if (!$roleVisitanteId) {
+            return response()->json(['message' => 'No existe el rol visitante.'], 500);
+        }
+
+        $nombre = trim((string) ($data['nombre'] ?? ''));
+        $apellido = trim((string) ($data['apellido'] ?? ''));
+        $name = trim($nombre . ' ' . $apellido) ?: 'Visitante';
+
+        // Password aleatorio (no se entrega; el visitante no necesita login para QR)
+        $randomPassword = Str::random(16);
+
+        // Guardar foto (archivo) si viene
+        $fotoPerfilPath = null;
+        if ($request->hasFile('foto')) {
+            $fotoPerfilPath = $request->file('foto')->store('fotos_perfil', 'public');
+        }
+
+        $user = User::query()->create([
+            'name' => $name,
+            'email' => $data['email'],
+            'password' => $randomPassword,
+            'role_id' => $roleVisitanteId,
+            'cargo_id' => null,
+            'gerencia_id' => null,
+            'fecha_expiracion' => null,
+            'activo' => true,
+            'nombre' => $data['nombre'],
+            'apellido' => $data['apellido'],
+            'n_identidad' => $data['n_identidad'] ?? null,
+            'numero_caso' => $data['numero_caso'] ?? null,
+            'foto_perfil' => $fotoPerfilPath,
+            // Auditoría (legacy + nuevo)
+            'creado_por' => $actor->id,
+            'created_by' => $actor->id,
+        ]);
+
+        return response()->json([
+            'message' => 'Visitante creado correctamente.',
+            'data' => [
+                'id' => $user->id,
+                'email' => $user->email,
+                'name' => $user->name,
+                'activo' => (bool) $user->activo,
+                'foto_perfil' => $user->foto_perfil,
+                'n_identidad' => $user->n_identidad,
+                'numero_caso' => $user->numero_caso,
+                'role' => ['id' => $roleVisitanteId, 'name' => 'visitante'],
+                'cargo' => null,
+            ],
+        ], 201);
+    }
+
+    /**
+     * Asignar una tarjeta NFC a un visitante desde Ingreso.
+     * Requiere permiso: asignar_tarjetas_nfc
+     */
+    public function asignarTarjetaNfc(Request $request): JsonResponse
+    {
+        $actor = $request->user();
+        if (!$actor) {
+            return response()->json(['message' => 'No autenticado.'], 401);
+        }
+
+        if (!$actor->hasPermission('asignar_tarjetas_nfc')) {
+            return response()->json(['message' => 'No autorizado.'], 403);
+        }
+
+        $data = $request->validate([
+            'tarjeta_nfc_id' => ['required', 'integer', 'exists:tarjetas_nfc,id'],
+            'user_id' => ['required', 'integer', 'exists:users,id'],
+            'gerencia_id' => ['nullable', 'integer', 'exists:gerencias,id'],
+            'pisos' => ['required', 'array', 'min:1'],
+            'pisos.*' => ['integer', 'exists:pisos,id'],
+            'hora_inicio' => ['nullable', 'date_format:H:i'],
+            'hora_fin' => ['nullable', 'date_format:H:i', 'after:hora_inicio'],
+            'dias_semana' => ['nullable', 'string', 'max:20'],
+            'fecha_inicio' => ['nullable', 'date'],
+            'fecha_fin' => ['nullable', 'date', 'after_or_equal:fecha_inicio'],
+        ]);
+
+        $tarjeta = TarjetaNfc::query()->findOrFail($data['tarjeta_nfc_id']);
+        $targetUser = User::query()->with('role')->findOrFail($data['user_id']);
+
+        // Solo se pueden asignar tarjetas a visitantes
+        if (($targetUser->role?->name ?? null) !== 'visitante') {
+            return response()->json(['message' => 'Las tarjetas NFC solo se pueden asignar a visitantes.'], 422);
+        }
+
+        // Validar que la tarjeta no esté asignada a otro usuario
+        if ($tarjeta->user_id && $tarjeta->user_id !== $targetUser->id) {
+            return response()->json(['message' => 'La tarjeta ya está asignada a otro usuario.'], 422);
+        }
+
+        $now = Carbon::now();
+        $expiresAt = $now->copy()->addDays(15); // Similar a QR de visitantes
+
+        DB::transaction(function () use ($tarjeta, $targetUser, $actor, $data, $expiresAt, $now) {
+            // Cerrar asignación anterior (si existe)
+            TarjetaNfcAsignacion::query()
+                ->where('tarjeta_nfc_id', $tarjeta->id)
+                ->whereNull('fecha_desasignacion')
+                ->update([
+                    'fecha_desasignacion' => $now,
+                    'updated_at' => now(),
+                ]);
+
+            // Asignar tarjeta al usuario
+            $tarjeta->update([
+                'user_id' => $targetUser->id,
+                'gerencia_id' => $data['gerencia_id'] ?? null,
+                'fecha_asignacion' => $now,
+                'fecha_expiracion' => $expiresAt,
+                'activo' => true,
+                'asignado_por' => $actor->id,
+            ]);
+
+            // Registrar historial
+            TarjetaNfcAsignacion::query()->create([
+                'tarjeta_nfc_id' => $tarjeta->id,
+                'user_id' => $targetUser->id,
+                'asignado_por' => $actor->id,
+                'gerencia_id' => $data['gerencia_id'] ?? null,
+                'fecha_asignacion' => $now,
+                'fecha_desasignacion' => null,
+            ]);
+
+            // Expandir pisos a puertas activas
+            $puertas = Puerta::query()
+                ->where('activo', true)
+                ->whereIn('piso_id', $data['pisos'])
+                ->pluck('id')
+                ->toArray();
+
+            // Eliminar relaciones anteriores
+            DB::table('tarjeta_nfc_puerta_acceso')
+                ->where('tarjeta_nfc_id', $tarjeta->id)
+                ->delete();
+
+            // Crear nuevas relaciones
+            if (count($puertas) > 0) {
+                $pivot = [
+                    'hora_inicio' => $data['hora_inicio'] ?? null,
+                    'hora_fin' => $data['hora_fin'] ?? null,
+                    'dias_semana' => $data['dias_semana'] ?? '1,2,3,4,5,6,7',
+                    'fecha_inicio' => $data['fecha_inicio'] ?? null,
+                    'fecha_fin' => $data['fecha_fin'] ?? null,
+                    'activo' => true,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ];
+
+                foreach ($puertas as $puertaId) {
+                    DB::table('tarjeta_nfc_puerta_acceso')->insert([
+                        'tarjeta_nfc_id' => $tarjeta->id,
+                        'puerta_id' => $puertaId,
+                        ...$pivot,
+                    ]);
+                }
+            }
+        });
+
+        return response()->json([
+            'message' => 'Tarjeta NFC asignada correctamente.',
+            'data' => [
+                'id' => $tarjeta->id,
+                'codigo' => $tarjeta->codigo,
+                'nombre' => $tarjeta->nombre,
+                'user_id' => $tarjeta->user_id,
+            ],
+        ], 200);
+    }
+
+    /**
+     * Desasignar una tarjeta NFC (dejarla disponible) desde Ingreso.
+     * Requiere permiso: asignar_tarjetas_nfc
+     */
+    public function desasignarTarjetaNfc(Request $request): JsonResponse
+    {
+        $actor = $request->user();
+        if (!$actor) {
+            return response()->json(['message' => 'No autenticado.'], 401);
+        }
+
+        if (!$actor->hasPermission('asignar_tarjetas_nfc')) {
+            return response()->json(['message' => 'No autorizado.'], 403);
+        }
+
+        $data = $request->validate([
+            'tarjeta_nfc_id' => ['required', 'integer', 'exists:tarjetas_nfc,id'],
+            'user_id' => ['required', 'integer', 'exists:users,id'],
+        ]);
+
+        $tarjeta = TarjetaNfc::query()->findOrFail($data['tarjeta_nfc_id']);
+
+        if (!$tarjeta->user_id) {
+            return response()->json(['message' => 'La tarjeta no está asignada.'], 422);
+        }
+
+        if ((int) $tarjeta->user_id !== (int) $data['user_id']) {
+            return response()->json(['message' => 'La tarjeta no está asignada a este usuario.'], 422);
+        }
+
+        $now = Carbon::now();
+
+        DB::transaction(function () use ($tarjeta, $now) {
+            // Cerrar asignación abierta (si existe)
+            TarjetaNfcAsignacion::query()
+                ->where('tarjeta_nfc_id', $tarjeta->id)
+                ->whereNull('fecha_desasignacion')
+                ->update([
+                    'fecha_desasignacion' => $now,
+                    'updated_at' => now(),
+                ]);
+
+            // Desasignar tarjeta
+            $tarjeta->update([
+                'user_id' => null,
+                'gerencia_id' => null,
+                'fecha_asignacion' => null,
+                'fecha_expiracion' => null,
+                'asignado_por' => null,
+            ]);
+        });
+
+        return response()->json([
+            'message' => 'Tarjeta NFC desasignada correctamente.',
+            'data' => [
+                'id' => $tarjeta->id,
+                'codigo' => $tarjeta->codigo,
+                'nombre' => $tarjeta->nombre,
+                'user_id' => $tarjeta->user_id,
+            ],
+        ], 200);
     }
 
     private function makeShortToken(int $len = 10): string

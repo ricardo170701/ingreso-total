@@ -21,6 +21,7 @@ use App\Http\Controllers\UpsMantenimientosController;
 use App\Http\Controllers\UpsVitacoraController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PasswordResetController;
+use App\Http\Controllers\TarjetasNfcController;
 
 /*
 |--------------------------------------------------------------------------
@@ -92,8 +93,15 @@ Route::middleware(['auth', 'visitante.restrict', 'permission.check'])->group(fun
     // Ingreso - Generar QR
     Route::get('/ingreso', [IngresoController::class, 'index'])->name('ingreso.index');
     Route::post('/ingreso', [IngresoController::class, 'generate'])->name('ingreso.generate');
+    Route::post('/ingreso/visitantes', [IngresoController::class, 'storeVisitante'])->name('ingreso.visitantes.store');
+    Route::post('/ingreso/tarjetas-nfc/asignar', [IngresoController::class, 'asignarTarjetaNfc'])->name('ingreso.tarjetas-nfc.asignar');
+    Route::post('/ingreso/tarjetas-nfc/desasignar', [IngresoController::class, 'desasignarTarjetaNfc'])->name('ingreso.tarjetas-nfc.desasignar');
     Route::post('/ingreso/{qr}/enviar-correo', [IngresoController::class, 'sendEmail'])->name('ingreso.send-email');
     Route::get('/ingreso/{qr}/descargar', [IngresoController::class, 'download'])->name('ingreso.download')->middleware('auth');
+
+    // Tarjetas NFC
+    Route::resource('tarjetas-nfc', TarjetasNfcController::class)->parameters(['tarjetas-nfc' => 'tarjetaNfc']);
+    Route::post('tarjetas-nfc/{tarjetaNfc}/desasignar', [TarjetasNfcController::class, 'desasignar'])->name('tarjetas-nfc.desasignar');
 
     // Módulo básico: generar un QR con un "código" (texto) para pruebas rápidas.
     Route::get('/qr', [QrToolController::class, 'index'])->name('qr.tool');
@@ -147,6 +155,7 @@ Route::middleware(['auth', 'visitante.restrict', 'permission.check'])->group(fun
 
     // Reportes
     Route::get('/reportes', [ReportesController::class, 'index'])->name('reportes.index');
+    Route::get('/reportes/accesos', [ReportesController::class, 'accesos'])->name('reportes.accesos');
     Route::get('/reportes/exportar/usuarios', [ReportesController::class, 'exportarUsuarios'])->name('reportes.exportar.usuarios');
     Route::get('/reportes/exportar/accesos', [ReportesController::class, 'exportarAccesos'])->name('reportes.exportar.accesos');
     Route::get('/reportes/exportar/mantenimientos', [ReportesController::class, 'exportarMantenimientos'])->name('reportes.exportar.mantenimientos');

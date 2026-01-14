@@ -16,6 +16,7 @@ class Acceso extends Model
         'user_id',
         'puerta_id',
         'codigo_qr_id',
+        'tarjeta_nfc_id',
         'tipo_evento',
         'fecha_acceso',
         'permitido',
@@ -56,5 +57,13 @@ class Acceso extends Model
     public function codigoQr(): BelongsTo
     {
         return $this->belongsTo(CodigoQr::class, 'codigo_qr_id');
+    }
+
+    /**
+     * Relación: Un acceso pertenece a una tarjeta NFC
+     */
+    public function tarjetaNfc(): BelongsTo
+    {
+        return $this->belongsTo(TarjetaNfc::class, 'tarjeta_nfc_id');
     }
 }

@@ -57,6 +57,18 @@ class EnsureUserHasPermission
         // Ingreso
         'ingreso.index' => 'view_ingreso',
         'ingreso.generate' => 'create_ingreso',
+        'ingreso.tarjetas-nfc.asignar' => 'asignar_tarjetas_nfc',
+        'ingreso.tarjetas-nfc.desasignar' => 'asignar_tarjetas_nfc',
+
+        // Tarjetas NFC
+        'tarjetas-nfc.index' => 'view_tarjetas_nfc',
+        'tarjetas-nfc.show' => 'view_tarjetas_nfc',
+        'tarjetas-nfc.create' => 'create_tarjetas_nfc',
+        'tarjetas-nfc.store' => 'create_tarjetas_nfc',
+        'tarjetas-nfc.edit' => 'edit_tarjetas_nfc',
+        'tarjetas-nfc.update' => 'edit_tarjetas_nfc',
+        'tarjetas-nfc.desasignar' => 'edit_tarjetas_nfc',
+        'tarjetas-nfc.destroy' => 'delete_tarjetas_nfc',
 
         // UPS
         'ups.index' => 'view_ups',
@@ -78,6 +90,7 @@ class EnsureUserHasPermission
 
         // Reportes
         'reportes.index' => 'view_reportes',
+        'reportes.accesos' => 'view_reportes',
         'reportes.exportar.usuarios' => 'view_reportes',
         'reportes.exportar.accesos' => 'view_reportes',
         'reportes.exportar.mantenimientos' => 'view_reportes',

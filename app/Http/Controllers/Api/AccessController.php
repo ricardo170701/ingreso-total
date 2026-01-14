@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Acceso;
 use App\Models\CodigoQr;
 use App\Models\Puerta;
+use App\Models\TarjetaNfc;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -88,47 +89,69 @@ class AccessController extends Controller
         }
 
         $tokenHash = hash('sha256', $data['token']);
+        $tokenCodigo = $data['token']; // Para tarjetas NFC, el código viene directo (no hasheado)
 
+        // Intentar buscar como QR primero
         $qr = CodigoQr::query()
             ->with(['user.role', 'user.cargo'])
             ->where('codigo', $tokenHash)
             ->where('activo', true)
             ->first();
 
+        // Si no es QR, intentar como tarjeta NFC
+        $tarjetaNfc = null;
         if (!$qr) {
-            $this->registrarAcceso(null, $puerta->id, null, false, 'QR inválido', $data['codigo_fisico'], $tipoEvento, $dispositivoId);
-            return response()->json(['permitido' => false, 'message' => 'QR inválido.'], 200);
+            $tarjetaNfc = TarjetaNfc::query()
+                ->with(['user.role', 'user.cargo'])
+                ->where('codigo', $tokenCodigo)
+                ->where('activo', true)
+                ->first();
         }
 
-        $user = $qr->user;
-        if (!$user || (isset($user->activo) && $user->activo === false)) {
-            $this->registrarAcceso($qr->user_id, $puerta->id, $qr->id, false, 'Usuario inactivo', $data['codigo_fisico'], $tipoEvento, $dispositivoId);
+        if (!$qr && !$tarjetaNfc) {
+            $this->registrarAcceso(null, $puerta->id, null, null, false, 'QR/Tarjeta inválido', $data['codigo_fisico'], $tipoEvento, $dispositivoId);
+            return response()->json(['permitido' => false, 'message' => 'QR/Tarjeta NFC inválido.'], 200);
+        }
+
+        // Determinar usuario por tipo de credencial
+        $qrId = $qr?->id;
+        $tarjetaNfcId = $tarjetaNfc?->id;
+        $user = $qr ? $qr->user : $tarjetaNfc?->user;
+
+        // Tarjeta NFC sin asignar (o usuario eliminado)
+        if (!$user) {
+            $motivo = $qr ? 'QR sin usuario' : 'Tarjeta NFC sin asignar';
+            $this->registrarAcceso(null, $puerta->id, $qrId, $tarjetaNfcId, false, $motivo, $data['codigo_fisico'], $tipoEvento, $dispositivoId);
+            return response()->json(['permitido' => false, 'message' => $motivo . '.'], 200);
+        }
+
+        if (isset($user->activo) && $user->activo === false) {
+            $this->registrarAcceso($user->id, $puerta->id, $qrId, $tarjetaNfcId, false, 'Usuario inactivo', $data['codigo_fisico'], $tipoEvento, $dispositivoId);
             return response()->json(['permitido' => false, 'message' => 'Usuario inactivo.'], 200);
         }
 
         // Para funcionarios: verificar solo la fecha de expiración del usuario
         // - Si tiene fecha_expiracion: validar que no haya expirado
         // - Si NO tiene fecha_expiracion (contrato indefinido): permitir acceso hasta que se marque como inactivo
-        // Para visitantes: verificar la fecha de expiración del QR (15 días)
+        // Para visitantes: verificar la fecha de expiración de la credencial (QR/Tarjeta)
         $userRole = $user->role?->name ?? null;
         if ($userRole === 'funcionario') {
-            // Funcionarios: el QR está activo hasta la fecha de expiración del usuario (si existe)
-            // Si el usuario tiene contrato indefinido (sin fecha_expiracion), puede acceder hasta que se marque como inactivo
             if ($user->fecha_expiracion && Carbon::parse($user->fecha_expiracion)->lt($now->startOfDay())) {
-                $this->registrarAcceso($qr->user_id, $puerta->id, $qr->id, false, 'Usuario expirado', $data['codigo_fisico'], $tipoEvento, $dispositivoId);
+                $this->registrarAcceso($user->id, $puerta->id, $qrId, $tarjetaNfcId, false, 'Usuario expirado', $data['codigo_fisico'], $tipoEvento, $dispositivoId);
                 return response()->json(['permitido' => false, 'message' => 'Usuario expirado.'], 200);
             }
         } else {
-            // Visitantes: verificar la fecha de expiración del QR (15 días)
-            if ($qr->fecha_expiracion && $qr->fecha_expiracion->lt($now)) {
-                $this->registrarAcceso($qr->user_id, $puerta->id, $qr->id, false, 'QR expirado', $data['codigo_fisico'], $tipoEvento, $dispositivoId);
-                return response()->json(['permitido' => false, 'message' => 'QR expirado.'], 200);
+            $fechaExpiracion = $qr ? $qr->fecha_expiracion : $tarjetaNfc?->fecha_expiracion;
+            if ($fechaExpiracion && Carbon::parse($fechaExpiracion)->lt($now)) {
+                $msg = $qr ? 'QR expirado' : 'Tarjeta NFC expirada';
+                $this->registrarAcceso($user->id, $puerta->id, $qrId, $tarjetaNfcId, false, $msg, $data['codigo_fisico'], $tipoEvento, $dispositivoId);
+                return response()->json(['permitido' => false, 'message' => $msg . '.'], 200);
             }
         }
 
         // Puerta de discapacidad: requiere usuario discapacitado, además de permiso
         if ($puerta->requiere_discapacidad && !$user->es_discapacitado) {
-            $this->registrarAcceso($qr->user_id, $puerta->id, $qr->id, false, 'Requiere discapacidad', $data['codigo_fisico'], $tipoEvento, $dispositivoId);
+            $this->registrarAcceso($user->id, $puerta->id, $qr?->id, $tarjetaNfc?->id, false, 'Requiere discapacidad', $data['codigo_fisico'], $tipoEvento, $dispositivoId);
             return response()->json(['permitido' => false, 'message' => 'Acceso denegado (discapacidad requerida).'], 200);
         }
 
@@ -136,48 +159,38 @@ class AccessController extends Controller
         // - entrada: si la última operación permitida fue entrada, se debe registrar salida antes de otra entrada
         // - salida: solo se permite si la última operación permitida fue entrada
         $lastOk = Acceso::query()
-            ->where('codigo_qr_id', $qr->id)
+            ->where(function ($q) use ($qr, $tarjetaNfc) {
+                if ($qr) {
+                    $q->where('codigo_qr_id', $qr->id);
+                } else {
+                    $q->where('tarjeta_nfc_id', $tarjetaNfc->id);
+                }
+            })
             ->where('permitido', true)
             ->whereIn('tipo_evento', ['entrada', 'salida'])
             ->orderByDesc('fecha_acceso')
             ->first();
 
         if ($tipoEvento === 'entrada' && $lastOk?->tipo_evento === 'entrada') {
-            $this->registrarAcceso($qr->user_id, $puerta->id, $qr->id, false, 'Entrada ya registrada (falta salida)', $data['codigo_fisico'], $tipoEvento, $dispositivoId);
+            $this->registrarAcceso($user->id, $puerta->id, $qr?->id, $tarjetaNfc?->id, false, 'Entrada ya registrada (falta salida)', $data['codigo_fisico'], $tipoEvento, $dispositivoId);
             return response()->json(['permitido' => false, 'message' => 'Entrada ya registrada. Debe registrarse salida antes de otra entrada.'], 200);
         }
         if ($tipoEvento === 'salida' && (!$lastOk || $lastOk->tipo_evento !== 'entrada')) {
-            $this->registrarAcceso($qr->user_id, $puerta->id, $qr->id, false, 'No hay entrada activa', $data['codigo_fisico'], $tipoEvento, $dispositivoId);
+            $this->registrarAcceso($user->id, $puerta->id, $qr?->id, $tarjetaNfc?->id, false, 'No hay entrada activa', $data['codigo_fisico'], $tipoEvento, $dispositivoId);
             return response()->json(['permitido' => false, 'message' => 'No hay una entrada activa para registrar salida.'], 200);
         }
 
-        // Si este QR tiene puertas explícitas (código_qr_puerta_acceso), entonces restringe SOLO a esas puertas
-        $qrHasDoorRules = DB::table('codigo_qr_puerta_acceso')
-            ->where('codigo_qr_id', $qr->id)
-            ->exists();
-
-        $qrRule = DB::table('codigo_qr_puerta_acceso')
-            ->where('codigo_qr_id', $qr->id)
-            ->where('puerta_id', $puerta->id)
-            ->first();
+        // Determinar si el usuario es funcionario o visitante
+        $userRole = $user->role?->name ?? null;
+        $isFuncionario = $userRole === 'funcionario';
 
         $permitido = false;
         $motivo = null;
 
-        if ($qrHasDoorRules) {
-            if (!$qrRule) {
-                $permitido = false;
-                $motivo = 'QR no autorizado para esta puerta';
-            } else {
-                $permitido = $this->ruleAllows($qrRule, $now);
-                $motivo = $permitido ? null : 'Fuera de horario (QR)';
-            }
-        } elseif ($qrRule) {
-            // Compatibilidad: si existe regla QR puntual aunque no haya otras, la respetamos.
-            $permitido = $this->ruleAllows($qrRule, $now);
-            $motivo = $permitido ? null : 'Fuera de horario (QR)';
-        } else {
-            // 2) Permiso por cargo->piso (si el cargo tiene permiso al piso de la puerta)
+        // Para funcionarios: SIEMPRE usar permisos del cargo->piso (ignorar reglas de QR/Tarjeta NFC)
+        // Para visitantes: usar reglas de la credencial (QR/Tarjeta NFC)
+        if ($isFuncionario) {
+            // Funcionario: usar permisos del cargo->piso
             if (!$user->cargo_id) {
                 $permitido = false;
                 $motivo = 'Sin cargo asignado';
@@ -198,9 +211,49 @@ class AccessController extends Controller
                     $motivo = $permitido ? null : 'Fuera de horario (cargo)';
                 }
             }
+        } else {
+            // Visitante: usar reglas de la credencial (QR o Tarjeta NFC)
+            $hasDoorRules = false;
+            $rule = null;
+
+            if ($qr) {
+                $hasDoorRules = DB::table('codigo_qr_puerta_acceso')
+                    ->where('codigo_qr_id', $qr->id)
+                    ->exists();
+                $rule = DB::table('codigo_qr_puerta_acceso')
+                    ->where('codigo_qr_id', $qr->id)
+                    ->where('puerta_id', $puerta->id)
+                    ->first();
+            } else {
+                $hasDoorRules = DB::table('tarjeta_nfc_puerta_acceso')
+                    ->where('tarjeta_nfc_id', $tarjetaNfc->id)
+                    ->exists();
+                $rule = DB::table('tarjeta_nfc_puerta_acceso')
+                    ->where('tarjeta_nfc_id', $tarjetaNfc->id)
+                    ->where('puerta_id', $puerta->id)
+                    ->first();
+            }
+
+            if ($hasDoorRules) {
+                if (!$rule) {
+                    $permitido = false;
+                    $motivo = ($qr ? 'QR' : 'Tarjeta NFC') . ' no autorizado para esta puerta';
+                } else {
+                    $permitido = $this->ruleAllows($rule, $now);
+                    $motivo = $permitido ? null : 'Fuera de horario (' . ($qr ? 'QR' : 'Tarjeta NFC') . ')';
+                }
+            } elseif ($rule) {
+                // Compatibilidad: si existe regla puntual aunque no haya otras, la respetamos.
+                $permitido = $this->ruleAllows($rule, $now);
+                $motivo = $permitido ? null : 'Fuera de horario (' . ($qr ? 'QR' : 'Tarjeta NFC') . ')';
+            } else {
+                // Sin reglas de puertas: denegar (visitantes deben tener reglas explícitas)
+                $permitido = false;
+                $motivo = 'Sin permisos configurados para esta puerta';
+            }
         }
 
-        $this->registrarAcceso($qr->user_id, $puerta->id, $qr->id, $permitido, $motivo, $data['codigo_fisico'], $tipoEvento, $dispositivoId);
+        $this->registrarAcceso($user->id, $puerta->id, $qr?->id, $tarjetaNfc?->id, $permitido, $motivo, $data['codigo_fisico'], $tipoEvento, $dispositivoId);
 
         // Determinar el tiempo de apertura según si el usuario es discapacitado
         $tiempoApertura = $puerta->tiempo_apertura ?? 5; // Valor por defecto si no está configurado
@@ -213,10 +266,11 @@ class AccessController extends Controller
             'message' => $permitido ? 'Acceso permitido.' : ('Acceso denegado. ' . ($motivo ?? '')),
             'tiempo_apertura' => $permitido ? $tiempoApertura : null, // Solo devolver tiempo si el acceso es permitido
             'data' => [
-                'user_id' => $qr->user_id,
+                'user_id' => $user->id,
                 'puerta_id' => $puerta->id,
                 'codigo_fisico' => $data['codigo_fisico'],
-                'codigo_qr_id' => $qr->id,
+                'codigo_qr_id' => $qr?->id,
+                'tarjeta_nfc_id' => $tarjetaNfc?->id,
                 'tipo_evento' => $tipoEvento,
                 'dispositivo_id' => $dispositivoId,
                 'fecha' => $now->toIso8601String(),
@@ -224,13 +278,14 @@ class AccessController extends Controller
         ]);
     }
 
-    private function registrarAcceso(?int $userId, int $puertaId, ?int $codigoQrId, bool $permitido, ?string $motivo, ?string $lectorId, string $tipoEventoIntentado = 'entrada', ?string $dispositivoId = null): void
+    private function registrarAcceso(?int $userId, int $puertaId, ?int $codigoQrId, ?int $tarjetaNfcId, bool $permitido, ?string $motivo, ?string $lectorId, string $tipoEventoIntentado = 'entrada', ?string $dispositivoId = null): void
     {
         Acceso::query()->create([
-            // user_id será nullable (migración adicional) para registrar intentos con QR inválido
+            // user_id será nullable (migración adicional) para registrar intentos con QR/Tarjeta inválido
             'user_id' => $userId,
             'puerta_id' => $puertaId,
             'codigo_qr_id' => $codigoQrId,
+            'tarjeta_nfc_id' => $tarjetaNfcId,
             'tipo_evento' => $permitido ? $tipoEventoIntentado : 'denegado',
             'fecha_acceso' => Carbon::now(),
             'permitido' => $permitido,

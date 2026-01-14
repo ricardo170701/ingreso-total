@@ -212,7 +212,7 @@
 
                             <div
                                 v-if="userPickerOpen && puedeCrearParaOtros"
-                                class="absolute z-30 mt-1 w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-lg overflow-hidden"
+                                class="absolute z-30 mt-1 w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-lg overflow-hidden max-h-[280px] overflow-y-auto"
                             >
                                 <div v-if="filteredUsuariosForPicker.length === 0" class="px-3 py-3 text-sm text-slate-500 dark:text-slate-400">
                                     Sin resultados

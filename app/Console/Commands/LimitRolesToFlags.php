@@ -11,12 +11,12 @@ class LimitRolesToFlags extends Command
 {
     protected $signature = 'roles:limit-to-flags {--dry-run : No aplica cambios, solo muestra qué haría}';
 
-    protected $description = 'Limita los roles a funcionario/visitante, reasigna usuarios con roles antiguos y elimina roles no permitidos.';
+    protected $description = 'Limita los tipos de vinculación a visitante/servidor_publico/contratista, reasigna usuarios con roles antiguos y elimina roles no permitidos.';
 
     public function handle(): int
     {
         $dryRun = (bool) $this->option('dry-run');
-        $allowed = ['funcionario', 'visitante'];
+        $allowed = ['visitante', 'servidor_publico', 'contratista'];
 
         $this->info('Roles permitidos: ' . implode(', ', $allowed));
         if ($dryRun) {
@@ -28,19 +28,22 @@ class LimitRolesToFlags extends Command
             foreach ($allowed as $name) {
                 Role::query()->updateOrCreate(
                     ['name' => $name],
-                    ['description' => $name === 'visitante'
-                        ? 'Usuario externo (QR por correo / accesos embebidos)'
-                        : 'Usuario interno (permisos por cargo)']
+                    ['description' => match ($name) {
+                        'visitante' => 'Visitante (QR por correo / accesos embebidos)',
+                        'contratista' => 'Contratista (mismas reglas que servidor público)',
+                        default => 'Servidor público (permisos por rol)',
+                    }]
                 );
             }
 
-            $roleFuncionarioId = Role::query()->where('name', 'funcionario')->value('id');
-            if (!$roleFuncionarioId) {
-                $this->error('No se pudo resolver el rol funcionario.');
+            $roleServidorPublicoId = Role::query()->where('name', 'servidor_publico')->value('id')
+                ?: Role::query()->where('name', 'funcionario')->value('id'); // compatibilidad
+            if (!$roleServidorPublicoId) {
+                $this->error('No se pudo resolver el rol servidor_publico (ni funcionario legado).');
                 return 1;
             }
 
-            // 2) Reasignar usuarios con rol no permitido -> funcionario
+            // 2) Reasignar usuarios con rol no permitido -> servidor_publico
             $usersToMove = User::query()
                 ->whereNotNull('role_id')
                 ->whereHas('role', fn($q) => $q->whereNotIn('name', $allowed))
@@ -52,7 +55,7 @@ class LimitRolesToFlags extends Command
                 User::query()
                     ->whereNotNull('role_id')
                     ->whereHas('role', fn($q) => $q->whereNotIn('name', $allowed))
-                    ->update(['role_id' => $roleFuncionarioId]);
+                    ->update(['role_id' => $roleServidorPublicoId]);
             }
 
             // 3) Eliminar roles no permitidos (y su pivot role_permission)

@@ -92,7 +92,7 @@
                                 </div>
                             </div>
                             <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                                Puedes asignar la tarjeta a un usuario (funcionario o visitante). Busca por nombre, email o número de cédula.
+                                Puedes asignar la tarjeta a un usuario (visitante, servidor público o contratista). Busca por nombre, email o número de cédula.
                             </p>
                         </FormField>
 

@@ -86,17 +86,17 @@
                     </div>
 
                     <FormField
-                        label="Falla"
-                        :error="form.errors.falla"
+                        label="Descripción de mantenimiento"
+                        :error="form.errors.descripcion_mantenimiento"
                     >
                         <textarea
-                            v-model="form.falla"
+                            v-model="form.descripcion_mantenimiento"
                             rows="4"
                             class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-transparent transition-colors duration-200"
-                            placeholder="Describa la falla encontrada..."
+                            placeholder="Describa el mantenimiento realizado..."
                         />
                         <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                            Descripción de la falla o problema detectado
+                            Descripción del mantenimiento realizado
                         </p>
                     </FormField>
 
@@ -175,7 +175,7 @@ const form = useForm({
     fecha_mantenimiento: new Date().toISOString().split("T")[0],
     fecha_fin_programada: null,
     tipo: "realizado",
-    falla: "",
+    descripcion_mantenimiento: "",
     documentos: [],
     redirect_to_puerta_id: props.puertaSeleccionada || null, // Para redirección después de crear
 });

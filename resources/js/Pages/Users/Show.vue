@@ -3,7 +3,9 @@
         <div class="max-w-6xl mx-auto space-y-4">
             <div class="flex items-start justify-between flex-wrap gap-3">
                 <div>
-                    <h1 class="text-xl font-semibold text-slate-900 dark:text-slate-100">
+                    <h1
+                        class="text-xl font-semibold text-slate-900 dark:text-slate-100"
+                    >
                         {{ user.name || user.email }}
                     </h1>
                     <p class="text-sm text-slate-600 dark:text-slate-400">
@@ -35,18 +37,58 @@
                 </div>
             </div>
 
-            <div
-                v-if="$page.props.flash?.message || $page.props.flash?.success"
-                class="p-4 rounded-lg bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 text-green-800 dark:text-green-200 transition-colors duration-200"
+            <!-- Mensaje de éxito (notificación temporal) -->
+            <Transition
+                enter-active-class="transition ease-out duration-300"
+                enter-from-class="opacity-0 translate-x-full"
+                enter-to-class="opacity-100 translate-x-0"
+                leave-active-class="transition ease-in duration-200"
+                leave-from-class="opacity-100 translate-x-0"
+                leave-to-class="opacity-0 translate-x-full"
             >
-                {{ $page.props.flash.message || $page.props.flash.success }}
-            </div>
+                <div
+                    v-if="showSuccessMessage"
+                    class="fixed top-4 right-4 z-50 max-w-md"
+                >
+                    <div
+                        class="bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 rounded-lg p-4 shadow-lg flex items-center gap-3"
+                    >
+                        <div class="shrink-0">
+                            <span class="text-2xl">✅</span>
+                        </div>
+                        <div class="flex-1">
+                            <p
+                                class="text-sm font-medium text-green-800 dark:text-green-200"
+                            >
+                                {{ successTitle }}
+                            </p>
+                            <p
+                                class="text-xs text-green-700 dark:text-green-300 mt-1"
+                            >
+                                {{ successMessage }}
+                            </p>
+                        </div>
+                        <button
+                            type="button"
+                            @click="showSuccessMessage = false"
+                            class="shrink-0 text-green-600 dark:text-green-400 hover:text-green-800 dark:hover:text-green-200 transition-colors"
+                            aria-label="Cerrar"
+                        >
+                            ×
+                        </button>
+                    </div>
+                </div>
+            </Transition>
 
             <!-- Hoja de vida -->
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                <div class="lg:col-span-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl overflow-hidden transition-colors duration-200">
+                <div
+                    class="lg:col-span-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl overflow-hidden transition-colors duration-200"
+                >
                     <!-- Foto de perfil -->
-                    <div class="aspect-video bg-slate-100 dark:bg-slate-700 relative overflow-hidden transition-colors duration-200">
+                    <div
+                        class="aspect-video bg-slate-100 dark:bg-slate-700 relative overflow-hidden transition-colors duration-200"
+                    >
                         <img
                             v-if="user.foto_perfil"
                             :src="storageUrl(user.foto_perfil)"
@@ -55,7 +97,10 @@
                             loading="lazy"
                             decoding="async"
                         />
-                        <div v-else class="w-full h-full flex items-center justify-center text-slate-400 dark:text-slate-500">
+                        <div
+                            v-else
+                            class="w-full h-full flex items-center justify-center text-slate-400 dark:text-slate-500"
+                        >
                             <div class="text-center">
                                 <div class="text-4xl leading-none">👤</div>
                                 <div class="mt-2 text-sm">Sin foto</div>
@@ -63,11 +108,15 @@
                         </div>
 
                         <!-- Badges de estado -->
-                        <div class="absolute top-3 right-3 flex flex-col gap-2 items-end">
+                        <div
+                            class="absolute top-3 right-3 flex flex-col gap-2 items-end"
+                        >
                             <span
                                 :class="[
                                     'px-2.5 py-1 rounded-full text-xs font-semibold border shadow-sm bg-white/80 dark:bg-slate-800/80 backdrop-blur',
-                                    user.activo ? 'text-green-700 dark:text-green-400 border-green-200 dark:border-green-800' : 'text-red-700 dark:text-red-400 border-red-200 dark:border-red-800',
+                                    user.activo
+                                        ? 'text-green-700 dark:text-green-400 border-green-200 dark:border-green-800'
+                                        : 'text-red-700 dark:text-red-400 border-red-200 dark:border-red-800',
                                 ]"
                             >
                                 {{ user.activo ? "Activo" : "Inactivo" }}
@@ -90,97 +139,241 @@
                     <div class="p-6 space-y-4">
                         <!-- Datos personales -->
                         <div>
-                            <h2 class="text-sm font-semibold text-slate-900 dark:text-slate-100 mb-3">Datos Personales</h2>
+                            <h2
+                                class="text-sm font-semibold text-slate-900 dark:text-slate-100 mb-3"
+                            >
+                                Datos Personales
+                            </h2>
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
-                                    <p class="text-xs text-slate-500 dark:text-slate-400">Nombre completo</p>
-                                    <p class="text-sm text-slate-900 dark:text-slate-100 font-medium">
-                                        {{ user.nombre && user.apellido ? `${user.nombre} ${user.apellido}` : user.name || "-" }}
+                                    <p
+                                        class="text-xs text-slate-500 dark:text-slate-400"
+                                    >
+                                        Nombre completo
+                                    </p>
+                                    <p
+                                        class="text-sm text-slate-900 dark:text-slate-100 font-medium"
+                                    >
+                                        {{
+                                            user.nombre && user.apellido
+                                                ? `${user.nombre} ${user.apellido}`
+                                                : user.name || "-"
+                                        }}
                                     </p>
                                 </div>
                                 <div>
-                                    <p class="text-xs text-slate-500 dark:text-slate-400">Email</p>
-                                    <p class="text-sm text-slate-700 dark:text-slate-300 break-all">
+                                    <p
+                                        class="text-xs text-slate-500 dark:text-slate-400"
+                                    >
+                                        Email
+                                    </p>
+                                    <p
+                                        class="text-sm text-slate-700 dark:text-slate-300 break-all"
+                                    >
                                         {{ user.email || "-" }}
                                     </p>
                                 </div>
                                 <div>
-                                    <p class="text-xs text-slate-500 dark:text-slate-400">N. Identidad</p>
-                                    <p class="text-sm text-slate-700 dark:text-slate-300">
+                                    <p
+                                        class="text-xs text-slate-500 dark:text-slate-400"
+                                    >
+                                        N. Identidad
+                                    </p>
+                                    <p
+                                        class="text-sm text-slate-700 dark:text-slate-300"
+                                    >
                                         {{ user.n_identidad || "-" }}
                                     </p>
                                 </div>
-                                <div v-if="user.numero_caso">
-                                    <p class="text-xs text-slate-500 dark:text-slate-400">Número de Caso</p>
-                                    <p class="text-sm text-slate-700 dark:text-slate-300 font-medium">
-                                        {{ user.numero_caso }}
+                                <div
+                                    v-if="user.observaciones"
+                                    class="md:col-span-2"
+                                >
+                                    <p
+                                        class="text-xs text-slate-500 dark:text-slate-400"
+                                    >
+                                        Observaciones
+                                    </p>
+                                    <p
+                                        class="text-sm text-slate-700 dark:text-slate-300 font-medium whitespace-pre-wrap"
+                                    >
+                                        {{ user.observaciones }}
                                     </p>
                                 </div>
                             </div>
                         </div>
 
                         <!-- Rol y permisos -->
-                        <div class="pt-4 border-t border-slate-200 dark:border-slate-700">
-                            <h2 class="text-sm font-semibold text-slate-900 dark:text-slate-100 mb-3">Rol y Permisos</h2>
+                        <div
+                            class="pt-4 border-t border-slate-200 dark:border-slate-700"
+                        >
+                            <h2
+                                class="text-sm font-semibold text-slate-900 dark:text-slate-100 mb-3"
+                            >
+                                Rol y Permisos
+                            </h2>
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
-                                    <p class="text-xs text-slate-500 dark:text-slate-400">Rol</p>
-                                    <p class="text-sm text-slate-900 dark:text-slate-100 font-medium">
-                                        {{ user.role?.name || "-" }}
+                                    <p
+                                        class="text-xs text-slate-500 dark:text-slate-400"
+                                    >
+                                        Tipo de vinculación
+                                    </p>
+                                    <p
+                                        class="text-sm text-slate-900 dark:text-slate-100 font-medium"
+                                    >
+                                        {{
+                                            formatTipoVinculacion(
+                                                user.role?.name
+                                            ) || "-"
+                                        }}
                                     </p>
                                 </div>
                                 <div v-if="user.cargo">
-                                    <p class="text-xs text-slate-500 dark:text-slate-400">Cargo</p>
-                                    <p class="text-sm text-slate-700 dark:text-slate-300">
+                                    <p
+                                        class="text-xs text-slate-500 dark:text-slate-400"
+                                    >
+                                        Rol (permisos)
+                                    </p>
+                                    <p
+                                        class="text-sm text-slate-700 dark:text-slate-300"
+                                    >
                                         {{ user.cargo?.name || "-" }}
                                     </p>
                                 </div>
+                                <div v-if="user.cargo_texto">
+                                    <p
+                                        class="text-xs text-slate-500 dark:text-slate-400"
+                                    >
+                                        Cargo (registro)
+                                    </p>
+                                    <p
+                                        class="text-sm text-slate-700 dark:text-slate-300 font-medium"
+                                    >
+                                        {{ user.cargo_texto }}
+                                    </p>
+                                </div>
                                 <div v-if="user.gerencia">
-                                    <p class="text-xs text-slate-500 dark:text-slate-400">Secretaría / Gerencia</p>
-                                    <p class="text-sm text-slate-700 dark:text-slate-300">
-                                        <span class="font-medium">{{ user.gerencia.secretaria?.nombre || "-" }}</span>
-                                        <span v-if="user.gerencia.secretaria?.piso" class="text-slate-500 dark:text-slate-400">
-                                            · {{ user.gerencia.secretaria.piso.nombre }}
+                                    <p
+                                        class="text-xs text-slate-500 dark:text-slate-400"
+                                    >
+                                        Secretaría / Gerencia
+                                    </p>
+                                    <p
+                                        class="text-sm text-slate-700 dark:text-slate-300"
+                                    >
+                                        <span class="font-medium">{{
+                                            user.gerencia.secretaria?.nombre ||
+                                            "-"
+                                        }}</span>
+                                        <span
+                                            v-if="
+                                                user.gerencia.secretaria?.piso
+                                            "
+                                            class="text-slate-500 dark:text-slate-400"
+                                        >
+                                            ·
+                                            {{
+                                                user.gerencia.secretaria.piso
+                                                    .nombre
+                                            }}
                                         </span>
                                     </p>
-                                    <p class="text-xs text-slate-600 dark:text-slate-400 mt-1">
+                                    <p
+                                        class="text-xs text-slate-600 dark:text-slate-400 mt-1"
+                                    >
                                         Gerencia: {{ user.gerencia.nombre }}
                                     </p>
                                 </div>
+                                <div v-else>
+                                    <p
+                                        class="text-xs text-slate-500 dark:text-slate-400"
+                                    >
+                                        Dependencia
+                                    </p>
+                                    <p
+                                        class="text-sm text-slate-700 dark:text-slate-300 font-medium italic"
+                                    >
+                                        Despacho
+                                    </p>
+                                </div>
                                 <div v-if="user.fecha_expiracion">
-                                    <p class="text-xs text-slate-500 dark:text-slate-400">Fecha expiración</p>
-                                    <p class="text-sm text-slate-700 dark:text-slate-300">
+                                    <p
+                                        class="text-xs text-slate-500 dark:text-slate-400"
+                                    >
+                                        Fecha expiración
+                                    </p>
+                                    <p
+                                        class="text-sm text-slate-700 dark:text-slate-300"
+                                    >
                                         {{ formatDate(user.fecha_expiracion) }}
                                     </p>
                                 </div>
                                 <div v-if="user.tipo_contrato">
-                                    <p class="text-xs text-slate-500 dark:text-slate-400">Tipo de contrato</p>
-                                    <p class="text-sm text-slate-700 dark:text-slate-300 font-medium">
-                                        {{ formatTipoContrato(user.tipo_contrato) }}
+                                    <p
+                                        class="text-xs text-slate-500 dark:text-slate-400"
+                                    >
+                                        Tipo de contrato
+                                    </p>
+                                    <p
+                                        class="text-sm text-slate-700 dark:text-slate-300 font-medium"
+                                    >
+                                        {{
+                                            formatTipoContrato(
+                                                user.tipo_contrato
+                                            )
+                                        }}
                                     </p>
                                 </div>
                             </div>
                         </div>
 
                         <!-- Auditoría -->
-                        <div class="pt-4 border-t border-slate-200 dark:border-slate-700">
-                            <h2 class="text-sm font-semibold text-slate-900 dark:text-slate-100 mb-3">Auditoría</h2>
+                        <div
+                            class="pt-4 border-t border-slate-200 dark:border-slate-700"
+                        >
+                            <h2
+                                class="text-sm font-semibold text-slate-900 dark:text-slate-100 mb-3"
+                            >
+                                Auditoría
+                            </h2>
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
-                                    <p class="text-xs text-slate-500 dark:text-slate-400">Creado por</p>
-                                    <p class="text-sm text-slate-700 dark:text-slate-300">
-                                        {{ user.created_by_name || user.creado_por?.name || user.creado_por?.email || "Sistema" }}
+                                    <p
+                                        class="text-xs text-slate-500 dark:text-slate-400"
+                                    >
+                                        Creado por
                                     </p>
-                                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                                    <p
+                                        class="text-sm text-slate-700 dark:text-slate-300"
+                                    >
+                                        {{
+                                            user.created_by_name ||
+                                            user.creado_por?.name ||
+                                            user.creado_por?.email ||
+                                            "Sistema"
+                                        }}
+                                    </p>
+                                    <p
+                                        class="text-xs text-slate-500 dark:text-slate-400 mt-1"
+                                    >
                                         {{ formatDateTime(user.created_at) }}
                                     </p>
                                 </div>
                                 <div>
-                                    <p class="text-xs text-slate-500 dark:text-slate-400">Última edición por</p>
-                                    <p class="text-sm text-slate-700 dark:text-slate-300">
+                                    <p
+                                        class="text-xs text-slate-500 dark:text-slate-400"
+                                    >
+                                        Última edición por
+                                    </p>
+                                    <p
+                                        class="text-sm text-slate-700 dark:text-slate-300"
+                                    >
                                         {{ user.updated_by_name || "N/A" }}
                                     </p>
-                                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                                    <p
+                                        class="text-xs text-slate-500 dark:text-slate-400 mt-1"
+                                    >
                                         {{ formatDateTime(user.updated_at) }}
                                     </p>
                                 </div>
@@ -189,9 +382,15 @@
                     </div>
                 </div>
 
-                <!-- Acciones y documentos -->
-                <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-6 space-y-4 transition-colors duration-200">
-                    <h2 class="text-sm font-semibold text-slate-900 dark:text-slate-100">Acciones</h2>
+                <!-- Acciones -->
+                <div
+                    class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-6 space-y-4 transition-colors duration-200"
+                >
+                    <h2
+                        class="text-sm font-semibold text-slate-900 dark:text-slate-100"
+                    >
+                        Acciones
+                    </h2>
                     <div class="space-y-2">
                         <Link
                             v-if="hasPermission('edit_users')"
@@ -209,40 +408,6 @@
                             Eliminar Usuario
                         </button>
                     </div>
-
-                    <!-- Documentos -->
-                    <div v-if="(user.documentos?.length || 0) > 0" class="pt-4 border-t border-slate-200 dark:border-slate-700">
-                        <h2 class="text-sm font-semibold text-slate-900 dark:text-slate-100 mb-3">Documentos</h2>
-                        <div class="space-y-2">
-                            <div
-                                v-for="doc in user.documentos"
-                                :key="doc.id"
-                                class="flex items-center justify-between gap-2 p-2 bg-slate-50 dark:bg-slate-700 rounded-lg transition-colors duration-200"
-                            >
-                                <div class="min-w-0 flex-1">
-                                    <p class="text-xs font-medium text-slate-900 dark:text-slate-100 truncate">
-                                        {{ doc.nombre_original || `Documento #${doc.id}` }}
-                                    </p>
-                                    <p v-if="doc.tipo_contrato" class="text-xs text-slate-500 dark:text-slate-400">
-                                        {{ formatTipoContrato(doc.tipo_contrato) }}
-                                    </p>
-                                    <p class="text-xs text-slate-500 dark:text-slate-400">
-                                        {{ formatDateTime(doc.created_at) }}
-                                    </p>
-                                </div>
-                                <a
-                                    :href="route('usuarios.documentos.download', { user: user.id, documento: doc.id })"
-                                    class="px-2 py-1 rounded border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 text-xs shrink-0 transition-colors duration-200"
-                                    target="_blank"
-                                >
-                                    📥
-                                </a>
-                            </div>
-                        </div>
-                    </div>
-                    <div v-else class="pt-4 border-t border-slate-200 dark:border-slate-700">
-                        <p class="text-xs text-slate-500 dark:text-slate-400 italic">Sin documentos</p>
-                    </div>
                 </div>
             </div>
         </div>
@@ -252,15 +417,43 @@
 <script setup>
 import AppLayout from "@/Layouts/AppLayout.vue";
 import { Link, router, usePage } from "@inertiajs/vue3";
-import { computed } from "vue";
+import { computed, ref, watch, Transition } from "vue";
 
 const props = defineProps({
     user: Object,
 });
 
 const page = usePage();
-const userPermissions = computed(() => page.props.auth?.user?.permissions || []);
-const hasPermission = (permission) => userPermissions.value.includes(permission);
+
+// Mensaje de éxito
+const showSuccessMessage = ref(false);
+const successTitle = ref("");
+const successMessage = ref("");
+
+// Mostrar mensaje de éxito si hay flash message
+watch(
+    () => page.props.flash?.message || page.props.flash?.success,
+    (message) => {
+        if (message) {
+            successTitle.value = "Usuario actualizado exitosamente";
+            successMessage.value = `Los cambios se han aplicado al usuario "${
+                props.user.name || props.user.email
+            }"`;
+            showSuccessMessage.value = true;
+            // Ocultar el mensaje después de 5 segundos
+            setTimeout(() => {
+                showSuccessMessage.value = false;
+            }, 5000);
+        }
+    },
+    { immediate: true }
+);
+
+const userPermissions = computed(
+    () => page.props.auth?.user?.permissions || []
+);
+const hasPermission = (permission) =>
+    userPermissions.value.includes(permission);
 
 const storageUrl = (path) => {
     if (!path) return "";
@@ -297,9 +490,26 @@ const formatTipoContrato = (tipo) => {
     return map[tipo] || tipo;
 };
 
+const formatTipoVinculacion = (name) => {
+    const map = {
+        visitante: "Visitante",
+        servidor_publico: "Servidor público",
+        contratista: "Contratista",
+        // compatibilidad histórica
+        funcionario: "Servidor público",
+    };
+    return map[name] || name || null;
+};
+
 const eliminarUsuario = () => {
-    if (!confirm(`¿Eliminar el usuario "${props.user.name || props.user.email}"? Esta acción no se puede deshacer.`)) return;
+    if (
+        !confirm(
+            `¿Eliminar el usuario "${
+                props.user.name || props.user.email
+            }"? Esta acción no se puede deshacer.`
+        )
+    )
+        return;
     router.delete(route("usuarios.destroy", { user: props.user.id }));
 };
 </script>
-

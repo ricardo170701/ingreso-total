@@ -18,6 +18,7 @@ class CodigoQr extends Model
     protected $fillable = [
         'user_id',
         'gerencia_id',
+        'responsable_id',
         'codigo',
         'token_encrypted',
         'fecha_generacion',
@@ -54,6 +55,14 @@ class CodigoQr extends Model
     }
 
     /**
+     * Responsable del ingreso (usuario servidor público que autoriza el ingreso del visitante)
+     */
+    public function responsable(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'responsable_id');
+    }
+
+    /**
      * Relación: Un código QR tiene muchos accesos
      */
     public function accesos(): HasMany
@@ -79,6 +88,8 @@ class CodigoQr extends Model
     }
     /**
      * Verificar si el código QR está activo (no expirado y activo)
+     * Para staff (servidor público/contratista): siempre verifica la fecha_expiracion del usuario
+     * Para visitantes: verifica la fecha_expiracion del QR
      */
     public function estaActivo(): bool
     {
@@ -88,24 +99,57 @@ class CodigoQr extends Model
 
         $now = now();
 
-        // Si tiene fecha de expiración y ya expiró, no está activo
-        if ($this->fecha_expiracion && $this->fecha_expiracion->lt($now)) {
+        // Cargar usuario y su rol si no está cargado
+        if (!$this->relationLoaded('user')) {
+            $this->load('user.role');
+        }
+
+        $user = $this->user;
+        if (!$user) {
             return false;
         }
 
-        return true;
+        $userRole = $user->role?->name ?? null;
+        $staffRoles = ['servidor_publico', 'contratista', 'funcionario']; // 'funcionario' legado
+        $isStaff = in_array($userRole, $staffRoles, true);
+
+        if ($isStaff) {
+            // Para staff: verificar siempre la fecha_expiracion del usuario, no la del QR
+            if ($user->fecha_expiracion) {
+                $fechaExpiracion = \Carbon\Carbon::parse($user->fecha_expiracion)->startOfDay();
+                if ($fechaExpiracion->lt($now->startOfDay())) {
+                    return false;
+                }
+            }
+            // Si no tiene fecha_expiracion (contrato indefinido), el QR está activo mientras el usuario esté activo
+            return true;
+        } else {
+            // Para visitantes: verificar la fecha_expiracion del QR
+            if ($this->fecha_expiracion && $this->fecha_expiracion->lt($now)) {
+                return false;
+            }
+            return true;
+        }
     }
 
     /**
      * Scope para obtener solo códigos QR activos
+     * Nota: Este scope solo filtra por activo=true y fecha_expiracion del QR.
+     * Para staff, la validación completa (incluyendo fecha_expiracion del usuario) se hace en estaActivo()
      */
     public function scopeActivos($query)
     {
         $now = now();
         return $query->where('activo', true)
             ->where(function ($q) use ($now) {
+                // Para visitantes: verificar fecha_expiracion del QR
+                // Para staff: este filtro es preliminar, la validación real se hace en estaActivo()
                 $q->whereNull('fecha_expiracion')
                     ->orWhere('fecha_expiracion', '>', $now);
+            })
+            ->whereHas('user', function ($q) {
+                // Asegurar que el usuario esté activo
+                $q->where('activo', true);
             });
     }
     public function getTokenOriginalAttribute(): ?string

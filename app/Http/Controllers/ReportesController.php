@@ -31,7 +31,7 @@ class ReportesController extends Controller
 
         // Obtener datos para los filtros
         $roles = Role::query()
-            ->whereIn('name', ['funcionario', 'visitante'])
+            ->whereIn('name', ['visitante', 'servidor_publico', 'contratista', 'funcionario'])
             ->orderBy('name')
             ->get(['id', 'name']);
         $cargos = Cargo::query()->orderBy('name')->get(['id', 'name']);
@@ -40,7 +40,7 @@ class ReportesController extends Controller
             ->with('piso')
             ->orderBy('nombre')
             ->get(['id', 'nombre', 'piso_id']);
-        
+
         $gerencias = Gerencia::query()
             ->where('activo', true)
             ->with('secretaria')
@@ -62,10 +62,6 @@ class ReportesController extends Controller
             ->where('activo', true)
             ->orderBy('nombre')
             ->get(['id', 'nombre']);
-        $usuarios = User::query()
-            ->where('activo', true)
-            ->orderBy('name')
-            ->get(['id', 'name', 'email']);
 
         return Inertia::render('Reportes/Index', [
             'roles' => $roles,
@@ -76,7 +72,6 @@ class ReportesController extends Controller
             'puertas' => $puertas,
             'tiposPuerta' => $tiposPuerta,
             'materiales' => $materiales,
-            'usuarios' => $usuarios,
         ]);
     }
 
@@ -130,8 +125,9 @@ class ReportesController extends Controller
                 'ID',
                 'Nombre',
                 'Email',
-                'Rol',
-                'Cargo',
+                'Tipo de vinculación',
+                'Rol (permisos)',
+                'Cargo (registro)',
                 'Secretaría',
                 'Gerencia',
                 'Activo',
@@ -146,6 +142,7 @@ class ReportesController extends Controller
                     $usuario->email,
                     $usuario->role?->name ?? '',
                     $usuario->cargo?->name ?? '',
+                    $usuario->cargo_texto ?? '',
                     $usuario->gerencia?->secretaria?->nombre ?? '',
                     $usuario->gerencia?->nombre ?? '',
                     $usuario->activo ? 'Sí' : 'No',
@@ -175,14 +172,15 @@ class ReportesController extends Controller
         $filtros = $request->only([
             'fecha_desde',
             'fecha_hasta',
-            'user_id',
+            'secretaria_id',
+            'gerencia_id',
             'piso_id',
             'tipo_evento',
             'permitido',
         ]);
 
         $query = Acceso::query()
-            ->with(['user.role', 'puerta.piso']);
+            ->with(['user.role', 'user.gerencia.secretaria', 'puerta.piso']);
 
         if (!empty($filtros['fecha_desde'])) {
             $query->whereDate('fecha_acceso', '>=', $filtros['fecha_desde']);
@@ -192,8 +190,25 @@ class ReportesController extends Controller
             $query->whereDate('fecha_acceso', '<=', $filtros['fecha_hasta']);
         }
 
-        if (!empty($filtros['user_id'])) {
-            $query->where('user_id', $filtros['user_id']);
+        // Filtrar por gerencia o despacho (si se especifica)
+        if (!empty($filtros['gerencia_id'])) {
+            if ($filtros['gerencia_id'] === 'despacho') {
+                // Filtrar usuarios con gerencia_id null (Despacho)
+                $query->whereHas('user', function ($q) {
+                    $q->whereNull('gerencia_id');
+                });
+            } else {
+                // Filtrar por gerencia específica
+                $query->whereHas('user', function ($q) use ($filtros) {
+                    $q->where('gerencia_id', $filtros['gerencia_id']);
+                });
+            }
+        }
+        // Filtrar por secretaría (si se especifica pero no gerencia específica ni despacho)
+        elseif (!empty($filtros['secretaria_id'])) {
+            $query->whereHas('user.gerencia', function ($q) use ($filtros) {
+                $q->where('secretaria_id', $filtros['secretaria_id']);
+            });
         }
 
         if (!empty($filtros['piso_id'])) {
@@ -233,10 +248,16 @@ class ReportesController extends Controller
             ]);
 
         // Datos para filtros
-        $usuarios = User::query()
+        $secretarias = Secretaria::query()
             ->where('activo', true)
-            ->orderBy('name')
-            ->get(['id', 'name', 'email']);
+            ->orderBy('nombre')
+            ->get(['id', 'nombre']);
+
+        $gerencias = Gerencia::query()
+            ->where('activo', true)
+            ->with('secretaria')
+            ->orderBy('nombre')
+            ->get(['id', 'nombre', 'secretaria_id']);
 
         $pisos = Piso::query()
             ->where('activo', true)
@@ -245,7 +266,8 @@ class ReportesController extends Controller
 
         return Inertia::render('Reportes/Accesos', [
             'accesos' => $accesos,
-            'usuarios' => $usuarios,
+            'secretarias' => $secretarias,
+            'gerencias' => $gerencias,
             'pisos' => $pisos,
             'filters' => $filtros,
         ]);
@@ -263,14 +285,15 @@ class ReportesController extends Controller
         $filtros = $request->only([
             'fecha_desde',
             'fecha_hasta',
-            'user_id',
+            'secretaria_id',
+            'gerencia_id',
             'piso_id',
             'tipo_evento',
             'permitido',
         ]);
 
         $query = Acceso::query()
-            ->with(['user', 'puerta.piso']);
+            ->with(['user.gerencia.secretaria', 'puerta.piso']);
 
         if (!empty($filtros['fecha_desde'])) {
             $query->whereDate('fecha_acceso', '>=', $filtros['fecha_desde']);
@@ -280,8 +303,25 @@ class ReportesController extends Controller
             $query->whereDate('fecha_acceso', '<=', $filtros['fecha_hasta']);
         }
 
-        if (!empty($filtros['user_id'])) {
-            $query->where('user_id', $filtros['user_id']);
+        // Filtrar por gerencia o despacho (si se especifica)
+        if (!empty($filtros['gerencia_id'])) {
+            if ($filtros['gerencia_id'] === 'despacho') {
+                // Filtrar usuarios con gerencia_id null (Despacho)
+                $query->whereHas('user', function ($q) {
+                    $q->whereNull('gerencia_id');
+                });
+            } else {
+                // Filtrar por gerencia específica
+                $query->whereHas('user', function ($q) use ($filtros) {
+                    $q->where('gerencia_id', $filtros['gerencia_id']);
+                });
+            }
+        }
+        // Filtrar por secretaría (si se especifica pero no gerencia específica ni despacho)
+        elseif (!empty($filtros['secretaria_id'])) {
+            $query->whereHas('user.gerencia', function ($q) use ($filtros) {
+                $q->where('secretaria_id', $filtros['secretaria_id']);
+            });
         }
 
         if (!empty($filtros['piso_id'])) {
@@ -359,11 +399,10 @@ class ReportesController extends Controller
             'fecha_hasta',
             'puerta_id',
             'tipo',
-            'usuario_id',
         ]);
 
         $query = Mantenimiento::query()
-            ->with(['puerta', 'usuario']);
+            ->with(['puerta', 'creadoPor']);
 
         if (!empty($filtros['fecha_desde'])) {
             $query->whereDate('fecha_mantenimiento', '>=', $filtros['fecha_desde']);
@@ -379,10 +418,6 @@ class ReportesController extends Controller
 
         if (!empty($filtros['tipo'])) {
             $query->where('tipo', $filtros['tipo']);
-        }
-
-        if (!empty($filtros['usuario_id'])) {
-            $query->where('usuario_id', $filtros['usuario_id']);
         }
 
         $mantenimientos = $query->orderByDesc('fecha_mantenimiento')->get();
@@ -413,7 +448,7 @@ class ReportesController extends Controller
                     $mantenimiento->id,
                     $mantenimiento->fecha_mantenimiento?->format('Y-m-d') ?? '',
                     $mantenimiento->puerta?->nombre ?? 'N/A',
-                    $mantenimiento->usuario?->name ?? 'N/A',
+                    $mantenimiento->creadoPor?->name ?? 'N/A',
                     $mantenimiento->tipo ?? '',
                     $mantenimiento->fecha_fin_programada?->format('Y-m-d') ?? '',
                     $mantenimiento->otros_defectos ?? '',

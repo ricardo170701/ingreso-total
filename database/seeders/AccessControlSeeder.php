@@ -18,10 +18,11 @@ class AccessControlSeeder extends Seeder
     public function run(): void
     {
         DB::transaction(function () {
-            // Roles del sistema (bandera de tipo de usuario)
+            // Roles del sistema (bandera de tipo de vinculación)
             $roles = [
-                ['name' => 'funcionario', 'description' => 'Usuario interno (permisos por cargo)'],
-                ['name' => 'visitante', 'description' => 'Usuario externo (QR por correo / accesos embebidos)'],
+                ['name' => 'servidor_publico', 'description' => 'Servidor público (permisos por rol)'],
+                ['name' => 'contratista', 'description' => 'Contratista (mismas reglas que servidor público)'],
+                ['name' => 'visitante', 'description' => 'Visitante (QR por correo / accesos embebidos)'],
             ];
 
             foreach ($roles as $roleData) {
@@ -53,7 +54,8 @@ class AccessControlSeeder extends Seeder
             $adminEmail = env('SEED_ADMIN_EMAIL', 'admin@local.test');
             $adminPassword = env('SEED_ADMIN_PASSWORD', 'admin12345');
 
-            $roleFuncionario = Role::query()->where('name', 'funcionario')->first();
+            $roleServidorPublico = Role::query()->where('name', 'servidor_publico')->first()
+                ?? Role::query()->where('name', 'funcionario')->first(); // compatibilidad
 
             // Nota: usamos el modelo User (tabla users). Si luego quieres separar "usuarios" de "users",
             // lo ajustamos con otra migración.
@@ -62,7 +64,7 @@ class AccessControlSeeder extends Seeder
                 [
                     'name' => 'Admin',
                     'password' => Hash::make($adminPassword),
-                    'role_id' => $roleFuncionario?->id,
+                    'role_id' => $roleServidorPublico?->id,
                     'cargo_id' => $cargoSuper->id,
                     'activo' => true,
                 ]

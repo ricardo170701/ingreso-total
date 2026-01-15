@@ -4,17 +4,17 @@
             <div class="flex items-center justify-between">
                 <div>
                     <h1 class="text-xl font-semibold text-slate-900 dark:text-slate-100">
-                        Cargos y Permisos
+                        Roles y Permisos
                     </h1>
                     <p class="text-sm text-slate-600 dark:text-slate-400">
-                        Gestiona los cargos y sus permisos de acceso a puertas.
+                        Gestiona los roles (antes “cargos”) y sus permisos de acceso a puertas.
                     </p>
                 </div>
                 <Link
                     :href="route('cargos.create')"
                     class="px-4 py-2 rounded-lg bg-slate-900 dark:bg-slate-700 text-white hover:bg-slate-800 dark:hover:bg-slate-600 font-medium transition-colors duration-200"
                 >
-                    Nuevo Cargo
+                    Nuevo Rol
                 </Link>
             </div>
 

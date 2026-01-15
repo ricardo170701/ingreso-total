@@ -194,7 +194,7 @@ class PuertasController extends Controller
         $puerta->save();
 
         return redirect()
-            ->route('puertas.index')
+            ->route('puertas.show', $puerta)
             ->with('message', 'Puerta actualizada exitosamente.');
     }
 

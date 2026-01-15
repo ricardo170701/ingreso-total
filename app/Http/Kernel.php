@@ -68,5 +68,6 @@ class Kernel extends HttpKernel
         'permission' => \App\Http\Middleware\CheckPermission::class,
         'visitante.restrict' => \App\Http\Middleware\RestrictVisitanteWeb::class,
         'permission.check' => \App\Http\Middleware\EnsureUserHasPermission::class,
+        'force.password.change' => \App\Http\Middleware\ForcePasswordChange::class,
     ];
 }

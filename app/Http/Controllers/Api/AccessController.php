@@ -134,8 +134,12 @@ class AccessController extends Controller
         // - Si tiene fecha_expiracion: validar que no haya expirado
         // - Si NO tiene fecha_expiracion (contrato indefinido): permitir acceso hasta que se marque como inactivo
         // Para visitantes: verificar la fecha de expiración de la credencial (QR/Tarjeta)
+        // Tipos de vinculación (compatibilidad: 'funcionario' legado)
         $userRole = $user->role?->name ?? null;
-        if ($userRole === 'funcionario') {
+        $staffRoles = ['servidor_publico', 'contratista', 'funcionario'];
+        $isStaff = in_array($userRole, $staffRoles, true);
+
+        if ($isStaff) {
             if ($user->fecha_expiracion && Carbon::parse($user->fecha_expiracion)->lt($now->startOfDay())) {
                 $this->registrarAcceso($user->id, $puerta->id, $qrId, $tarjetaNfcId, false, 'Usuario expirado', $data['codigo_fisico'], $tipoEvento, $dispositivoId);
                 return response()->json(['permitido' => false, 'message' => 'Usuario expirado.'], 200);
@@ -153,6 +157,12 @@ class AccessController extends Controller
         if ($puerta->requiere_discapacidad && !$user->es_discapacitado) {
             $this->registrarAcceso($user->id, $puerta->id, $qr?->id, $tarjetaNfc?->id, false, 'Requiere discapacidad', $data['codigo_fisico'], $tipoEvento, $dispositivoId);
             return response()->json(['permitido' => false, 'message' => 'Acceso denegado (discapacidad requerida).'], 200);
+        }
+
+        // Puerta de datacenter: requiere permiso especial access_datacenter
+        if ($puerta->requiere_permiso_datacenter && !$user->hasPermission('access_datacenter')) {
+            $this->registrarAcceso($user->id, $puerta->id, $qr?->id, $tarjetaNfc?->id, false, 'Requiere permiso datacenter', $data['codigo_fisico'], $tipoEvento, $dispositivoId);
+            return response()->json(['permitido' => false, 'message' => 'Acceso denegado (requiere permiso de datacenter).'], 200);
         }
 
         // Estado entrada/salida:
@@ -182,15 +192,16 @@ class AccessController extends Controller
 
         // Determinar si el usuario es funcionario o visitante
         $userRole = $user->role?->name ?? null;
-        $isFuncionario = $userRole === 'funcionario';
+        $staffRoles = $staffRoles ?? ['servidor_publico', 'contratista', 'funcionario'];
+        $isStaff = in_array($userRole, $staffRoles, true);
 
         $permitido = false;
         $motivo = null;
 
         // Para funcionarios: SIEMPRE usar permisos del cargo->piso (ignorar reglas de QR/Tarjeta NFC)
         // Para visitantes: usar reglas de la credencial (QR/Tarjeta NFC)
-        if ($isFuncionario) {
-            // Funcionario: usar permisos del cargo->piso
+        if ($isStaff) {
+            // Staff (servidor público/contratista): usar permisos del cargo->piso
             if (!$user->cargo_id) {
                 $permitido = false;
                 $motivo = 'Sin cargo asignado';

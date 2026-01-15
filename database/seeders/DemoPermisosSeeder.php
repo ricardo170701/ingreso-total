@@ -20,12 +20,12 @@ class DemoPermisosSeeder extends Seeder
         DB::transaction(function () {
             // Cargos de ejemplo
             $cargoTrabajador = Cargo::query()->updateOrCreate(
-                ['name' => 'Funcionario Trabajador'],
+                ['name' => 'Rol Trabajador'],
                 ['description' => 'Acceso básico', 'activo' => true]
             );
 
             $cargoMedio = Cargo::query()->updateOrCreate(
-                ['name' => 'Funcionario Medio'],
+                ['name' => 'Rol Medio'],
                 ['description' => 'Acceso medio', 'activo' => true]
             );
 
@@ -49,9 +49,9 @@ class DemoPermisosSeeder extends Seeder
             }
 
             // Usuarios demo (opcionales)
-            $this->upsertUser('funcionario@local.test', 'Funcionario Demo', 'funcionario', $cargoTrabajador->id, false);
+            $this->upsertUser('funcionario@local.test', 'Servidor Público Demo', 'servidor_publico', $cargoTrabajador->id, false);
             $this->upsertUser('visitante@local.test', 'Visitante Demo', 'visitante', $cargoTrabajador->id, false);
-            $this->upsertUser('disca@local.test', 'Discapacitado Demo', 'funcionario', $cargoMedio->id, true);
+            $this->upsertUser('disca@local.test', 'Discapacitado Demo', 'servidor_publico', $cargoMedio->id, true);
         });
     }
 
@@ -74,7 +74,8 @@ class DemoPermisosSeeder extends Seeder
 
     private function upsertUser(string $email, string $name, string $roleName, int $cargoId, bool $esDiscapacitado): void
     {
-        $role = Role::query()->where('name', $roleName)->first();
+        $role = Role::query()->where('name', $roleName)->first()
+            ?? ($roleName === 'servidor_publico' ? Role::query()->where('name', 'funcionario')->first() : null);
 
         User::query()->updateOrCreate(
             ['email' => $email],

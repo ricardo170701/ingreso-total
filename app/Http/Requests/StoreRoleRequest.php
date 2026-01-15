@@ -23,8 +23,8 @@ class StoreRoleRequest extends FormRequest
     public function rules(): array
     {
         return [
-            // Roles fijos: funcionario | visitante
-            'name' => ['required', 'string', 'max:50', Rule::in(['funcionario', 'visitante']), 'unique:roles,name'],
+            // Tipos de vinculación fijos
+            'name' => ['required', 'string', 'max:50', Rule::in(['visitante', 'servidor_publico', 'contratista', 'funcionario']), 'unique:roles,name'],
             'description' => ['nullable', 'string', 'max:255'],
         ];
     }

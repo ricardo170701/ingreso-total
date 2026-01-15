@@ -33,6 +33,7 @@ class ProfileController extends Controller
                 'fecha_expiracion' => $user->fecha_expiracion?->format('Y-m-d'),
                 'role' => $user->role ? ['id' => $user->role->id, 'name' => $user->role->name] : null,
                 'cargo' => $user->cargo ? ['id' => $user->cargo->id, 'name' => $user->cargo->name] : null,
+                'cargo_texto' => $user->cargo_texto,
                 'gerencia' => $user->gerencia ? [
                     'id' => $user->gerencia->id,
                     'nombre' => $user->gerencia->nombre,
@@ -89,6 +90,7 @@ class ProfileController extends Controller
         // Actualizar contraseña si se proporcionó
         if (!empty($data['password'])) {
             $user->password = Hash::make($data['password']);
+            $user->password_changed_at = now();
         }
 
         $user->save();

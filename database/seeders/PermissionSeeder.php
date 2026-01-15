@@ -92,6 +92,9 @@ class PermissionSeeder extends Seeder
             // Protocolo de Emergencia
             ['name' => 'view_protocolo', 'description' => 'Ver Protocolo de Emergencia', 'group' => 'protocolo'],
             ['name' => 'protocol_emergencia_open_all', 'description' => 'Ejecutar Protocolo de Emergencia (Abrir todas las puertas)', 'group' => 'protocolo'],
+
+            // Datacenter
+            ['name' => 'access_datacenter', 'description' => 'Acceso a puertas de datacenter', 'group' => 'puertas'],
         ];
 
         foreach ($permissions as $permissionData) {

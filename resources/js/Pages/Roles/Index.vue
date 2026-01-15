@@ -4,17 +4,17 @@
             <div class="flex items-center justify-between">
                 <div>
                     <h1 class="text-xl font-semibold text-slate-900 dark:text-slate-100">
-                        Tipos de Usuario
+                        Tipos de Vinculación
                     </h1>
                     <p class="text-sm text-slate-600 dark:text-slate-400">
-                        Los roles solo indican si un usuario es <b>funcionario</b> o <b>visitante</b>. Los permisos del sistema se gestionan por <b>Cargos</b>.
+                        Los tipos de vinculación solo indican si un usuario es <b>Visitante</b>, <b>Servidor público</b> o <b>Contratista</b>. Los permisos del sistema se gestionan por <b>Roles</b> (antes “Cargos”).
                     </p>
                 </div>
                 <Link
                     :href="route('cargos.index')"
                     class="px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-medium transition-colors duration-200"
                 >
-                    Ver Cargos
+                    Ver Roles (Permisos)
                 </Link>
             </div>
 
@@ -35,7 +35,7 @@
                     <div class="flex items-start justify-between mb-4">
                         <div>
                             <h2 class="text-lg font-semibold text-slate-900 dark:text-slate-100">
-                                {{ role.name }}
+                                {{ formatTipoVinculacion(role.name) }}
                             </h2>
                             <p class="text-sm text-slate-600 dark:text-slate-400 mt-1">
                                 {{ role.description || "Sin descripción" }}
@@ -58,5 +58,16 @@ import { Link } from "@inertiajs/vue3";
 const props = defineProps({
     roles: Array,
 });
+
+const formatTipoVinculacion = (name) => {
+    const map = {
+        visitante: "Visitante",
+        servidor_publico: "Servidor público",
+        contratista: "Contratista",
+        // compatibilidad histórica
+        funcionario: "Servidor público",
+    };
+    return map[name] || name;
+};
 </script>
 

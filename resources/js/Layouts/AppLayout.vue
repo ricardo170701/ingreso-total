@@ -1,5 +1,32 @@
 <template>
     <div class="min-h-screen bg-slate-50 dark:bg-slate-900 transition-colors duration-200">
+        <!-- Bloqueo visual (mejor esfuerzo) ante intento de captura/impresión -->
+        <!-- IMPORTANTE: el blur NO debe afectar el modal (solo el fondo) -->
+        <div
+            v-if="securityOverlayVisible"
+            class="fixed inset-0 z-9999 bg-black/85 flex items-center justify-center p-4"
+        >
+            <div class="max-w-md w-full rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 p-5 shadow-2xl">
+                <h3 class="text-base font-semibold text-slate-900 dark:text-slate-100">
+                    Acción bloqueada
+                </h3>
+                <p class="mt-2 text-sm text-slate-700 dark:text-slate-300">
+                    Las capturas de pantalla / impresión están deshabilitadas en este sistema.
+                </p>
+                <div class="mt-4 flex justify-end">
+                    <button
+                        type="button"
+                        class="px-4 py-2 rounded-lg bg-slate-900 dark:bg-slate-700 text-white hover:bg-slate-800 dark:hover:bg-slate-600 transition-colors"
+                        @click="hideSecurityOverlay"
+                    >
+                        Entendido
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- App (se blurea solo el fondo, no el overlay) -->
+        <div :class="securityBlur ? 'blur-sm select-none' : ''">
         <!-- Overlay (mobile) -->
         <div
             v-if="sidebarOpen"
@@ -60,69 +87,6 @@
                         </a>
                     </li>
                 </ul>
-
-                <!-- Sección de Permisos -->
-                <div class="mt-6 pt-4 border-t border-[#006a2d]">
-                    <button
-                        @click="showPermissions = !showPermissions"
-                        class="w-full flex items-center justify-between px-3 py-2 text-sm font-medium text-white/80 hover:text-white transition-colors"
-                    >
-                        <span class="flex items-center gap-2">
-                            <span class="text-blue-400">🔑</span>
-                            <span>Mis Permisos</span>
-                        </span>
-                        <span class="text-xs">
-                            {{ showPermissions ? "▼" : "▶" }}
-                        </span>
-                    </button>
-
-                    <div
-                        v-if="showPermissions"
-                        class="mt-2 space-y-2 px-3 pb-2"
-                    >
-                        <!-- Permisos activos -->
-                        <div v-if="userPermissions.length > 0">
-                            <p class="text-xs text-white/70 mb-2">
-                                Permisos activos ({{ userPermissions.length }}):
-                            </p>
-                            <div class="space-y-1">
-                                <div
-                                    v-for="permission in userPermissions"
-                                    :key="permission"
-                                    class="flex items-center gap-2 text-xs text-white/80"
-                                >
-                                    <span class="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
-                                    <span>{{ formatPermissionName(permission) }}</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Botones visibles -->
-                        <div class="mt-3 pt-3 border-t border-[#006a2d]">
-                            <p class="text-xs text-white/70 mb-2">
-                                Botones visibles ({{ filteredMenuItems.length }}):
-                            </p>
-                            <div class="space-y-1">
-                                <div
-                                    v-for="item in filteredMenuItems"
-                                    :key="item.name"
-                                    class="flex items-center gap-2 text-xs text-white/80"
-                                >
-                                    <span class="text-sm">{{ item.icon }}</span>
-                                    <span>{{ item.label }}</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Sin permisos -->
-                        <div
-                            v-if="userPermissions.length === 0"
-                            class="text-xs text-white/70 italic"
-                        >
-                            No tienes permisos asignados
-                        </div>
-                    </div>
-                </div>
             </nav>
 
             <!-- User Section -->
@@ -141,8 +105,8 @@
             </div>
         </aside>
 
-        <!-- Main Content -->
-        <div class="lg:ml-64">
+            <!-- Main Content -->
+            <div class="lg:ml-64">
             <!-- Top Bar -->
             <header
                 class="sticky top-0 z-20 bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 h-16 flex items-center justify-between px-4 sm:px-6 transition-colors duration-200"
@@ -172,7 +136,7 @@
                         <span v-if="isDark" class="text-xl">☀️</span>
                         <span v-else class="text-xl">🌙</span>
                     </button>
-                    
+
                     <Link
                         :href="route('profile.show')"
                         class="text-right hover:opacity-80 transition-opacity"
@@ -204,10 +168,38 @@
                 </div>
             </header>
 
+            <!-- Aviso de expiración (<= 14 días) -->
+            <div
+                v-if="expiracionAviso.visible"
+                class="mx-4 sm:mx-6 mt-4 rounded-xl border border-amber-200 dark:border-amber-900 bg-amber-50 dark:bg-amber-900/20 px-4 py-3 text-amber-900 dark:text-amber-100"
+            >
+                <div class="flex items-start justify-between gap-4">
+                    <div class="min-w-0">
+                        <p class="text-sm font-semibold">
+                            Aviso: tu cuenta está próxima a expirar
+                        </p>
+                        <p class="text-sm mt-1">
+                            <span v-if="expiracionAviso.diasRestantes === 0">Expira hoy.</span>
+                            <span v-else>Faltan {{ expiracionAviso.diasRestantes }} día(s).</span>
+                            <span v-if="expiracionAviso.fecha"> ({{ expiracionAviso.fecha }})</span>
+                        </p>
+                    </div>
+                    <button
+                        type="button"
+                        class="shrink-0 text-amber-900/70 dark:text-amber-100/70 hover:text-amber-900 dark:hover:text-amber-100"
+                        @click="dismissExpiracionAviso = true"
+                        aria-label="Cerrar aviso"
+                    >
+                        ×
+                    </button>
+                </div>
+            </div>
+
             <!-- Page Content -->
             <main class="p-4 sm:p-6">
                 <slot />
             </main>
+            </div>
         </div>
     </div>
 </template>
@@ -218,12 +210,41 @@ import { usePage, router, Link } from "@inertiajs/vue3";
 import { useDarkMode } from "@/composables/useDarkMode";
 
 const page = usePage();
-const showPermissions = ref(false);
 const sidebarOpen = ref(false);
 const { isDark, toggleDarkMode } = useDarkMode();
 
 const user = computed(() => page.props.auth?.user || page.props.user);
 const esVisitante = computed(() => user.value?.role?.name === "visitante");
+const dismissExpiracionAviso = ref(false);
+
+const expiracionAviso = computed(() => {
+    if (dismissExpiracionAviso.value) {
+        return { visible: false, diasRestantes: null, fecha: null };
+    }
+    const u = user.value;
+    if (!u || u.activo !== true || !u.fecha_expiracion) {
+        return { visible: false, diasRestantes: null, fecha: null };
+    }
+
+    // fecha_expiracion viene como YYYY-MM-DD
+    const expMs = Date.parse(`${u.fecha_expiracion}T00:00:00`);
+    if (!Number.isFinite(expMs)) {
+        return { visible: false, diasRestantes: null, fecha: null };
+    }
+
+    const hoy = new Date();
+    const hoyMs = Date.parse(
+        `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, "0")}-${String(hoy.getDate()).padStart(2, "0")}T00:00:00`
+    );
+    const diffDays = Math.floor((expMs - hoyMs) / (1000 * 60 * 60 * 24));
+
+    // Mostrar aviso si faltan 14 días o menos, pero no si ya expiró (porque se inactiva)
+    if (diffDays < 0 || diffDays > 14) {
+        return { visible: false, diasRestantes: null, fecha: null };
+    }
+
+    return { visible: true, diasRestantes: diffDays, fecha: u.fecha_expiracion };
+});
 const pageTitle = computed(() => {
     const component = page.component || "";
     const parts = component.split("/");
@@ -243,7 +264,7 @@ const userInitials = computed(() => {
 const userSubtitle = computed(() => {
     if (!user.value) return "";
     if (esVisitante.value) return "Visitante";
-    return user.value.cargo?.name || "Sin cargo asignado";
+    return user.value.cargo?.name || "Sin rol asignado";
 });
 
 const storageUrl = (path) => {
@@ -277,7 +298,7 @@ const menuItems = [
     },
     {
         name: "cargos",
-        label: "Permisos",
+        label: "Roles / Permisos",
         href: "/cargos",
         icon: "🔐",
         permission: "view_cargos",
@@ -369,6 +390,85 @@ const logout = () => {
     router.post(route("logout"));
 };
 
+// ===== Seguridad UI (bloqueo mejor-esfuerzo de captura/impresión) =====
+// Nota: En navegadores NO es posible impedir al 100% las capturas de pantalla a nivel SO.
+// Esto solo bloquea atajos comunes y agrega disuasión visual.
+const securityOverlayVisible = ref(false);
+const securityBlur = ref(false);
+let securityTimeout = null;
+
+const hideSecurityOverlay = () => {
+    securityOverlayVisible.value = false;
+    securityBlur.value = false;
+    if (securityTimeout) {
+        clearTimeout(securityTimeout);
+        securityTimeout = null;
+    }
+};
+
+const triggerSecurityBlock = () => {
+    securityOverlayVisible.value = true;
+    securityBlur.value = true;
+    if (securityTimeout) clearTimeout(securityTimeout);
+    securityTimeout = setTimeout(() => {
+        hideSecurityOverlay();
+    }, 2500);
+};
+
+const onKeyDownSecurity = (e) => {
+    const key = String(e.key || "").toLowerCase();
+
+    // Print Screen (algunos navegadores lo reportan, otros no)
+    const isPrintScreen = key === "printscreen" || key === "prtsc" || key === "prtscr";
+
+    // Windows Snipping Tool: Win + Shift + S
+    const isWinSnip = e.metaKey && e.shiftKey && key === "s";
+
+    // macOS screenshots: Cmd + Shift + 3/4/5
+    const isMacShot = e.metaKey && e.shiftKey && (key === "3" || key === "4" || key === "5");
+
+    // Impresión: Ctrl/Cmd + P (evita imprimir QR)
+    const isPrint = (e.ctrlKey || e.metaKey) && key === "p";
+
+    if (isPrintScreen || isWinSnip || isMacShot || isPrint) {
+        try {
+            e.preventDefault();
+            e.stopPropagation();
+        } catch (_) {}
+        triggerSecurityBlock();
+        return false;
+    }
+
+    return true;
+};
+
+const onContextMenuSecurity = (e) => {
+    // Deshabilitar clic derecho (evita “Guardar imagen como...” y algunas herramientas)
+    try {
+        e.preventDefault();
+        e.stopPropagation();
+    } catch (_) {}
+    triggerSecurityBlock();
+    return false;
+};
+
+const onDragStartSecurity = (e) => {
+    // Evitar arrastrar imágenes/textos fuera del navegador
+    try {
+        e.preventDefault();
+        e.stopPropagation();
+    } catch (_) {}
+    return false;
+};
+
+const onVisibilityChangeSecurity = () => {
+    // Mobile/desktop: SOLO cuando realmente la pestaña pasa a segundo plano.
+    // Evitamos usar `blur` porque dispara con interacciones normales (barra de direcciones, cambio de foco, etc).
+    if (typeof document !== "undefined" && document.hidden) {
+        triggerSecurityBlock();
+    }
+};
+
 // Cerrar sidebar al navegar (mobile)
 watch(
     () => page.url,
@@ -396,46 +496,22 @@ const onKeyDown = (e) => {
 onMounted(() => {
     if (typeof window === "undefined") return;
     window.addEventListener("keydown", onKeyDown);
+
+    // Seguridad mejor-esfuerzo (capturas/impresión)
+    window.addEventListener("keydown", onKeyDownSecurity, true);
+    window.addEventListener("contextmenu", onContextMenuSecurity, true);
+    window.addEventListener("dragstart", onDragStartSecurity, true);
+    document.addEventListener("visibilitychange", onVisibilityChangeSecurity, true);
 });
 
 onUnmounted(() => {
     if (typeof window === "undefined") return;
     window.removeEventListener("keydown", onKeyDown);
-});
 
-const formatPermissionName = (permission) => {
-    const names = {
-        view_dashboard: "Ver Dashboard",
-        view_users: "Ver Usuarios",
-        create_users: "Crear Usuarios",
-        edit_users: "Editar Usuarios",
-        delete_users: "Eliminar Usuarios",
-        view_puertas: "Ver Puertas",
-        create_puertas: "Crear Puertas",
-        edit_puertas: "Editar Puertas",
-        delete_puertas: "Eliminar Puertas",
-        view_cargos: "Ver Permisos/Cargos",
-        create_cargos: "Crear Permisos/Cargos",
-        edit_cargos: "Editar Permisos/Cargos",
-        delete_cargos: "Eliminar Permisos/Cargos",
-        view_ingreso: "Ver Ingreso/QR",
-        create_ingreso: "Generar Códigos QR",
-        view_ingreso_funcionarios: "Ver funcionarios (Ingreso)",
-        create_ingreso_visitantes: "Crear visitantes (Ingreso)",
-        asignar_tarjetas_nfc: "Asignar Tarjetas NFC",
-        view_tarjetas_nfc: "Ver Tarjetas NFC",
-        create_tarjetas_nfc: "Crear Tarjetas NFC",
-        edit_tarjetas_nfc: "Editar Tarjetas NFC",
-        delete_tarjetas_nfc: "Eliminar Tarjetas NFC",
-        view_reportes: "Ver Reportes",
-        view_mantenimientos: "Ver Mantenimientos",
-        create_mantenimientos: "Crear Mantenimientos",
-        edit_mantenimientos: "Editar Mantenimientos",
-        delete_mantenimientos: "Eliminar Mantenimientos",
-        view_protocolo: "Ver Protocolo de Emergencia",
-        protocol_emergencia_open_all: "Ejecutar Protocolo de Emergencia",
-        view_soporte: "Ver Soporte/FAQs",
-    };
-    return names[permission] || permission;
-};
+    window.removeEventListener("keydown", onKeyDownSecurity, true);
+    window.removeEventListener("contextmenu", onContextMenuSecurity, true);
+    window.removeEventListener("dragstart", onDragStartSecurity, true);
+    document.removeEventListener("visibilitychange", onVisibilityChangeSecurity, true);
+    hideSecurityOverlay();
+});
 </script>

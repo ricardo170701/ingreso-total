@@ -4001,10 +4001,11 @@ class ImportarUsuariosSeeder extends Seeder
         $this->command->info("📋 Iniciando importación de usuarios...");
         $this->command->newLine();
 
-        // Obtener el rol funcionario
-        $role = Role::query()->where('name', 'funcionario')->first();
+        // Obtener el tipo de vinculación "servidor_publico" (compatibilidad: 'funcionario' legado)
+        $role = Role::query()->where('name', 'servidor_publico')->first()
+            ?? Role::query()->where('name', 'funcionario')->first();
         if (!$role) {
-            $this->command->error('❌ El rol "funcionario" no existe. Ejecuta primero: php artisan db:seed --class=AccessControlSeeder');
+            $this->command->error('❌ No existe un tipo de vinculación válido (servidor_publico/funcionario). Ejecuta primero: php artisan db:seed --class=AccessControlSeeder');
             return;
         }
 
@@ -4100,6 +4101,7 @@ class ImportarUsuariosSeeder extends Seeder
                             'password' => $cc, // La contraseña es el número de cédula
                             'role_id' => $role->id,
                             'cargo_id' => $cargo->id,
+                            'cargo_texto' => $denominacionCargo,
                             'gerencia_id' => $gerenciaId,
                             'tipo_contrato' => 'contrato_indefinido',
                             'activo' => true,
@@ -4146,7 +4148,6 @@ class ImportarUsuariosSeeder extends Seeder
                 $this->command->newLine();
                 $this->command->info("✅ Importación completada sin errores!");
             }
-
         } catch (\Exception $e) {
             DB::rollBack();
             $this->command->error("❌ Error durante la importación: {$e->getMessage()}");

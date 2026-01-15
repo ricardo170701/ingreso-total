@@ -23,11 +23,12 @@ class SuperUserSeeder extends Seeder
             return;
         }
 
-        // Buscar el rol "funcionario" (por defecto para usuarios internos)
-        $role = Role::query()->where('name', 'funcionario')->first();
+        // Buscar tipo de vinculación interno (compatibilidad: 'funcionario' legado)
+        $role = Role::query()->where('name', 'servidor_publico')->first()
+            ?? Role::query()->where('name', 'funcionario')->first();
 
         if (!$role) {
-            $this->command->error('⚠ El rol "funcionario" no existe. Ejecuta primero: php artisan db:seed --class=AccessControlSeeder');
+            $this->command->error('⚠ No existe un tipo de vinculación válido (servidor_publico/funcionario). Ejecuta primero: php artisan db:seed --class=AccessControlSeeder');
             return;
         }
 
@@ -53,7 +54,7 @@ class SuperUserSeeder extends Seeder
         $this->command->info("  • Email: {$email}");
         $this->command->info("  • Nombre: {$name}");
         $this->command->info("  • Cargo: {$cargo->name}");
-        $this->command->info("  • Rol: {$role->name}");
+        $this->command->info("  • Tipo de vinculación: {$role->name}");
         $this->command->info("  • Password: {$password}");
         $this->command->warn("  ⚠ Recuerda cambiar la contraseña después del primer inicio de sesión.");
     }

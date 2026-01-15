@@ -19,7 +19,7 @@
             </div>
 
             <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-6 transition-colors duration-200">
-                <form @submit.prevent="submit" class="grid grid-cols-1 gap-4">
+                <form @submit.prevent="showConfirmModal = true" class="grid grid-cols-1 gap-4">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <FormField label="Email" :error="form.errors.email">
                             <input
@@ -70,20 +70,21 @@
                                 v-model="form.n_identidad"
                                 type="text"
                                 class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-transparent transition-colors duration-200"
+                                required
                             />
                         </FormField>
                         <FormField
-                            label="Número de Caso"
-                            :error="form.errors.numero_caso"
+                            label="Observaciones"
+                            :error="form.errors.observaciones"
                         >
-                            <input
-                                v-model="form.numero_caso"
-                                type="text"
+                            <textarea
+                                v-model="form.observaciones"
+                                rows="3"
                                 class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-transparent transition-colors duration-200"
-                                placeholder="Número de caso (opcional)"
+                                placeholder="Observaciones adicionales (opcional)"
                             />
                             <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                                Número de caso para seguimiento de solicitud/renovación (opcional)
+                                Notas o comentarios adicionales sobre el usuario (opcional)
                             </p>
                         </FormField>
                     </div>
@@ -118,7 +119,7 @@
                                 :disabled="!form.secretaria_id"
                                 class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-transparent transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                                <option :value="null">Sin gerencia</option>
+                                <option :value="null">Despacho</option>
                                 <option
                                     v-for="ger in gerenciasFiltradas"
                                     :key="ger.id"
@@ -176,97 +177,8 @@
                         </FormField>
                     </div>
 
-                    <div class="grid grid-cols-1 gap-2">
-                        <FormField
-                            label="Documentos de contrato (PDF) (opcional)"
-                            :error="form.errors.contratos"
-                        >
-                            <input
-                                type="file"
-                                accept="application/pdf"
-                                multiple
-                                @change="onContratosChange"
-                                class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 transition-colors duration-200"
-                            />
-                            <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                                Puedes subir hasta 5 PDFs (máx 10MB cada uno). El tipo de contrato se guarda incluso si no subes documentos.
-                            </p>
-                            <ul
-                                v-if="contratosSeleccionados.length > 0"
-                                class="mt-2 text-sm text-slate-700 dark:text-slate-300 list-disc list-inside"
-                            >
-                                <li v-for="(f, idx) in contratosSeleccionados" :key="idx">
-                                    {{ f.name }}
-                                </li>
-                            </ul>
-                        </FormField>
-                    </div>
-
-                    <div
-                        v-if="(documentos || []).length > 0"
-                        class="bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-700 rounded-xl p-4 transition-colors duration-200"
-                    >
-                        <h3 class="text-sm font-semibold text-slate-900 dark:text-slate-100 mb-2">
-                            Historial de contratos
-                        </h3>
-                        <div class="space-y-2">
-                            <div
-                                v-for="doc in documentos"
-                                :key="doc.id"
-                                class="flex items-center justify-between gap-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-3 transition-colors duration-200"
-                            >
-                                <div class="min-w-0 flex-1">
-                                    <p class="text-sm font-medium text-slate-900 dark:text-slate-100 truncate">
-                                        {{ doc.nombre || (doc.tipo_contrato ? formatTipoContrato(doc.tipo_contrato) : ('Contrato #' + doc.id)) }}
-                                    </p>
-                                    <p v-if="doc.tipo_contrato" class="text-xs text-slate-600 dark:text-slate-400">
-                                        Tipo: {{ formatTipoContrato(doc.tipo_contrato) }}
-                                    </p>
-                                    <p v-if="!doc.path" class="text-xs text-amber-600 dark:text-amber-400 font-medium">
-                                        Sin documento adjunto
-                                    </p>
-                                    <p v-if="doc.path && doc.size" class="text-xs text-slate-500 dark:text-slate-400">
-                                        {{ formatFileSize(doc.size) }}
-                                    </p>
-                                    <p class="text-xs text-slate-500 dark:text-slate-400">
-                                        {{ doc.created_at }}
-                                    </p>
-                                </div>
-                                <div class="flex items-center gap-2 shrink-0">
-                                    <template v-if="doc.path">
-                                        <a
-                                            :href="route('usuarios.documentos.download', { user: props.user.id, documento: doc.id })"
-                                            class="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-sm transition-colors duration-200"
-                                            target="_blank"
-                                        >
-                                            Descargar
-                                        </a>
-                                    </template>
-                                    <template v-else>
-                                        <label class="px-3 py-1.5 rounded-lg border border-green-200 dark:border-green-800 hover:bg-green-50 dark:hover:bg-green-900/30 text-green-700 dark:text-green-400 text-sm transition-colors duration-200 cursor-pointer">
-                                            Agregar documento
-                                            <input
-                                                type="file"
-                                                accept="application/pdf"
-                                                class="hidden"
-                                                @change="(e) => agregarDocumentoAContrato(doc, e.target.files[0])"
-                                            />
-                                        </label>
-                                    </template>
-                                    <button
-                                        type="button"
-                                        @click="eliminarDocumento(doc)"
-                                        class="px-3 py-1.5 rounded-lg border border-red-200 dark:border-red-800 hover:bg-red-50 dark:hover:bg-red-900/30 text-red-700 dark:text-red-400 text-sm transition-colors duration-200"
-                                    >
-                                        Eliminar
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <FormField label="Rol" :error="form.errors.role_id">
+                        <FormField label="Tipo de vinculación" :error="form.errors.role_id">
                             <select
                                 v-model="form.role_id"
                                 class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-transparent transition-colors duration-200"
@@ -277,11 +189,11 @@
                                     :key="r.id"
                                     :value="r.id"
                                 >
-                                    {{ r.name }}
+                                    {{ formatTipoVinculacion(r.name) }}
                                 </option>
                             </select>
                         </FormField>
-                        <FormField v-if="!esVisitante" label="Cargo" :error="form.errors.cargo_id">
+                        <FormField v-if="!esVisitante" label="Rol (permisos)" :error="form.errors.cargo_id">
                             <select
                                 v-model="form.cargo_id"
                                 class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-transparent transition-colors duration-200"
@@ -295,6 +207,20 @@
                                     {{ c.name }}
                                 </option>
                             </select>
+                        </FormField>
+                    </div>
+
+                    <div v-if="!esVisitante" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <FormField label="Cargo (registro)" :error="form.errors.cargo_texto">
+                            <input
+                                v-model="form.cargo_texto"
+                                type="text"
+                                class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-transparent transition-colors duration-200"
+                                placeholder="Cargo/denominación (solo registro)"
+                            />
+                            <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                                Este campo es solo informativo y no afecta los permisos.
+                            </p>
                         </FormField>
                     </div>
 
@@ -344,7 +270,8 @@
                             Eliminar
                         </button>
                         <button
-                            type="submit"
+                            type="button"
+                            @click="showConfirmModal = true"
                             :disabled="form.processing"
                             class="px-4 py-2 rounded-lg bg-slate-900 dark:bg-slate-700 text-white hover:bg-slate-800 dark:hover:bg-slate-600 disabled:opacity-50 transition-colors duration-200"
                         >
@@ -352,6 +279,64 @@
                         </button>
                     </div>
                 </form>
+            </div>
+        </div>
+
+        <!-- Modal de Confirmación -->
+        <div
+            v-if="showConfirmModal"
+            @click="showConfirmModal = false"
+            class="fixed inset-0 bg-black/60 dark:bg-black/70 flex items-center justify-center z-50 p-4 transition-colors duration-200"
+        >
+            <div
+                class="bg-white dark:bg-slate-800 rounded-xl shadow-2xl max-w-md w-full border border-slate-200 dark:border-slate-700 transition-colors duration-200"
+                @click.stop
+            >
+                <div class="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-700">
+                    <h3 class="text-lg font-semibold text-slate-900 dark:text-slate-100">
+                        Confirmar Edición
+                    </h3>
+                    <button
+                        type="button"
+                        @click="showConfirmModal = false"
+                        class="w-9 h-9 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-colors duration-200 flex items-center justify-center"
+                        aria-label="Cerrar"
+                    >
+                        ×
+                    </button>
+                </div>
+
+                <div class="p-6">
+                    <p class="text-sm text-slate-700 dark:text-slate-300 mb-4">
+                        ¿Estás seguro de que deseas editar el usuario
+                        <strong class="text-slate-900 dark:text-slate-100">{{ user.name || user.email }}</strong>?
+                    </p>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 mb-4">
+                        Los cambios se guardarán y se aplicarán inmediatamente.
+                    </p>
+
+                    <div class="flex items-center justify-end gap-3">
+                        <button
+                            type="button"
+                            @click="showConfirmModal = false"
+                            class="px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-colors duration-200"
+                        >
+                            Cancelar
+                        </button>
+                        <button
+                            type="button"
+                            @click="confirmSubmit"
+                            :disabled="form.processing"
+                            class="px-4 py-2 rounded-lg bg-slate-900 dark:bg-slate-700 text-white hover:bg-slate-800 dark:hover:bg-slate-600 disabled:opacity-50 font-medium transition-colors duration-200"
+                        >
+                            {{
+                                form.processing
+                                    ? "Guardando..."
+                                    : "Sí, Guardar Cambios"
+                            }}
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
     </AppLayout>
@@ -362,7 +347,7 @@ import AppLayout from "@/Layouts/AppLayout.vue";
 import { Link, router, useForm } from "@inertiajs/vue3";
 import FormField from "@/Components/FormField.vue";
 import { submitUploadForm } from "@/Support/inertiaUploads";
-import { computed, watch } from "vue";
+import { computed, watch, ref } from "vue";
 
 const props = defineProps({
     user: Object,
@@ -370,8 +355,20 @@ const props = defineProps({
     cargos: Array,
     secretarias: Array,
     gerencias: Array,
-    documentos: Array,
 });
+
+const showConfirmModal = ref(false);
+
+const formatTipoVinculacion = (name) => {
+    const map = {
+        visitante: "Visitante",
+        servidor_publico: "Servidor público",
+        contratista: "Contratista",
+        // compatibilidad histórica
+        funcionario: "Servidor público",
+    };
+    return map[name] || name;
+};
 
 const esVisitante = computed(() => {
     const role = props.roles?.find((r) => r.id === form.role_id);
@@ -383,15 +380,15 @@ const form = useForm({
     password: "",
     role_id: props.user.role_id ?? null,
     cargo_id: props.user.cargo_id ?? null,
+    cargo_texto: props.user.cargo_texto || "",
     nombre: props.user.nombre || "",
     apellido: props.user.apellido || "",
     n_identidad: props.user.n_identidad || "",
-    numero_caso: props.user.numero_caso || "",
+    observaciones: props.user.observaciones || "",
     secretaria_id: props.user.secretaria_id || null,
     gerencia_id: props.user.gerencia_id || null,
     fecha_expiracion: props.user.fecha_expiracion || null,
     foto: null,
-    contratos: [],
     tipo_contrato: props.user.tipo_contrato || null,
     activo: !!props.user.activo,
     es_discapacitado: !!props.user.es_discapacitado,
@@ -425,13 +422,6 @@ const onFotoChange = (e) => {
     form.foto = file;
 };
 
-const onContratosChange = (e) => {
-    const files = Array.from(e.target?.files || []);
-    form.contratos = files;
-};
-
-const contratosSeleccionados = computed(() => form.contratos || []);
-
 const storageUrl = (path) => {
     if (!path) return null;
     if (String(path).startsWith("http")) return path;
@@ -464,21 +454,14 @@ watch(() => form.tipo_contrato, (nuevoTipo) => {
     }
 });
 
-const submit = () => {
+const confirmSubmit = () => {
+    showConfirmModal.value = false;
     submitUploadForm(form, route("usuarios.update", { user: props.user.id }), "put");
 };
 
 const destroy = () => {
     if (!confirm("¿Eliminar este usuario?")) return;
     router.delete(route("usuarios.destroy", { user: props.user.id }));
-};
-
-const eliminarDocumento = (doc) => {
-    if (!confirm("¿Eliminar este documento?")) return;
-    router.delete(
-        route("usuarios.documentos.destroy", { user: props.user.id, documento: doc.id }),
-        { preserveScroll: true }
-    );
 };
 
 const formatTipoContrato = (tipo) => {
@@ -488,51 +471,5 @@ const formatTipoContrato = (tipo) => {
         contrato_indefinido: "Contrato indefinido",
     };
     return map[tipo] || tipo;
-};
-
-const formatFileSize = (bytes) => {
-    if (!bytes || bytes === 0) return "0 B";
-    const k = 1024;
-    const sizes = ["B", "KB", "MB", "GB"];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return Math.round(bytes / Math.pow(k, i) * 100) / 100 + " " + sizes[i];
-};
-
-const agregarDocumentoAContrato = (doc, file) => {
-    if (!file) return;
-    
-    if (file.type !== 'application/pdf') {
-        alert('Solo se permiten archivos PDF.');
-        return;
-    }
-    
-    if (file.size > 10 * 1024 * 1024) { // 10MB
-        alert('El archivo no debe exceder 10MB.');
-        return;
-    }
-    
-    if (!confirm(`¿Agregar este documento al contrato "${formatTipoContrato(doc.tipo_contrato)}"?`)) {
-        return;
-    }
-    
-    const formData = new FormData();
-    formData.append('documento', file);
-    formData.append('_method', 'PUT');
-    
-    router.post(
-        route('usuarios.documentos.update', { user: props.user.id, documento: doc.id }),
-        formData,
-        {
-            forceFormData: true,
-            preserveScroll: true,
-            onSuccess: () => {
-                // Recargar la página para mostrar el documento actualizado
-                router.reload({ only: ['documentos'] });
-            },
-            onError: (errors) => {
-                alert(errors.documento || 'Error al agregar el documento.');
-            },
-        }
-    );
 };
 </script>

@@ -39,6 +39,28 @@ class GenerateCodigoQrRequest extends FormRequest
                     }
                 },
             ],
+            'responsable_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('users', 'id'),
+                // Validar que el responsable sea un usuario servidor público o contratista
+                function ($attribute, $value, $fail) {
+                    if ($value) {
+                        $responsable = \App\Models\User::query()
+                            ->with('role')
+                            ->find($value);
+                        if (!$responsable) {
+                            $fail('El responsable seleccionado no existe.');
+                            return;
+                        }
+                        $roleName = $responsable->role?->name ?? '';
+                        $staffRoles = ['servidor_publico', 'contratista', 'funcionario']; // 'funcionario' legado
+                        if (!in_array($roleName, $staffRoles, true)) {
+                            $fail('El responsable debe ser un servidor público o contratista.');
+                        }
+                    }
+                },
+            ],
             // Pisos (recomendado para visitantes). Se expanden a puertas al generar el QR.
             'pisos' => ['nullable', 'array'],
             'pisos.*' => ['integer', Rule::exists('pisos', 'id')],

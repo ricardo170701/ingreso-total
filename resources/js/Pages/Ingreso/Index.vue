@@ -46,7 +46,7 @@
                 </ul>
             </div>
 
-            <!-- Mostrar QR personal si existe y no puede crear para otros -->
+            <!-- Mostrar QR personal si existe y (no puede crear para otros O es visitante O showMiQr está activo) -->
             <div
                 v-if="qrPersonal && (!puedeCrearParaOtros || esVisitante || showMiQr)"
                 ref="miQrRef"
@@ -128,13 +128,6 @@
                             </ul>
                         </div>
                         <div class="flex flex-col gap-2">
-                            <button
-                                v-if="qrPersonal.token"
-                                @click="descargarQRPersonal"
-                                class="px-4 py-2 rounded-lg bg-green-600 dark:bg-green-700 text-white hover:bg-green-700 dark:hover:bg-green-600 text-center transition-colors duration-200"
-                            >
-                                Descargar QR
-                            </button>
                             <button
                                 v-if="!esVisitante"
                                 @click="mostrarFormulario = true"
@@ -326,6 +319,74 @@
                             </FormField>
                         </div>
 
+                        <!-- Selector de responsable (solo para visitantes) -->
+                        <FormField
+                            v-if="usuarioSeleccionado?.role?.name === 'visitante'"
+                            label="Responsable (opcional)"
+                            :error="form.errors.responsable_id"
+                        >
+                            <div class="relative">
+                                <input
+                                    v-model="responsablePickerQuery"
+                                    type="text"
+                                    @focus="openResponsablePicker"
+                                    @keydown.down.prevent="responsablePickerMove(1)"
+                                    @keydown.up.prevent="responsablePickerMove(-1)"
+                                    @keydown.enter.prevent="responsablePickerSelectActive"
+                                    @keydown.esc.prevent="closeResponsablePicker"
+                                    class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-transparent transition-colors duration-200"
+                                    placeholder="Buscar responsable por nombre, email o cargo…"
+                                    autocomplete="off"
+                                />
+                                <input type="hidden" v-model="form.responsable_id" />
+
+                                <div
+                                    v-if="responsablePickerOpen"
+                                    class="absolute z-30 mt-1 w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-lg overflow-hidden max-h-[280px] overflow-y-auto"
+                                >
+                                    <button
+                                        type="button"
+                                        @click="selectResponsableFromPicker(null)"
+                                        @mouseenter="responsablePickerActiveIndex = -1"
+                                        class="w-full text-left px-3 py-2 flex items-center justify-between gap-3 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+                                        :class="-1 === responsablePickerActiveIndex ? 'bg-slate-50 dark:bg-slate-700' : ''"
+                                    >
+                                        <div class="text-sm font-medium text-slate-500 dark:text-slate-400 italic">
+                                            Sin responsable
+                                        </div>
+                                    </button>
+                                    <div v-if="filteredResponsablesForPicker.length === 0" class="px-3 py-3 text-sm text-slate-500 dark:text-slate-400">
+                                        Sin resultados
+                                    </div>
+                                    <button
+                                        v-for="(resp, idx) in filteredResponsablesForPicker"
+                                        :key="resp.id"
+                                        type="button"
+                                        @click="selectResponsableFromPicker(resp)"
+                                        @mouseenter="responsablePickerActiveIndex = idx"
+                                        class="w-full text-left px-3 py-2 flex items-center justify-between gap-3 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+                                        :class="idx === responsablePickerActiveIndex ? 'bg-slate-50 dark:bg-slate-700' : ''"
+                                    >
+                                        <div class="min-w-0">
+                                            <div class="text-sm font-medium text-slate-900 dark:text-slate-100 truncate">
+                                                {{ resp.name || resp.email }}
+                                            </div>
+                                            <div class="text-xs text-slate-500 dark:text-slate-400 truncate">
+                                                <span v-if="resp.email">{{ resp.email }}</span>
+                                                <span v-if="resp.cargo"> · {{ resp.cargo.name }}</span>
+                                            </div>
+                                        </div>
+                                        <div class="text-xs text-slate-400 dark:text-slate-500 shrink-0">
+                                            #{{ resp.id }}
+                                        </div>
+                                    </button>
+                                </div>
+                            </div>
+                            <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                                Busca y selecciona un servidor público o contratista como responsable del ingreso del visitante (opcional)
+                            </p>
+                        </FormField>
+
                         <FormField
                             label="Pisos (obligatorio para visitantes)"
                             :error="form.errors.pisos"
@@ -412,9 +473,9 @@
                         </div>
                     </div>
 
-                    <!-- Opciones avanzadas (horarios) - Solo para usuarios con permiso create_ingreso_otros Y que NO sea funcionario -->
+                    <!-- Opciones avanzadas (horarios) - Solo para usuarios con permiso create_ingreso_otros Y que NO sea staff -->
                     <div
-                        v-if="puedeCrearParaOtros && usuarioSeleccionado?.role?.name !== 'funcionario'"
+                        v-if="puedeCrearParaOtros && !isStaffUsuarioSeleccionado"
                         class="border-t border-slate-200 dark:border-slate-700 pt-4"
                     >
                         <h3 class="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">
@@ -481,14 +542,14 @@
                         </FormField>
                     </div>
 
-                    <!-- Mensaje informativo para funcionarios -->
+                    <!-- Mensaje informativo para staff -->
                     <div
-                        v-if="puedeCrearParaOtros && usuarioSeleccionado?.role?.name === 'funcionario'"
+                        v-if="puedeCrearParaOtros && isStaffUsuarioSeleccionado"
                         class="border-t border-slate-200 dark:border-slate-700 pt-4"
                     >
                         <div class="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-lg p-3 transition-colors duration-200">
                             <p class="text-sm text-blue-800 dark:text-blue-200">
-                                <strong>Nota:</strong> Para funcionarios, el código QR estará activo hasta la fecha de expiración del contrato del usuario o hasta que se marque como inactivo. No se requieren fechas ni horarios adicionales.
+                                <strong>Nota:</strong> Para servidor público/contratista, el código QR estará activo hasta la fecha de expiración del contrato del usuario o hasta que se marque como inactivo. No se requieren fechas ni horarios adicionales.
                             </p>
                         </div>
                     </div>
@@ -584,12 +645,6 @@
                                 }}
                             </button>
                             <button
-                                @click="descargarQR"
-                                class="px-4 py-2 rounded-lg bg-green-600 dark:bg-green-700 text-white hover:bg-green-700 dark:hover:bg-green-600 text-center transition-colors duration-200"
-                            >
-                                Descargar QR
-                            </button>
-                            <button
                                 @click="generarNuevo"
                                 class="px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-colors duration-200"
                             >
@@ -675,18 +730,20 @@
                     </FormField>
 
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <FormField label="N° Identidad (opcional)" :error="visitanteErrors.n_identidad">
+                        <FormField label="N° Identidad" :error="visitanteErrors.n_identidad">
                             <input
                                 v-model="visitanteForm.n_identidad"
                                 type="text"
                                 class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-transparent transition-colors duration-200"
+                                required
                             />
                         </FormField>
-                        <FormField label="Número de caso (opcional)" :error="visitanteErrors.numero_caso">
-                            <input
-                                v-model="visitanteForm.numero_caso"
-                                type="text"
+                        <FormField label="Observaciones (opcional)" :error="visitanteErrors.observaciones">
+                            <textarea
+                                v-model="visitanteForm.observaciones"
+                                rows="2"
                                 class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-transparent transition-colors duration-200"
+                                placeholder="Observaciones adicionales"
                             />
                         </FormField>
                     </div>
@@ -752,6 +809,7 @@ const props = defineProps({
     pisos: Array,
     secretarias: Array,
     gerencias: Array,
+    responsables: Array,
     qrGenerado: Object,
     puedeCrearParaOtros: Boolean,
     qrPersonal: Object,
@@ -778,6 +836,7 @@ const form = useForm({
     user_id: null,
     secretaria_id: null,
     gerencia_id: null,
+    responsable_id: null,
     pisos: [],
     puertas: [],
     hora_inicio: null,
@@ -833,6 +892,11 @@ onMounted(() => {
         form.user_id = usuariosLocal.value[0].id;
     }
 
+    // showMiQr ya se inicializa antes del onMounted, pero aquí lo confirmamos por si acaso
+    if (!props.puedeCrearParaOtros && props.qrPersonal && props.qrPersonal.id && !showMiQr.value) {
+        showMiQr.value = true;
+    }
+
     // Si el usuario actual es visitante, establecer valores por defecto de seguridad
     if (esVisitante.value) {
         const hoy = new Date();
@@ -882,6 +946,11 @@ onMounted(() => {
                 formTarjetaNfc.fecha_inicio = form.fecha_inicio;
                 formTarjetaNfc.fecha_fin = form.fecha_fin;
             } else {
+                // Si no es visitante, limpiar responsable_id
+                if (usuarioSeleccionado.value?.role?.name !== 'visitante') {
+                    form.responsable_id = null;
+                    responsablePickerQuery.value = "";
+                }
                 formTarjetaNfc.user_id = null;
                 formTarjetaNfc.tarjeta_nfc_id = null;
             }
@@ -911,6 +980,11 @@ const mostrarFormulario = ref(false);
 const usuarioSeleccionado = computed(() => {
     if (!form.user_id) return null;
     return usuariosLocal.value.find((u) => u.id === form.user_id);
+});
+
+const isStaffUsuarioSeleccionado = computed(() => {
+    const roleName = usuarioSeleccionado.value?.role?.name;
+    return ["servidor_publico", "contratista", "funcionario"].includes(roleName);
 });
 
 // ===== Selector buscable de usuarios (Ingreso) =====
@@ -986,18 +1060,110 @@ watch(
     { immediate: true }
 );
 
-// Cerrar dropdown al click fuera / ESC global
-const onDocumentClick = (e) => {
-    if (!userPickerOpen.value) return;
-    const el = e?.target;
-    // Si el click fue dentro de un input/boton del picker, no cerrar (heurística simple)
-    if (el && (el.closest?.(".relative") || el.closest?.("button"))) {
+// ===== Selector buscable de responsables =====
+const responsablePickerOpen = ref(false);
+const responsablePickerQuery = ref("");
+const responsablePickerActiveIndex = ref(0);
+
+const formatResponsableLabel = (r) => {
+    if (!r) return "";
+    const base = r.name || r.email || "";
+    const cargo = r.cargo ? ` - ${r.cargo.name}` : "";
+    return `${base}${cargo}`.trim();
+};
+
+const openResponsablePicker = () => {
+    responsablePickerOpen.value = true;
+};
+const closeResponsablePicker = () => {
+    responsablePickerOpen.value = false;
+    responsablePickerActiveIndex.value = 0;
+};
+
+const filteredResponsablesForPicker = computed(() => {
+    const q = String(responsablePickerQuery.value || "").trim().toLowerCase();
+    let arr = props.responsables || [];
+    if (!q) return arr.slice(0, 50);
+
+    const matches = (r) => {
+        const name = String(r?.name || "").toLowerCase();
+        const email = String(r?.email || "").toLowerCase();
+        const cargo = String(r?.cargo?.name || "").toLowerCase();
+        return name.includes(q) || email.includes(q) || cargo.includes(q);
+    };
+
+    return arr.filter(matches).slice(0, 50);
+});
+
+const selectResponsableFromPicker = (r) => {
+    if (!r) {
+        form.responsable_id = null;
+        responsablePickerQuery.value = "";
+    } else {
+        form.responsable_id = r.id;
+        responsablePickerQuery.value = formatResponsableLabel(r);
+    }
+    closeResponsablePicker();
+};
+
+const responsablePickerMove = (delta) => {
+    if (!responsablePickerOpen.value) {
+        openResponsablePicker();
+    }
+    const len = filteredResponsablesForPicker.value.length + 1; // +1 por la opción "Sin responsable"
+    if (len <= 0) return;
+    const next = (responsablePickerActiveIndex.value + delta + len) % len;
+    responsablePickerActiveIndex.value = next;
+};
+
+const responsablePickerSelectActive = () => {
+    if (responsablePickerActiveIndex.value === -1) {
+        selectResponsableFromPicker(null);
         return;
     }
-    closeUserPicker();
+    const r = filteredResponsablesForPicker.value[responsablePickerActiveIndex.value];
+    if (r) selectResponsableFromPicker(r);
+};
+
+// Mantener input sincronizado cuando cambia el responsable_id
+watch(
+    () => form.responsable_id,
+    (id) => {
+        const r = props.responsables?.find((x) => x.id === id);
+        if (r) {
+            responsablePickerQuery.value = formatResponsableLabel(r);
+        } else if (!id) {
+            responsablePickerQuery.value = "";
+        }
+    },
+    { immediate: true }
+);
+
+// Cerrar dropdown al click fuera / ESC global
+const onDocumentClick = (e) => {
+    const el = e?.target;
+    // Cerrar selector de usuarios
+    if (userPickerOpen.value) {
+        // Si el click fue dentro de un input/boton del picker, no cerrar (heurística simple)
+        if (el && (el.closest?.(".relative") || el.closest?.("button"))) {
+            return;
+        }
+        closeUserPicker();
+    }
+    // Cerrar selector de responsables
+    if (responsablePickerOpen.value) {
+        // Si el click fue dentro de un input/boton del picker, no cerrar (heurística simple)
+        if (el && (el.closest?.(".relative") || el.closest?.("button"))) {
+            return;
+        }
+        closeResponsablePicker();
+    }
 };
 const onKeyDownGlobal = (e) => {
-    if (e.key === "Escape") closeUserPicker();
+    if (e.key === "Escape") {
+        closeUserPicker();
+        closeResponsablePicker();
+    }
 };
 
 onMounted(() => {
@@ -1074,8 +1240,8 @@ watch(
             }
         }
 
-        // Si se selecciona un funcionario, limpiar campos de fecha y horario
-        if (roleName === "funcionario") {
+        // Si se selecciona staff (servidor público/contratista), limpiar campos de fecha y horario
+        if (["servidor_publico", "contratista", "funcionario"].includes(roleName)) {
             form.hora_inicio = null;
             form.hora_fin = null;
             form.fecha_inicio = null;
@@ -1091,7 +1257,8 @@ const submit = () => {
     });
 };
 
-const showMiQr = ref(false);
+// Inicializar showMiQr: si no puede crear para otros y tiene QR personal, mostrarlo automáticamente
+const showMiQr = ref(!props.puedeCrearParaOtros && props.qrPersonal && props.qrPersonal.id ? true : false);
 const miQrRef = ref(null);
 const irAMiQr = async () => {
     showMiQr.value = true;
@@ -1139,28 +1306,6 @@ const enviarCorreo = () => {
     );
 };
 
-const descargarQR = () => {
-    if (!props.qrGenerado) return;
-
-    const url = route("ingreso.download", {
-        qr: props.qrGenerado.id,
-        token: props.qrGenerado.token,
-    });
-
-    window.open(url, "_blank");
-};
-
-const descargarQRPersonal = () => {
-    if (!props.qrPersonal || !props.qrPersonal.token || !props.qrPersonal.id) return;
-
-    const url = route("ingreso.download", {
-        qr: props.qrPersonal.id,
-        token: props.qrPersonal.token,
-    });
-
-    window.open(url, "_blank");
-};
-
 const generarNuevo = () => {
     form.reset();
     form.user_id = null;
@@ -1177,7 +1322,7 @@ const visitanteForm = ref({
     apellido: "",
     email: "",
     n_identidad: "",
-    numero_caso: "",
+    observaciones: "",
     foto: null,
 });
 
@@ -1203,7 +1348,7 @@ const resetVisitanteForm = () => {
         apellido: "",
         email: "",
         n_identidad: "",
-        numero_caso: "",
+        observaciones: "",
         foto: null,
     };
     visitanteErrors.value = {};
@@ -1221,7 +1366,7 @@ const submitVisitante = async () => {
         fd.append("apellido", visitanteForm.value.apellido || "");
         fd.append("email", visitanteForm.value.email || "");
         fd.append("n_identidad", visitanteForm.value.n_identidad || "");
-        fd.append("numero_caso", visitanteForm.value.numero_caso || "");
+        fd.append("observaciones", visitanteForm.value.observaciones || "");
         if (visitanteForm.value.foto instanceof File) {
             fd.append("foto", visitanteForm.value.foto);
         }

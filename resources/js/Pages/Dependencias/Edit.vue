@@ -19,7 +19,7 @@
             </div>
 
             <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-6 transition-colors duration-200">
-                <form @submit.prevent="submit" class="grid grid-cols-1 gap-4">
+                <form @submit.prevent="showConfirmModal = true" class="grid grid-cols-1 gap-4">
                     <FormField label="Nombre" :error="form.errors.nombre">
                         <input
                             v-model="form.nombre"
@@ -101,11 +101,14 @@
 import AppLayout from "@/Layouts/AppLayout.vue";
 import FormField from "@/Components/FormField.vue";
 import { Link, router, useForm } from "@inertiajs/vue3";
+import { ref } from "vue";
 
 const props = defineProps({
     dependencia: Object,
     pisos: Array,
 });
+
+const showConfirmModal = ref(false);
 
 const form = useForm({
     nombre: props.dependencia.nombre || "",
@@ -114,7 +117,8 @@ const form = useForm({
     activo: !!props.dependencia.activo,
 });
 
-const submit = () => {
+const confirmSubmit = () => {
+    showConfirmModal.value = false;
     form.put(route("dependencias.update", { dependencia: props.dependencia.id }));
 };
 

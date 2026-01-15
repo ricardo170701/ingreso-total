@@ -284,6 +284,16 @@
                                 >Puerta oculta (requiere permiso especial para ver)</span
                             >
                         </label>
+                        <label class="inline-flex items-center gap-2">
+                            <input
+                                v-model="form.requiere_permiso_datacenter"
+                                type="checkbox"
+                                class="h-4 w-4"
+                            />
+                            <span class="text-sm text-slate-700 dark:text-slate-300"
+                                >Requiere permiso datacenter</span
+                            >
+                        </label>
                     </div>
 
                     <div class="flex items-center justify-end gap-2 pt-2">
@@ -335,6 +345,7 @@ const form = useForm({
     activo: true,
     requiere_discapacidad: false,
     es_oculta: false,
+    requiere_permiso_datacenter: false,
 });
 
 const submit = () => {

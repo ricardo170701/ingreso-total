@@ -6,11 +6,11 @@
                     <h1
                         class="text-xl font-semibold text-slate-900 dark:text-slate-100"
                     >
-                        Gestionar Permisos: {{ cargo.name }}
+                        Gestionar Permisos (Rol): {{ cargo.name }}
                     </h1>
                     <p class="text-sm text-slate-600 dark:text-slate-400">
                         Configura los permisos de acceso a puertas para este
-                        cargo.
+                        rol.
                     </p>
                 </div>
                 <Link
@@ -35,7 +35,7 @@
                 <h2
                     class="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4"
                 >
-                    Información del Cargo
+                    Información del Rol
                 </h2>
                 <form
                     @submit.prevent="submitCargo"

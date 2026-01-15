@@ -32,18 +32,19 @@ class StoreUserRequest extends FormRequest
             'role_id' => [
                 'nullable',
                 'integer',
-                Rule::exists('roles', 'id')->whereIn('name', ['funcionario', 'visitante']),
+                Rule::exists('roles', 'id')->whereIn('name', ['visitante', 'servidor_publico', 'contratista', 'funcionario']),
             ],
-            'role_name' => ['nullable', 'string', 'max:50', Rule::in(['funcionario', 'visitante'])],
+            'role_name' => ['nullable', 'string', 'max:50', Rule::in(['visitante', 'servidor_publico', 'contratista', 'funcionario'])],
 
             'cargo_id' => ['nullable', 'integer', 'exists:cargos,id'],
+            'cargo_texto' => ['nullable', 'string', 'max:150'],
 
             // Perfil
             'name' => ['nullable', 'string', 'max:255'],
             'nombre' => ['nullable', 'string', 'max:100'],
             'apellido' => ['nullable', 'string', 'max:100'],
-            'n_identidad' => ['nullable', 'string', 'max:50', 'unique:users,n_identidad'],
-            'numero_caso' => ['nullable', 'string', 'max:100'],
+            'n_identidad' => ['required', 'string', 'max:50', 'unique:users,n_identidad'],
+            'observaciones' => ['nullable', 'string', 'max:500'],
             'secretaria_id' => ['nullable', 'integer', 'exists:secretarias,id'],
             'gerencia_id' => [
                 'nullable',
@@ -62,9 +63,7 @@ class StoreUserRequest extends FormRequest
             'foto_perfil' => ['nullable', 'string'],
             'foto' => ['nullable', 'file', 'image', 'max:4096'],
 
-            // Documentos (contrato)
-            'contratos' => ['nullable', 'array', 'max:5'],
-            'contratos.*' => ['file', 'mimes:pdf', 'max:10240'], // 10MB c/u
+            // Tipo de contrato (sin documentos PDF)
             'tipo_contrato' => ['nullable', 'string', Rule::in(['prestacion_servicios', 'contratista_externo', 'contrato_indefinido'])],
 
             'activo' => ['nullable', 'boolean'],

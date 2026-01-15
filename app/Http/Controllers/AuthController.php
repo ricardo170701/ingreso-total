@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Services\AuthService;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
@@ -45,6 +46,11 @@ class AuthController extends Controller
             Auth::login($user, $request->boolean('remember'));
             $request->session()->regenerate();
 
+            // Si el usuario no ha cambiado su contraseña, forzar cambio
+            if (is_null($user->password_changed_at)) {
+                return redirect()->route('password.change');
+            }
+
             // Visitantes: acceso limitado a Ingreso/Soporte
             if (($user->role?->name ?? null) === 'visitante') {
                 return redirect()->route('ingreso.index');
@@ -72,5 +78,47 @@ class AuthController extends Controller
         $request->session()->regenerateToken();
 
         return redirect()->route('login');
+    }
+
+    /**
+     * Mostrar formulario de cambio de contraseña obligatorio
+     */
+    public function showChangePasswordForm()
+    {
+        $user = Auth::user();
+        
+        // Si ya cambió la contraseña, redirigir al dashboard
+        if ($user && !is_null($user->password_changed_at)) {
+            return redirect()->route('dashboard');
+        }
+
+        return Inertia::render('Auth/ChangePassword');
+    }
+
+    /**
+     * Procesar cambio de contraseña obligatorio
+     */
+    public function changePassword(Request $request): RedirectResponse
+    {
+        $data = $request->validate([
+            'password' => ['required', 'string', 'min:8', 'confirmed'],
+            'password_confirmation' => ['required', 'string'],
+        ]);
+
+        $user = $request->user();
+        
+        // Actualizar contraseña
+        $user->password = \Illuminate\Support\Facades\Hash::make($data['password']);
+        $user->password_changed_at = now();
+        $user->save();
+
+        // Visitantes: acceso limitado a Ingreso/Soporte
+        if (($user->role?->name ?? null) === 'visitante') {
+            return redirect()->route('ingreso.index')
+                ->with('success', 'Contraseña actualizada correctamente. Bienvenido.');
+        }
+
+        return redirect()->route('dashboard')
+            ->with('success', 'Contraseña actualizada correctamente. Bienvenido.');
     }
 }

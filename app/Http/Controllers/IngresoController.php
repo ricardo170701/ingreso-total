@@ -41,14 +41,14 @@ class IngresoController extends Controller
 
         if ($puedeCrearParaOtros) {
             // Por defecto, en Ingreso se listan solo visitantes.
-            // Solo si tiene permiso extra, se listan también funcionarios.
+            // Solo si tiene permiso extra, se listan también servidores públicos/contratistas.
             $usuariosQ = User::query()
                 ->where('activo', true)
                 ->with(['role', 'cargo'])
                 ->orderBy('name');
 
             if (!$puedeVerFuncionariosEnIngreso) {
-                $usuariosQ->whereHas('role', fn ($r) => $r->where('name', 'visitante'));
+                $usuariosQ->whereHas('role', fn($r) => $r->where('name', 'visitante'));
             }
 
             $usuarios = $usuariosQ->get();
@@ -81,14 +81,41 @@ class IngresoController extends Controller
             ->orderBy('nombre')
             ->get(['id', 'nombre', 'secretaria_id']);
 
+        // Obtener usuarios servidores públicos y contratistas para selector de responsable
+        $responsables = User::query()
+            ->where('activo', true)
+            ->whereHas('role', function ($q) {
+                $q->whereIn('name', ['servidor_publico', 'contratista', 'funcionario']); // 'funcionario' legado
+            })
+            ->with(['role', 'cargo'])
+            ->orderBy('name')
+            ->get(['id', 'name', 'email', 'role_id', 'cargo_id']);
+
         // Buscar QR activo del usuario actual (si existe)
         $qrPersonal = null;
         if ($actor) {
-            $qrPersonal = CodigoQr::query()
+            $actorRole = $actor->role?->name;
+            $staffRoles = ['servidor_publico', 'contratista', 'funcionario']; // 'funcionario' legado
+            $isStaff = in_array($actorRole, $staffRoles, true);
+
+            // IMPORTANTE:
+            // - Para visitantes: el QR expira por codigos_qr.fecha_expiracion
+            // - Para staff: el QR NO debe depender de codigos_qr.fecha_expiracion (depende de users.fecha_expiracion)
+            // Por eso NO usamos el scope activos() aquí para staff.
+            $qrQ = CodigoQr::query()
                 ->where('user_id', $actor->id)
-                ->activos()
-                ->latest('fecha_generacion')
-                ->first();
+                ->where('activo', true)
+                ->latest('fecha_generacion');
+
+            if (!$isStaff) {
+                $now = now();
+                $qrQ->where(function ($q) use ($now) {
+                    $q->whereNull('fecha_expiracion')
+                        ->orWhere('fecha_expiracion', '>', $now);
+                });
+            }
+
+            $qrPersonal = $qrQ->first();
         }
 
         // Si tiene QR personal activo, prepararlo para mostrar
@@ -108,11 +135,29 @@ class IngresoController extends Controller
             }
 
             $actorRole = $actor->role?->name;
-            $expiresAtFormatted = $qrPersonal->fecha_expiracion
-                ? $qrPersonal->fecha_expiracion->format('d/m/Y H:i')
-                : ($actorRole === 'funcionario' 
-                    ? 'Hasta fin de contrato o inactivación' 
-                    : 'No definido');
+            $staffRoles = ['servidor_publico', 'contratista', 'funcionario']; // 'funcionario' legado
+            $isStaff = in_array($actorRole, $staffRoles, true);
+
+            // Mostrar expiración:
+            // - Staff: SIEMPRE depende de users.fecha_expiracion
+            // - Visitante: depende de codigos_qr.fecha_expiracion
+            $expiresAtIso = null;
+            $expiresAtFormatted = null;
+            if ($isStaff) {
+                if ($actor->fecha_expiracion) {
+                    $expires = Carbon::parse($actor->fecha_expiracion)->endOfDay();
+                    $expiresAtIso = $expires->toIso8601String();
+                    $expiresAtFormatted = $expires->format('d/m/Y H:i');
+                } else {
+                    $expiresAtIso = null;
+                    $expiresAtFormatted = 'Hasta fin de contrato o inactivación';
+                }
+            } else {
+                $expiresAtIso = $qrPersonal->fecha_expiracion?->toIso8601String();
+                $expiresAtFormatted = $qrPersonal->fecha_expiracion
+                    ? $qrPersonal->fecha_expiracion->format('d/m/Y H:i')
+                    : 'No definido';
+            }
 
             $qrPersonalData = [
                 'id' => $qrPersonal->id,
@@ -120,7 +165,7 @@ class IngresoController extends Controller
                 'user_name' => $actor->name,
                 'user_email' => $actor->email,
                 'token' => $tokenOriginal,
-                'expires_at' => $qrPersonal->fecha_expiracion?->toIso8601String(),
+                'expires_at' => $expiresAtIso,
                 'expires_at_formatted' => $expiresAtFormatted,
                 'fecha_generacion' => $qrPersonal->fecha_generacion?->format('d/m/Y H:i'),
                 'svg' => $qrSvg,
@@ -141,13 +186,13 @@ class IngresoController extends Controller
                 ->where('activo', true)
                 ->where('user_id', $usuario->id)
                 ->first(['id', 'codigo', 'nombre']);
-            
+
             $usuario->tarjeta_nfc_asignada = $tarjetaAsignada ? [
                 'id' => $tarjetaAsignada->id,
                 'codigo' => $tarjetaAsignada->codigo,
                 'nombre' => $tarjetaAsignada->nombre,
             ] : null;
-            
+
             return $usuario;
         });
 
@@ -157,6 +202,12 @@ class IngresoController extends Controller
             'pisos' => $pisos,
             'secretarias' => $secretarias,
             'gerencias' => $gerencias,
+            'responsables' => $responsables->map(fn($u) => [
+                'id' => $u->id,
+                'name' => $u->name,
+                'email' => $u->email,
+                'cargo' => $u->cargo ? ['id' => $u->cargo->id, 'name' => $u->cargo->name] : null,
+            ]),
             'puedeCrearParaOtros' => $puedeCrearParaOtros,
             'qrPersonal' => $qrPersonalData,
             'tarjetasNfcDisponibles' => $tarjetasNfcDisponibles,
@@ -221,11 +272,13 @@ class IngresoController extends Controller
 
         $now = Carbon::now();
 
-        // Para funcionarios:
+        // Para staff (servidor público/contratista):
         // - Si tiene fecha_expiracion: usar esa fecha
         // - Si NO tiene fecha_expiracion (contrato indefinido): null (el acceso se controla solo por campo 'activo')
         // Para visitantes: mantener 15 días
-        if ($targetRole === 'funcionario') {
+        $staffRoles = ['servidor_publico', 'contratista', 'funcionario']; // 'funcionario' legado
+        $isStaff = in_array($targetRole, $staffRoles, true);
+        if ($isStaff) {
             if ($targetUser->fecha_expiracion) {
                 $expiresAt = Carbon::parse($targetUser->fecha_expiracion)->endOfDay();
             } else {
@@ -258,6 +311,7 @@ class IngresoController extends Controller
             $qr = new CodigoQr();
             $qr->user_id = $targetUser->id;
             $qr->gerencia_id = $data['gerencia_id'] ?? null;
+            $qr->responsable_id = $data['responsable_id'] ?? null;
             $qr->codigo = $tokenHash;
             $qr->setTokenOriginal($plainToken); // Encriptar y guardar el token
             $qr->fecha_generacion = $now;
@@ -284,9 +338,11 @@ class IngresoController extends Controller
             }
 
             if (is_array($puertas) && count($puertas) > 0) {
-                // Para funcionarios: no guardar fechas ni horarios
+                // Para staff (servidor público/contratista): no guardar fechas ni horarios
                 // El QR es válido hasta la fecha de expiración del usuario o hasta que esté inactivo
-                if ($targetRole === 'funcionario') {
+                $staffRoles = ['servidor_publico', 'contratista', 'funcionario']; // 'funcionario' legado
+                $isStaff = in_array($targetRole, $staffRoles, true);
+                if ($isStaff) {
                     $pivot = [
                         'hora_inicio' => null,
                         'hora_fin' => null,
@@ -342,11 +398,10 @@ class IngresoController extends Controller
             $usuariosQ = User::query()
                 ->where('activo', true)
                 ->with(['role', 'cargo'])
-                ->orderBy('name')
-                ;
+                ->orderBy('name');
 
             if (!$puedeVerFuncionariosEnIngreso) {
-                $usuariosQ->whereHas('role', fn ($r) => $r->where('name', 'visitante'));
+                $usuariosQ->whereHas('role', fn($r) => $r->where('name', 'visitante'));
             }
 
             $usuarios = $usuariosQ->get();
@@ -377,12 +432,28 @@ class IngresoController extends Controller
             ->orderBy('nombre')
             ->get(['id', 'nombre', 'secretaria_id']);
 
+        // Obtener usuarios servidores públicos y contratistas para selector de responsable
+        $responsables = User::query()
+            ->where('activo', true)
+            ->whereHas('role', function ($q) {
+                $q->whereIn('name', ['servidor_publico', 'contratista', 'funcionario']); // 'funcionario' legado
+            })
+            ->with(['role', 'cargo'])
+            ->orderBy('name')
+            ->get(['id', 'name', 'email', 'role_id', 'cargo_id']);
+
         return Inertia::render('Ingreso/Index', [
             'usuarios' => $usuarios,
             'puertas' => $puertas,
             'pisos' => $pisos,
             'secretarias' => $secretarias,
             'gerencias' => $gerencias,
+            'responsables' => $responsables->map(fn($u) => [
+                'id' => $u->id,
+                'name' => $u->name,
+                'email' => $u->email,
+                'cargo' => $u->cargo ? ['id' => $u->cargo->id, 'name' => $u->cargo->name] : null,
+            ]),
             'puedeCrearParaOtros' => $puedeCrearParaOtros,
             'qrGenerado' => [
                 'id' => $qr->id,
@@ -391,10 +462,10 @@ class IngresoController extends Controller
                 'user_email' => $targetUser->email,
                 'token' => $plainToken,
                 'expires_at' => $expiresAt?->toIso8601String(),
-                'expires_at_formatted' => $expiresAt 
+                'expires_at_formatted' => $expiresAt
                     ? $expiresAt->format('d/m/Y H:i')
-                    : ($targetRole === 'funcionario' 
-                        ? 'Hasta fin de contrato o inactivación' 
+                    : (in_array($targetRole, ['servidor_publico', 'contratista', 'funcionario'], true)
+                        ? 'Hasta fin de contrato o inactivación'
                         : 'No definido'),
                 'svg' => (string) $qrSvg, // Asegurar que sea string
             ],
@@ -447,37 +518,6 @@ class IngresoController extends Controller
     }
 
     /**
-     * Descargar QR como imagen PNG
-     */
-    public function download(Request $request, int $qrId)
-    {
-        $request->validate([
-            'token' => ['required', 'string'], // Token original del QR
-        ]);
-
-        $qr = CodigoQr::query()->with('user')->findOrFail($qrId);
-
-        // Verificar que el token coincida con el hash almacenado
-        $tokenHash = hash('sha256', $request->token);
-        if ($tokenHash !== $qr->codigo) {
-            abort(403, 'Token inválido.');
-        }
-
-        // Generar PNG del QR con el token original
-        $qrPng = QrCode::format('png')
-            ->size(500)
-            ->margin(2)
-            ->generate($request->token);
-
-        $fileName = 'qr-' . ($qr->user->name ?? 'usuario') . '-' . $qr->id . '.png';
-        $fileName = preg_replace('/[^a-zA-Z0-9\-_\.]/', '_', $fileName);
-
-        return response($qrPng, 200)
-            ->header('Content-Type', 'image/png')
-            ->header('Content-Disposition', 'attachment; filename="' . $fileName . '"');
-    }
-
-    /**
      * Crear un usuario visitante desde la pantalla de Ingreso.
      * Requiere permiso: create_ingreso_visitantes
      */
@@ -501,8 +541,8 @@ class IngresoController extends Controller
             'nombre' => ['required', 'string', 'max:100'],
             'apellido' => ['required', 'string', 'max:100'],
             'email' => ['required', 'email', 'max:255', 'unique:users,email'],
-            'n_identidad' => ['nullable', 'string', 'max:50', 'unique:users,n_identidad'],
-            'numero_caso' => ['nullable', 'string', 'max:100'],
+            'n_identidad' => ['required', 'string', 'max:50', 'unique:users,n_identidad'],
+            'observaciones' => ['nullable', 'string', 'max:500'],
             'foto' => ['nullable', 'file', 'image', 'max:4096'],
         ]);
 
@@ -552,7 +592,7 @@ class IngresoController extends Controller
                 'activo' => (bool) $user->activo,
                 'foto_perfil' => $user->foto_perfil,
                 'n_identidad' => $user->n_identidad,
-                'numero_caso' => $user->numero_caso,
+                'observaciones' => $user->observaciones,
                 'role' => ['id' => $roleVisitanteId, 'name' => 'visitante'],
                 'cargo' => null,
             ],

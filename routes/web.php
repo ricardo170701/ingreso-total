@@ -51,7 +51,13 @@ Route::middleware('guest')->group(function () {
     Route::post('/reset-password', [PasswordResetController::class, 'reset'])->name('password.update');
 });
 
-Route::middleware(['auth', 'visitante.restrict', 'permission.check'])->group(function () {
+// Cambio de contraseña obligatorio (debe estar antes del middleware force.password.change)
+Route::middleware(['auth'])->group(function () {
+    Route::get('/password/change', [AuthController::class, 'showChangePasswordForm'])->name('password.change');
+    Route::post('/password/change', [AuthController::class, 'changePassword']);
+});
+
+Route::middleware(['auth', 'force.password.change', 'visitante.restrict', 'permission.check'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
@@ -68,8 +74,6 @@ Route::middleware(['auth', 'visitante.restrict', 'permission.check'])->group(fun
     Route::get('/usuarios/{user}/editar', [UsersController::class, 'edit'])->name('usuarios.edit');
     Route::put('/usuarios/{user}', [UsersController::class, 'update'])->name('usuarios.update');
     Route::delete('/usuarios/{user}', [UsersController::class, 'destroy'])->name('usuarios.destroy');
-    Route::get('/usuarios/{user}/documentos/{documento}/descargar', [UsersController::class, 'downloadDocumento'])->name('usuarios.documentos.download');
-    Route::put('/usuarios/{user}/documentos/{documento}', [UsersController::class, 'updateDocumento'])->name('usuarios.documentos.update');
     Route::delete('/usuarios/{user}/documentos/{documento}', [UsersController::class, 'destroyDocumento'])->name('usuarios.documentos.destroy');
 
     // Puertas (CRUD web)
@@ -97,7 +101,6 @@ Route::middleware(['auth', 'visitante.restrict', 'permission.check'])->group(fun
     Route::post('/ingreso/tarjetas-nfc/asignar', [IngresoController::class, 'asignarTarjetaNfc'])->name('ingreso.tarjetas-nfc.asignar');
     Route::post('/ingreso/tarjetas-nfc/desasignar', [IngresoController::class, 'desasignarTarjetaNfc'])->name('ingreso.tarjetas-nfc.desasignar');
     Route::post('/ingreso/{qr}/enviar-correo', [IngresoController::class, 'sendEmail'])->name('ingreso.send-email');
-    Route::get('/ingreso/{qr}/descargar', [IngresoController::class, 'download'])->name('ingreso.download')->middleware('auth');
 
     // Tarjetas NFC
     Route::resource('tarjetas-nfc', TarjetasNfcController::class)->parameters(['tarjetas-nfc' => 'tarjetaNfc']);

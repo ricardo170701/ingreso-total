@@ -60,7 +60,7 @@ class CodigoQrController extends Controller
 
         $targetRole = $targetUser->role?->name;
 
-        // Autorización por permisos (los roles solo representan tipo de usuario: funcionario/visitante)
+        // Autorización por permisos (los roles solo representan tipo de vinculación)
         if (!$actor || !$actor->hasPermission('create_ingreso')) {
             return response()->json(['message' => 'No autorizado.'], 403);
         }
@@ -114,11 +114,14 @@ class CodigoQrController extends Controller
 
         $now = Carbon::now();
 
-        // Para funcionarios:
+        // Para staff (servidor público/contratista):
         // - Si tiene fecha_expiracion: usar esa fecha
         // - Si NO tiene fecha_expiracion (contrato indefinido): null (el acceso se controla solo por campo 'activo')
         // Para visitantes: mantener 15 días
-        if ($targetRole === 'funcionario') {
+        $staffRoles = ['servidor_publico', 'contratista', 'funcionario']; // 'funcionario' legado
+        $isStaff = in_array($targetRole, $staffRoles, true);
+
+        if ($isStaff) {
             if ($targetUser->fecha_expiracion) {
                 $expiresAt = Carbon::parse($targetUser->fecha_expiracion)->endOfDay();
             } else {
@@ -126,7 +129,7 @@ class CodigoQrController extends Controller
                 $expiresAt = null;
             }
         } else {
-        $expiresAt = $now->copy()->addDays(15);
+            $expiresAt = $now->copy()->addDays(15);
         }
 
         // Token opaco (para QR) + hash (para BD)
@@ -153,6 +156,7 @@ class CodigoQrController extends Controller
             $qr = new CodigoQr();
             $qr->user_id = $targetUser->id;
             $qr->gerencia_id = $data['gerencia_id'] ?? null;
+            $qr->responsable_id = $data['responsable_id'] ?? null;
             $qr->codigo = $tokenHash;
             $qr->setTokenOriginal($plainToken); // Encriptar y guardar el token
             $qr->fecha_generacion = $now;

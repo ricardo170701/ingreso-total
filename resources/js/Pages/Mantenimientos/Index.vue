@@ -112,7 +112,7 @@
                                 <th
                                     class="px-4 py-3 text-left font-semibold text-slate-700 dark:text-slate-300"
                                 >
-                                    Falla
+                                    Descripción de mantenimiento
                                 </th>
                                 <th
                                     class="px-4 py-3 text-left font-semibold text-slate-700 dark:text-slate-300"
@@ -169,8 +169,8 @@
                                     </span>
                                 </td>
                                 <td class="px-4 py-3 text-slate-600 dark:text-slate-400">
-                                    <div class="max-w-xs truncate" :title="m.falla">
-                                        {{ m.falla || '-' }}
+                                    <div class="max-w-xs truncate" :title="m.descripcion_mantenimiento">
+                                        {{ m.descripcion_mantenimiento || '-' }}
                                     </div>
                                 </td>
                                 <td class="px-4 py-3 text-slate-600 dark:text-slate-400">

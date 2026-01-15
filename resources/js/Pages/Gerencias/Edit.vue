@@ -29,7 +29,7 @@
             </div>
 
             <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-6 transition-colors duration-200">
-                <form @submit.prevent="submit" class="grid grid-cols-1 gap-4">
+                <form @submit.prevent="showConfirmModal = true" class="grid grid-cols-1 gap-4">
                     <FormField label="Nombre" :error="form.errors.nombre">
                         <input
                             v-model="form.nombre"
@@ -72,7 +72,8 @@
                             Cancelar
                         </Link>
                         <button
-                            type="submit"
+                            type="button"
+                            @click="showConfirmModal = true"
                             :disabled="form.processing"
                             class="px-4 py-2 rounded-lg bg-purple-600 dark:bg-purple-700 text-white hover:bg-purple-700 dark:hover:bg-purple-600 disabled:opacity-50 font-medium transition-colors duration-200"
                         >
@@ -91,6 +92,64 @@
                 </form>
             </div>
         </div>
+
+        <!-- Modal de Confirmación -->
+        <div
+            v-if="showConfirmModal"
+            @click="showConfirmModal = false"
+            class="fixed inset-0 bg-black/60 dark:bg-black/70 flex items-center justify-center z-50 p-4 transition-colors duration-200"
+        >
+            <div
+                class="bg-white dark:bg-slate-800 rounded-xl shadow-2xl max-w-md w-full border border-slate-200 dark:border-slate-700 transition-colors duration-200"
+                @click.stop
+            >
+                <div class="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-700">
+                    <h3 class="text-lg font-semibold text-slate-900 dark:text-slate-100">
+                        Confirmar Edición
+                    </h3>
+                    <button
+                        type="button"
+                        @click="showConfirmModal = false"
+                        class="w-9 h-9 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-colors duration-200 flex items-center justify-center"
+                        aria-label="Cerrar"
+                    >
+                        ×
+                    </button>
+                </div>
+
+                <div class="p-6">
+                    <p class="text-sm text-slate-700 dark:text-slate-300 mb-4">
+                        ¿Estás seguro de que deseas editar la gerencia
+                        <strong class="text-slate-900 dark:text-slate-100">{{ gerencia.nombre }}</strong>?
+                    </p>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 mb-4">
+                        Los cambios se guardarán y se aplicarán inmediatamente.
+                    </p>
+
+                    <div class="flex items-center justify-end gap-3">
+                        <button
+                            type="button"
+                            @click="showConfirmModal = false"
+                            class="px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-colors duration-200"
+                        >
+                            Cancelar
+                        </button>
+                        <button
+                            type="button"
+                            @click="confirmSubmit"
+                            :disabled="form.processing"
+                            class="px-4 py-2 rounded-lg bg-purple-600 dark:bg-purple-700 text-white hover:bg-purple-700 dark:hover:bg-purple-600 disabled:opacity-50 font-medium transition-colors duration-200"
+                        >
+                            {{
+                                form.processing
+                                    ? "Guardando..."
+                                    : "Sí, Guardar Cambios"
+                            }}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
     </AppLayout>
 </template>
 
@@ -98,11 +157,14 @@
 import AppLayout from "@/Layouts/AppLayout.vue";
 import FormField from "@/Components/FormField.vue";
 import { Link, router, useForm } from "@inertiajs/vue3";
+import { ref } from "vue";
 
 const props = defineProps({
     secretaria: Object,
     gerencia: Object,
 });
+
+const showConfirmModal = ref(false);
 
 const form = useForm({
     nombre: props.gerencia.nombre || "",
@@ -110,7 +172,8 @@ const form = useForm({
     activo: !!props.gerencia.activo,
 });
 
-const submit = () => {
+const confirmSubmit = () => {
+    showConfirmModal.value = false;
     form.put(
         route("gerencias.update", {
             secretaria: props.secretaria.id,

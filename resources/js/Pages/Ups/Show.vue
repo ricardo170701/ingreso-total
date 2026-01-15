@@ -27,12 +27,44 @@
                 </div>
             </div>
 
-            <div
-                v-if="$page.props.flash?.message"
-                class="p-4 rounded-lg bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 text-green-800 dark:text-green-200 transition-colors duration-200"
+            <!-- Mensaje de éxito (notificación temporal) -->
+            <Transition
+                enter-active-class="transition ease-out duration-300"
+                enter-from-class="opacity-0 translate-x-full"
+                enter-to-class="opacity-100 translate-x-0"
+                leave-active-class="transition ease-in duration-200"
+                leave-from-class="opacity-100 translate-x-0"
+                leave-to-class="opacity-0 translate-x-full"
             >
-                {{ $page.props.flash.message }}
-            </div>
+                <div
+                    v-if="showSuccessMessage"
+                    class="fixed top-4 right-4 z-50 max-w-md"
+                >
+                    <div
+                        class="bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 rounded-lg p-4 shadow-lg flex items-center gap-3"
+                    >
+                        <div class="shrink-0">
+                            <span class="text-2xl">✅</span>
+                        </div>
+                        <div class="flex-1">
+                            <p class="text-sm font-medium text-green-800 dark:text-green-200">
+                                UPS actualizado exitosamente
+                            </p>
+                            <p class="text-xs text-green-700 dark:text-green-300 mt-1">
+                                Los cambios se han aplicado al UPS "{{ ups.nombre }}"
+                            </p>
+                        </div>
+                        <button
+                            type="button"
+                            @click="showSuccessMessage = false"
+                            class="shrink-0 text-green-600 dark:text-green-400 hover:text-green-800 dark:hover:text-green-200 transition-colors"
+                            aria-label="Cerrar"
+                        >
+                            ×
+                        </button>
+                    </div>
+                </div>
+            </Transition>
 
             <!-- Detalles -->
             <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-6 space-y-4 transition-colors duration-200">
@@ -328,13 +360,32 @@
 import AppLayout from "@/Layouts/AppLayout.vue";
 import FormField from "@/Components/FormField.vue";
 import { Link, router, useForm, usePage } from "@inertiajs/vue3";
-import { computed } from "vue";
+import { computed, ref, watch, Transition } from "vue";
 
 const props = defineProps({
     ups: Object,
 });
 
 const page = usePage();
+
+// Mensaje de éxito
+const showSuccessMessage = ref(false);
+
+// Mostrar mensaje de éxito si hay flash message
+watch(
+    () => page.props.flash?.message,
+    (message) => {
+        if (message) {
+            showSuccessMessage.value = true;
+            // Ocultar el mensaje después de 5 segundos
+            setTimeout(() => {
+                showSuccessMessage.value = false;
+            }, 5000);
+        }
+    },
+    { immediate: true }
+);
+
 const userPermissions = computed(() => page.props.auth?.user?.permissions || []);
 const hasPermission = (permission) => userPermissions.value.includes(permission);
 

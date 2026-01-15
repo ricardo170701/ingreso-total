@@ -19,7 +19,7 @@
                     @submit.prevent="exportarUsuarios"
                     class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4"
                 >
-                    <FormField label="Rol" :error="formUsuarios.errors.role_id">
+                    <FormField label="Tipo de vinculación" :error="formUsuarios.errors.role_id">
                         <select
                             v-model="formUsuarios.role_id"
                             class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 transition-colors duration-200"
@@ -30,12 +30,12 @@
                                 :key="rol.id"
                                 :value="rol.id"
                             >
-                                {{ rol.name }}
+                                {{ formatTipoVinculacion(rol.name) }}
                             </option>
                         </select>
                     </FormField>
 
-                    <FormField label="Cargo" :error="formUsuarios.errors.cargo_id">
+                    <FormField label="Rol (permisos)" :error="formUsuarios.errors.cargo_id">
                         <select
                             v-model="formUsuarios.cargo_id"
                             class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 transition-colors duration-200"
@@ -153,20 +153,42 @@
                         />
                     </FormField>
 
-                    <FormField label="Usuario" :error="formAccesos.errors.user_id">
+                    <FormField label="Dependencia (Secretaría)" :error="formAccesos.errors.secretaria_id">
                         <select
-                            v-model="formAccesos.user_id"
+                            v-model="formAccesos.secretaria_id"
+                            @change="onSecretariaChange('accesos')"
                             class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 transition-colors duration-200"
                         >
-                            <option :value="null">Todos</option>
+                            <option :value="null">Todas</option>
                             <option
-                                v-for="user in usuarios"
-                                :key="user.id"
-                                :value="user.id"
+                                v-for="secretaria in secretarias"
+                                :key="secretaria.id"
+                                :value="secretaria.id"
                             >
-                                {{ user.name }} ({{ user.email }})
+                                {{ secretaria.nombre }}
                             </option>
                         </select>
+                    </FormField>
+
+                    <FormField label="Gerencia" :error="formAccesos.errors.gerencia_id">
+                        <select
+                            v-model="formAccesos.gerencia_id"
+                            :disabled="!formAccesos.secretaria_id"
+                            class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            <option :value="null">Todas</option>
+                            <option value="despacho">Despacho</option>
+                            <option
+                                v-for="gerencia in gerenciasFiltradasAccesos"
+                                :key="gerencia.id"
+                                :value="gerencia.id"
+                            >
+                                {{ gerencia.nombre }}
+                            </option>
+                        </select>
+                        <p v-if="!formAccesos.secretaria_id" class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                            Selecciona una dependencia primero
+                        </p>
                     </FormField>
 
                     <FormField label="Piso" :error="formAccesos.errors.piso_id">
@@ -288,25 +310,6 @@
                             <option :value="null">Todos</option>
                             <option value="realizado">Realizado</option>
                             <option value="programado">Programado</option>
-                        </select>
-                    </FormField>
-
-                    <FormField
-                        label="Usuario"
-                        :error="formMantenimientos.errors.usuario_id"
-                    >
-                        <select
-                            v-model="formMantenimientos.usuario_id"
-                            class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 transition-colors duration-200"
-                        >
-                            <option :value="null">Todos</option>
-                            <option
-                                v-for="user in usuarios"
-                                :key="user.id"
-                                :value="user.id"
-                            >
-                                {{ user.name }}
-                            </option>
                         </select>
                     </FormField>
 
@@ -434,8 +437,18 @@ const props = defineProps({
     puertas: Array,
     tiposPuerta: Array,
     materiales: Array,
-    usuarios: Array,
 });
+
+const formatTipoVinculacion = (name) => {
+    const map = {
+        visitante: "Visitante",
+        servidor_publico: "Servidor público",
+        contratista: "Contratista",
+        // compatibilidad histórica
+        funcionario: "Servidor público",
+    };
+    return map[name] || name;
+};
 
 // Formulario para usuarios
 const formUsuarios = useForm({
@@ -456,6 +469,8 @@ const gerenciasFiltradasUsuarios = computed(() => {
 const onSecretariaChange = (formType) => {
     if (formType === 'usuarios') {
         formUsuarios.gerencia_id = null;
+    } else if (formType === 'accesos') {
+        formAccesos.gerencia_id = null;
     }
 };
 
@@ -463,10 +478,17 @@ const onSecretariaChange = (formType) => {
 const formAccesos = useForm({
     fecha_desde: null,
     fecha_hasta: null,
-    user_id: null,
+    secretaria_id: null,
+    gerencia_id: null,
     piso_id: null,
     tipo_evento: null,
     permitido: null,
+});
+
+// Filtrar gerencias por secretaría seleccionada (para accesos)
+const gerenciasFiltradasAccesos = computed(() => {
+    if (!formAccesos.secretaria_id) return [];
+    return props.gerencias?.filter(g => g.secretaria_id === formAccesos.secretaria_id) || [];
 });
 
 // Formulario para mantenimientos
@@ -475,7 +497,6 @@ const formMantenimientos = useForm({
     fecha_hasta: null,
     puerta_id: null,
     tipo: null,
-    usuario_id: null,
 });
 
 // Formulario para puertas

@@ -26,7 +26,7 @@ class StoreMantenimientoRequest extends FormRequest
             'fecha_mantenimiento' => ['required', 'date'],
             'fecha_fin_programada' => ['nullable', 'date', 'required_if:tipo,programado', 'after_or_equal:fecha_mantenimiento'],
             'tipo' => ['required', 'in:programado,realizado'],
-            'falla' => ['nullable', 'string', 'max:5000'],
+            'descripcion_mantenimiento' => ['nullable', 'string', 'max:5000'],
             'documentos' => ['nullable', 'array', 'max:5'],
             'documentos.*' => ['file', 'mimes:pdf', 'max:10240'], // Max 10MB por PDF
         ];

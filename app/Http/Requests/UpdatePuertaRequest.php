@@ -47,6 +47,7 @@ class UpdatePuertaRequest extends FormRequest
             'codigo_fisico_salida' => ['nullable', 'string', 'max:50', Rule::unique('puertas', 'codigo_fisico_salida')->ignore($puertaId)],
             'requiere_discapacidad' => ['nullable', 'boolean'],
             'es_oculta' => ['nullable', 'boolean'],
+            'requiere_permiso_datacenter' => ['nullable', 'boolean'],
             'activo' => ['nullable', 'boolean'],
         ];
     }

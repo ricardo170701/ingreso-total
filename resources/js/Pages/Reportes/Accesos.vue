@@ -37,20 +37,42 @@
                         />
                     </FormField>
 
-                    <FormField label="Usuario" :error="searchForm.errors.user_id">
+                    <FormField label="Dependencia (Secretaría)" :error="searchForm.errors.secretaria_id">
                         <select
-                            v-model="searchForm.user_id"
+                            v-model="searchForm.secretaria_id"
                             class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 transition-colors duration-200"
+                            @change="onSecretariaChange"
                         >
-                            <option :value="null">Todos</option>
+                            <option :value="null">Todas</option>
                             <option
-                                v-for="user in usuarios"
-                                :key="user.id"
-                                :value="user.id"
+                                v-for="secretaria in secretarias"
+                                :key="secretaria.id"
+                                :value="secretaria.id"
                             >
-                                {{ user.name }} ({{ user.email }})
+                                {{ secretaria.nombre }}
                             </option>
                         </select>
+                    </FormField>
+
+                    <FormField label="Gerencia" :error="searchForm.errors.gerencia_id">
+                        <select
+                            v-model="searchForm.gerencia_id"
+                            :disabled="!searchForm.secretaria_id"
+                            class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            <option :value="null">Todas</option>
+                            <option value="despacho">Despacho</option>
+                            <option
+                                v-for="gerencia in gerenciasFiltradas"
+                                :key="gerencia.id"
+                                :value="gerencia.id"
+                            >
+                                {{ gerencia.nombre }}
+                            </option>
+                        </select>
+                        <p v-if="!searchForm.secretaria_id" class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                            Selecciona una dependencia primero
+                        </p>
                     </FormField>
 
                     <FormField label="Piso" :error="searchForm.errors.piso_id">
@@ -244,10 +266,12 @@
 import AppLayout from "@/Layouts/AppLayout.vue";
 import FormField from "@/Components/FormField.vue";
 import { Link, useForm } from "@inertiajs/vue3";
+import { computed } from "vue";
 
 const props = defineProps({
     accesos: Object,
-    usuarios: Array,
+    secretarias: Array,
+    gerencias: Array,
     pisos: Array,
     filters: Object,
 });
@@ -255,11 +279,23 @@ const props = defineProps({
 const searchForm = useForm({
     fecha_desde: props.filters?.fecha_desde || null,
     fecha_hasta: props.filters?.fecha_hasta || null,
-    user_id: props.filters?.user_id || null,
+    secretaria_id: props.filters?.secretaria_id || null,
+    gerencia_id: props.filters?.gerencia_id || null,
     piso_id: props.filters?.piso_id || null,
     tipo_evento: props.filters?.tipo_evento || null,
     permitido: props.filters?.permitido !== undefined ? props.filters.permitido : null,
 });
+
+// Filtrar gerencias por secretaría seleccionada
+const gerenciasFiltradas = computed(() => {
+    if (!searchForm.secretaria_id) return [];
+    return props.gerencias?.filter(g => g.secretaria_id === searchForm.secretaria_id) || [];
+});
+
+// Limpiar gerencia cuando cambia la secretaría
+const onSecretariaChange = () => {
+    searchForm.gerencia_id = null;
+};
 
 const applyFilters = () => {
     searchForm.get(route("reportes.accesos"), {
@@ -272,7 +308,8 @@ const applyFilters = () => {
 const clearFilters = () => {
     searchForm.fecha_desde = null;
     searchForm.fecha_hasta = null;
-    searchForm.user_id = null;
+    searchForm.secretaria_id = null;
+    searchForm.gerencia_id = null;
     searchForm.piso_id = null;
     searchForm.tipo_evento = null;
     searchForm.permitido = null;

@@ -437,8 +437,8 @@ class TarjetasNfcController extends Controller
         });
 
         return redirect()
-            ->route('tarjetas-nfc.index')
-            ->with('success', 'Tarjeta NFC actualizada exitosamente.');
+            ->route('tarjetas-nfc.show', $tarjetaNfc)
+            ->with('message', 'Tarjeta NFC actualizada exitosamente.');
     }
 
     /**
@@ -476,7 +476,7 @@ class TarjetasNfcController extends Controller
 
         return redirect()
             ->route('tarjetas-nfc.show', $tarjetaNfc)
-            ->with('success', 'Tarjeta NFC desasignada correctamente.');
+            ->with('message', 'Tarjeta NFC desasignada correctamente.');
     }
 
     /**

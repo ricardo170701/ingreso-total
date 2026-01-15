@@ -19,7 +19,7 @@
             </div>
 
             <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-6 transition-colors duration-200">
-                <form @submit.prevent="submit" class="grid grid-cols-1 gap-6">
+                <form @submit.prevent="showConfirmModal = true" class="grid grid-cols-1 gap-6">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <FormField
                             label="Puerta"
@@ -82,17 +82,17 @@
                     </div>
 
                     <FormField
-                        label="Falla"
-                        :error="form.errors.falla"
+                        label="Descripción de mantenimiento"
+                        :error="form.errors.descripcion_mantenimiento"
                     >
                         <textarea
-                            v-model="form.falla"
+                            v-model="form.descripcion_mantenimiento"
                             rows="4"
                             class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-transparent transition-colors duration-200"
-                            placeholder="Describa la falla encontrada..."
+                            placeholder="Describa el mantenimiento realizado..."
                         />
                         <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                            Descripción de la falla o problema detectado
+                            Descripción del mantenimiento realizado
                         </p>
                     </FormField>
 
@@ -184,7 +184,8 @@
                             Eliminar
                         </button>
                         <button
-                            type="submit"
+                            type="button"
+                            @click="showConfirmModal = true"
                             :disabled="form.processing"
                             class="px-4 py-2 rounded-lg bg-slate-900 dark:bg-slate-700 text-white hover:bg-slate-800 dark:hover:bg-slate-600 disabled:opacity-50 transition-colors duration-200"
                         >
@@ -192,6 +193,63 @@
                         </button>
                     </div>
                 </form>
+            </div>
+        </div>
+
+        <!-- Modal de Confirmación -->
+        <div
+            v-if="showConfirmModal"
+            @click="showConfirmModal = false"
+            class="fixed inset-0 bg-black/60 dark:bg-black/70 flex items-center justify-center z-50 p-4 transition-colors duration-200"
+        >
+            <div
+                class="bg-white dark:bg-slate-800 rounded-xl shadow-2xl max-w-md w-full border border-slate-200 dark:border-slate-700 transition-colors duration-200"
+                @click.stop
+            >
+                <div class="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-700">
+                    <h3 class="text-lg font-semibold text-slate-900 dark:text-slate-100">
+                        Confirmar Edición
+                    </h3>
+                    <button
+                        type="button"
+                        @click="showConfirmModal = false"
+                        class="w-9 h-9 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-colors duration-200 flex items-center justify-center"
+                        aria-label="Cerrar"
+                    >
+                        ×
+                    </button>
+                </div>
+
+                <div class="p-6">
+                    <p class="text-sm text-slate-700 dark:text-slate-300 mb-4">
+                        ¿Estás seguro de que deseas editar el mantenimiento #{{ mantenimiento.id }}?
+                    </p>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 mb-4">
+                        Los cambios se guardarán y se aplicarán inmediatamente.
+                    </p>
+
+                    <div class="flex items-center justify-end gap-3">
+                        <button
+                            type="button"
+                            @click="showConfirmModal = false"
+                            class="px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-colors duration-200"
+                        >
+                            Cancelar
+                        </button>
+                        <button
+                            type="button"
+                            @click="confirmSubmit"
+                            :disabled="form.processing"
+                            class="px-4 py-2 rounded-lg bg-slate-900 dark:bg-slate-700 text-white hover:bg-slate-800 dark:hover:bg-slate-600 disabled:opacity-50 font-medium transition-colors duration-200"
+                        >
+                            {{
+                                form.processing
+                                    ? "Guardando..."
+                                    : "Sí, Guardar Cambios"
+                            }}
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
     </AppLayout>
@@ -222,7 +280,7 @@ const form = useForm({
         ? new Date(props.mantenimiento.fecha_fin_programada).toISOString().split("T")[0]
         : null,
     tipo: props.mantenimiento.tipo || "realizado",
-    falla: props.mantenimiento.falla || "",
+    descripcion_mantenimiento: props.mantenimiento.descripcion_mantenimiento || "",
     documentos: [],
     documentos_eliminar: [],
     from_puerta_id: props.fromPuertaId || null, // Para redirección después de actualizar
@@ -285,7 +343,8 @@ const formatFileSize = (bytes) => {
     return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
 };
 
-const submit = () => {
+const confirmSubmit = () => {
+    showConfirmModal.value = false;
     submitUploadForm(
         form,
         route("mantenimientos.update", { mantenimiento: props.mantenimiento.id }),

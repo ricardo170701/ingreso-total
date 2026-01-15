@@ -121,7 +121,7 @@ class SecretariasController extends Controller
         $secretaria->update($data);
 
         return redirect()
-            ->route('dependencias.index')
+            ->route('secretarias.show', $secretaria)
             ->with('message', 'Secretaría actualizada exitosamente.');
     }
 

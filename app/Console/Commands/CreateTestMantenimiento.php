@@ -49,7 +49,7 @@ class CreateTestMantenimiento extends Command
                 'fecha_mantenimiento' => $fechaMantenimiento,
                 'fecha_fin_programada' => $fechaLimite,
                 'tipo' => 'programado',
-                'falla' => 'MANTENIMIENTO PROGRAMADO (VENCIDO) - Registro de prueba',
+                'descripcion_mantenimiento' => 'MANTENIMIENTO PROGRAMADO (VENCIDO) - Registro de prueba',
                 'created_by' => $usuario->id,
             ]);
 
@@ -66,7 +66,7 @@ class CreateTestMantenimiento extends Command
             'fecha_mantenimiento' => $now->toDateString(),
             'fecha_fin_programada' => null,
             'tipo' => 'realizado',
-            'falla' => 'MANTENIMIENTO REALIZADO - Registro de prueba',
+            'descripcion_mantenimiento' => 'MANTENIMIENTO REALIZADO - Registro de prueba',
             'created_by' => $usuario->id,
         ]);
 

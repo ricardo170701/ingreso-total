@@ -55,7 +55,7 @@
             padding-bottom: 5px;
         }
 
-        .falla-content {
+        .descripcion-content {
             background-color: #f5f5f5;
             padding: 10px;
             border: 1px solid #ddd;
@@ -146,10 +146,10 @@
         </div>
     </div>
 
-    @if($mantenimiento->falla)
-    <div class="section-title">FALLA REPORTADA</div>
-    <div class="falla-content">
-        {{ $mantenimiento->falla }}
+    @if($mantenimiento->descripcion_mantenimiento)
+    <div class="section-title">DESCRIPCIÓN DE MANTENIMIENTO</div>
+    <div class="descripcion-content">
+        {{ $mantenimiento->descripcion_mantenimiento }}
     </div>
     @endif
 

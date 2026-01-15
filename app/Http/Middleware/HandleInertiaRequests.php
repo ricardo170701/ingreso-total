@@ -2,6 +2,8 @@
 
 namespace App\Http\Middleware;
 
+use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -39,6 +41,24 @@ class HandleInertiaRequests extends Middleware
             ...parent::share($request),
             'auth' => [
                 'user' => $request->user() ? (function ($user) {
+                    // Fail-safe: si el usuario ya expiró, marcarlo inactivo inmediatamente
+                    // (evita que siga activo hasta que corra el scheduler/cron).
+                    try {
+                        if (($user->activo ?? true) && $user->fecha_expiracion) {
+                            $hoy = Carbon::now()->startOfDay();
+                            $exp = Carbon::parse($user->fecha_expiracion)->startOfDay();
+                            if ($exp->lt($hoy)) {
+                                DB::table('users')->where('id', $user->id)->update([
+                                    'activo' => false,
+                                    'updated_at' => now(),
+                                ]);
+                                $user->activo = false;
+                            }
+                        }
+                    } catch (\Throwable $e) {
+                        // No bloquear la carga de la app por un error de actualización
+                    }
+
                     // Cargar relaciones necesarias para obtener permisos
                     if (!$user->relationLoaded('role')) {
                         $user->load('role');
@@ -55,6 +75,8 @@ class HandleInertiaRequests extends Middleware
                         'name' => $user->name,
                         'email' => $user->email,
                         'foto_perfil' => $user->foto_perfil,
+                        'activo' => (bool) ($user->activo ?? true),
+                        'fecha_expiracion' => $user->fecha_expiracion ? Carbon::parse($user->fecha_expiracion)->format('Y-m-d') : null,
                         'role' => $user->role ? [
                             'id' => $user->role->id,
                             'name' => $user->role->name,
@@ -70,6 +92,7 @@ class HandleInertiaRequests extends Middleware
             'flash' => [
                 'success' => session('success'),
                 'error' => session('error'),
+                'message' => session('message'),
             ],
         ];
     }

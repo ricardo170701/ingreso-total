@@ -68,7 +68,7 @@ class UserController extends Controller
 
     /**
      * POST /api/users
-     * Crea un usuario (funcionario/visitante). La autorización depende de permisos del cargo.
+     * Crea un usuario (visitante/servidor_publico/contratista). La autorización depende de permisos del cargo.
      *
      * @OA\Post(
      *     path="/api/users",
@@ -147,6 +147,7 @@ class UserController extends Controller
 
             'role_id' => $roleId,
             'cargo_id' => $cargoId,
+            'cargo_texto' => $data['cargo_texto'] ?? null,
 
             'name' => $name,
             'nombre' => $data['nombre'] ?? null,

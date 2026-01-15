@@ -36,6 +36,7 @@ class Puerta extends Model
         // Puerta especial (ej: discapacitados)
         'requiere_discapacidad',
         'es_oculta', // Puerta oculta (solo visible con permiso)
+        'requiere_permiso_datacenter', // Puerta de datacenter (requiere permiso especial)
         'activo',
     ];
 
@@ -43,6 +44,7 @@ class Puerta extends Model
         'activo' => 'boolean',
         'requiere_discapacidad' => 'boolean',
         'es_oculta' => 'boolean',
+        'requiere_permiso_datacenter' => 'boolean',
         'tiempo_apertura' => 'integer',
         'tiempo_discapacitados' => 'integer',
         'alto' => 'decimal:2',

@@ -63,8 +63,8 @@
                                 <th class="px-4 py-3 font-semibold">ID</th>
                                 <th class="px-4 py-3 font-semibold">Nombre</th>
                                 <th class="px-4 py-3 font-semibold">Email</th>
-                                <th class="px-4 py-3 font-semibold">Rol</th>
-                                <th class="px-4 py-3 font-semibold">Cargo</th>
+                                <th class="px-4 py-3 font-semibold">Tipo de vinculación</th>
+                                <th class="px-4 py-3 font-semibold">Rol / Cargo</th>
                                 <th class="px-4 py-3 font-semibold">Secretaría / Gerencia</th>
                                 <th class="px-4 py-3 font-semibold">Activo</th>
                                 <th class="px-4 py-3 font-semibold text-right">
@@ -106,10 +106,20 @@
                                 </td>
                                 <td class="px-4 py-3 text-slate-700 dark:text-slate-300">{{ u.email }}</td>
                                 <td class="px-4 py-3 text-slate-700 dark:text-slate-300">
-                                    {{ u.role?.name || "-" }}
+                                    {{ formatTipoVinculacion(u.role?.name) || "-" }}
                                 </td>
                                 <td class="px-4 py-3 text-slate-700 dark:text-slate-300">
-                                    {{ u.cargo?.name || "-" }}
+                                    <div class="min-w-0">
+                                        <div class="truncate">
+                                            {{ u.cargo?.name || "-" }}
+                                        </div>
+                                        <div
+                                            v-if="u.cargo_texto"
+                                            class="text-xs text-slate-500 dark:text-slate-400 truncate"
+                                        >
+                                            Cargo: {{ u.cargo_texto }}
+                                        </div>
+                                    </div>
                                 </td>
                                 <td class="px-4 py-3 text-slate-700 dark:text-slate-300">
                                     <div v-if="u.gerencia">
@@ -118,7 +128,7 @@
                                             {{ u.gerencia.nombre }}
                                         </div>
                                     </div>
-                                    <span v-else>-</span>
+                                    <span v-else class="text-slate-500 dark:text-slate-400 italic">Despacho</span>
                                 </td>
                                 <td class="px-4 py-3">
                                     <span
@@ -228,5 +238,16 @@ const initials = (text) => {
     const parts = t.split(/\s+/).filter(Boolean);
     if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
     return (parts[0][0] || "U").toUpperCase();
+};
+
+const formatTipoVinculacion = (name) => {
+    const map = {
+        visitante: "Visitante",
+        servidor_publico: "Servidor público",
+        contratista: "Contratista",
+        // compatibilidad histórica
+        funcionario: "Servidor público",
+    };
+    return map[name] || name || null;
 };
 </script>

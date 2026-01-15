@@ -60,23 +60,24 @@
                                 type="text"
                                 class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-transparent transition-colors duration-200"
                                 placeholder="Ej: 001-0000000-0"
+                                required
                             />
                         </FormField>
                     </div>
 
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="grid grid-cols-1 gap-4">
                         <FormField
-                            label="Número de Caso"
-                            :error="form.errors.numero_caso"
+                            label="Observaciones"
+                            :error="form.errors.observaciones"
                         >
-                            <input
-                                v-model="form.numero_caso"
-                                type="text"
+                            <textarea
+                                v-model="form.observaciones"
+                                rows="3"
                                 class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-transparent transition-colors duration-200"
-                                placeholder="Número de caso (opcional)"
+                                placeholder="Observaciones adicionales (opcional)"
                             />
                             <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                                Número de caso para seguimiento de solicitud/renovación (opcional)
+                                Notas o comentarios adicionales sobre el usuario (opcional)
                             </p>
                         </FormField>
                     </div>
@@ -96,7 +97,7 @@
                     </div>
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <FormField label="Rol" :error="form.errors.role_id">
+                        <FormField label="Tipo de vinculación" :error="form.errors.role_id">
                             <select
                                 v-model="form.role_id"
                                 class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-transparent transition-colors duration-200"
@@ -107,11 +108,11 @@
                                     :key="r.id"
                                     :value="r.id"
                                 >
-                                    {{ r.name }}
+                                    {{ formatTipoVinculacion(r.name) }}
                                 </option>
                             </select>
                         </FormField>
-                        <FormField v-if="!esVisitante" label="Cargo" :error="form.errors.cargo_id">
+                        <FormField v-if="!esVisitante" label="Rol (permisos)" :error="form.errors.cargo_id">
                             <select
                                 v-model="form.cargo_id"
                                 class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-transparent transition-colors duration-200"
@@ -125,6 +126,20 @@
                                     {{ c.name }}
                                 </option>
                             </select>
+                        </FormField>
+                    </div>
+
+                    <div v-if="!esVisitante" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <FormField label="Cargo (registro)" :error="form.errors.cargo_texto">
+                            <input
+                                v-model="form.cargo_texto"
+                                type="text"
+                                class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-transparent transition-colors duration-200"
+                                placeholder="Cargo/denominación (solo registro)"
+                            />
+                            <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                                Este campo es solo informativo y no afecta los permisos.
+                            </p>
                         </FormField>
                     </div>
 
@@ -158,7 +173,7 @@
                                 :disabled="!form.secretaria_id"
                                 class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-transparent transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                                <option :value="null">Sin gerencia</option>
+                                <option :value="null">Despacho</option>
                                 <option
                                     v-for="ger in gerenciasFiltradas"
                                     :key="ger.id"
@@ -213,32 +228,6 @@
                             <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
                                 Tipo de contrato actual (se guarda incluso sin documento)
                             </p>
-                        </FormField>
-                    </div>
-
-                    <div class="grid grid-cols-1 gap-2">
-                        <FormField
-                            label="Documentos de contrato (PDF) (opcional)"
-                            :error="form.errors.contratos"
-                        >
-                            <input
-                                type="file"
-                                accept="application/pdf"
-                                multiple
-                                @change="onContratosChange"
-                                class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 transition-colors duration-200"
-                            />
-                            <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                                Puedes subir hasta 5 PDFs (máx 10MB cada uno). El tipo de contrato se guarda incluso si no subes documentos.
-                            </p>
-                            <ul
-                                v-if="contratosSeleccionados.length > 0"
-                                class="mt-2 text-sm text-slate-700 dark:text-slate-300 list-disc list-inside"
-                            >
-                                <li v-for="(f, idx) in contratosSeleccionados" :key="idx">
-                                    {{ f.name }}
-                                </li>
-                            </ul>
                         </FormField>
                     </div>
 
@@ -317,15 +306,15 @@ const form = useForm({
     password: "",
     role_id: null,
     cargo_id: null,
+    cargo_texto: "",
     nombre: "",
     apellido: "",
     n_identidad: "",
-    numero_caso: "",
+    observaciones: "",
     secretaria_id: null,
     gerencia_id: null,
     fecha_expiracion: null,
     foto: null,
-    contratos: [],
     tipo_contrato: null,
     activo: true,
     es_discapacitado: false,
@@ -346,13 +335,6 @@ const onFotoChange = (e) => {
     const file = e.target?.files?.[0] || null;
     form.foto = file;
 };
-
-const onContratosChange = (e) => {
-    const files = Array.from(e.target?.files || []);
-    form.contratos = files;
-};
-
-const contratosSeleccionados = computed(() => form.contratos || []);
 
 const fotoPreviewUrl = computed(() => {
     if (!form.foto) return null;
@@ -377,6 +359,17 @@ watch(() => form.tipo_contrato, (nuevoTipo) => {
         form.fecha_expiracion = null;
     }
 });
+
+const formatTipoVinculacion = (name) => {
+    const map = {
+        visitante: "Visitante",
+        servidor_publico: "Servidor público",
+        contratista: "Contratista",
+        // compatibilidad histórica
+        funcionario: "Servidor público",
+    };
+    return map[name] || name;
+};
 
 const submit = () => {
     form.post(route("usuarios.store"), { forceFormData: true });

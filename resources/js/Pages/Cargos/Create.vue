@@ -4,10 +4,10 @@
             <div class="flex items-center justify-between">
                 <div>
                     <h1 class="text-xl font-semibold text-slate-900 dark:text-slate-100">
-                        Crear cargo
+                        Crear rol
                     </h1>
                     <p class="text-sm text-slate-600 dark:text-slate-400">
-                        Registra un nuevo cargo en el sistema.
+                        Registra un nuevo rol (antes “cargo”) en el sistema.
                     </p>
                 </div>
                 <Link
@@ -25,7 +25,7 @@
                             v-model="form.name"
                             type="text"
                             class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-transparent transition-colors duration-200"
-                            placeholder="Ej: Funcionario Medio"
+                            placeholder="Ej: Rol Medio"
                             required
                         />
                     </FormField>
@@ -38,7 +38,7 @@
                             v-model="form.description"
                             rows="3"
                             class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-transparent transition-colors duration-200"
-                            placeholder="Descripción del cargo y sus responsabilidades"
+                            placeholder="Descripción del rol y sus responsabilidades"
                         />
                     </FormField>
 

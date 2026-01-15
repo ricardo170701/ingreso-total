@@ -35,7 +35,7 @@ class RoleController extends Controller
 
         return response()->json(
             Role::query()
-                ->whereIn('name', ['funcionario', 'visitante'])
+                ->whereIn('name', ['visitante', 'servidor_publico', 'contratista', 'funcionario'])
                 ->orderBy('name')
                 ->paginate($perPage)
         );
@@ -67,7 +67,7 @@ class RoleController extends Controller
         }
 
         return response()->json([
-            'message' => 'Operación no permitida. Los roles son fijos: funcionario/visitante.',
+            'message' => 'Operación no permitida. Los roles son fijos: visitante/servidor_publico/contratista.',
         ], 403);
     }
 
@@ -91,7 +91,7 @@ class RoleController extends Controller
             return response()->json(['message' => 'No autorizado.'], 403);
         }
 
-        if (!in_array($role->name, ['funcionario', 'visitante'], true)) {
+        if (!in_array($role->name, ['visitante', 'servidor_publico', 'contratista', 'funcionario'], true)) {
             return response()->json(['message' => 'No encontrado.'], 404);
         }
 
@@ -124,7 +124,7 @@ class RoleController extends Controller
         }
 
         return response()->json([
-            'message' => 'Operación no permitida. Los roles son fijos: funcionario/visitante.',
+            'message' => 'Operación no permitida. Los roles son fijos: visitante/servidor_publico/contratista.',
         ], 403);
     }
 
@@ -149,7 +149,7 @@ class RoleController extends Controller
         }
 
         return response()->json([
-            'message' => 'Operación no permitida. Los roles son fijos: funcionario/visitante.',
+            'message' => 'Operación no permitida. Los roles son fijos: visitante/servidor_publico/contratista.',
         ], 403);
     }
 }

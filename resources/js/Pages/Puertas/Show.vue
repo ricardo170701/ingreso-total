@@ -77,12 +77,44 @@
                 </div>
             </div>
 
-            <div
-                v-if="$page.props.flash?.message"
-                class="p-4 rounded-lg bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 text-green-800 dark:text-green-200 transition-colors duration-200"
+            <!-- Mensaje de éxito (notificación temporal) -->
+            <Transition
+                enter-active-class="transition ease-out duration-300"
+                enter-from-class="opacity-0 translate-x-full"
+                enter-to-class="opacity-100 translate-x-0"
+                leave-active-class="transition ease-in duration-200"
+                leave-from-class="opacity-100 translate-x-0"
+                leave-to-class="opacity-0 translate-x-full"
             >
-                {{ $page.props.flash.message }}
-            </div>
+                <div
+                    v-if="showSuccessMessage"
+                    class="fixed top-4 right-4 z-50 max-w-md"
+                >
+                    <div
+                        class="bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 rounded-lg p-4 shadow-lg flex items-center gap-3"
+                    >
+                        <div class="shrink-0">
+                            <span class="text-2xl">✅</span>
+                        </div>
+                        <div class="flex-1">
+                            <p class="text-sm font-medium text-green-800 dark:text-green-200">
+                                Puerta actualizada exitosamente
+                            </p>
+                            <p class="text-xs text-green-700 dark:text-green-300 mt-1">
+                                Los cambios se han aplicado a la puerta "{{ puerta.nombre }}"
+                            </p>
+                        </div>
+                        <button
+                            type="button"
+                            @click="showSuccessMessage = false"
+                            class="shrink-0 text-green-600 dark:text-green-400 hover:text-green-800 dark:hover:text-green-200 transition-colors"
+                            aria-label="Cerrar"
+                        >
+                            ×
+                        </button>
+                    </div>
+                </div>
+            </Transition>
 
             <!-- Hoja de vida -->
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
@@ -321,7 +353,7 @@
                                 <th class="px-4 py-3 text-left font-semibold text-slate-700 dark:text-slate-300">Fecha</th>
                                 <th class="px-4 py-3 text-left font-semibold text-slate-700 dark:text-slate-300">Tipo</th>
                                 <th class="px-4 py-3 text-left font-semibold text-slate-700 dark:text-slate-300">Fecha límite</th>
-                                <th class="px-4 py-3 text-left font-semibold text-slate-700 dark:text-slate-300">Falla</th>
+                                <th class="px-4 py-3 text-left font-semibold text-slate-700 dark:text-slate-300">Descripción de mantenimiento</th>
                                 <th class="px-4 py-3 text-right font-semibold text-slate-700 dark:text-slate-300">Acciones</th>
                             </tr>
                         </thead>
@@ -351,7 +383,7 @@
                                 </td>
                                 <td class="px-4 py-3 text-slate-700 dark:text-slate-300">
                                     <span class="line-clamp-2">
-                                        {{ m.falla || "-" }}
+                                        {{ m.descripcion_mantenimiento || "-" }}
                                     </span>
                                     <p v-if="(m.documentos?.length || 0) > 0" class="text-xs text-slate-500 dark:text-slate-400 mt-1">
                                         📄 {{ m.documentos.length }} documento(s)
@@ -391,7 +423,7 @@
 <script setup>
 import AppLayout from "@/Layouts/AppLayout.vue";
 import { Link, router, usePage } from "@inertiajs/vue3";
-import { computed, ref, onMounted, onUnmounted, watch } from "vue";
+import { computed, ref, onMounted, onUnmounted, watch, Transition } from "vue";
 import axios from "axios";
 
 const props = defineProps({
@@ -401,6 +433,24 @@ const props = defineProps({
 const page = usePage();
 const userPermissions = computed(() => page.props.auth?.user?.permissions || []);
 const hasPermission = (permission) => userPermissions.value.includes(permission);
+
+// Mensaje de éxito
+const showSuccessMessage = ref(false);
+
+// Mostrar mensaje de éxito si hay flash message
+watch(
+    () => page.props.flash?.message,
+    (message) => {
+        if (message) {
+            showSuccessMessage.value = true;
+            // Ocultar el mensaje después de 5 segundos
+            setTimeout(() => {
+                showSuccessMessage.value = false;
+            }, 5000);
+        }
+    },
+    { immediate: true }
+);
 
 const storageUrl = (path) => {
     if (!path) return "";

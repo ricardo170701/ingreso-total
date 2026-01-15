@@ -96,7 +96,7 @@ class MantenimientosController extends Controller
                 ? ($data['fecha_fin_programada'] ?? null)
                 : null,
             'tipo' => $data['tipo'] ?? 'realizado',
-            'falla' => $data['falla'] ?? null,
+            'descripcion_mantenimiento' => $data['descripcion_mantenimiento'] ?? null,
             'created_by' => $request->user()->id,
         ]);
 
@@ -225,7 +225,7 @@ class MantenimientosController extends Controller
             }
         }
 
-        // Si viene desde una puerta, redirigir a la puerta, si no, a mantenimientos.index
+        // Si viene desde una puerta, redirigir a la puerta, si no, a mantenimientos.show
         $fromPuertaId = $request->input('from_puerta_id');
         if ($fromPuertaId) {
             return redirect()
@@ -234,7 +234,7 @@ class MantenimientosController extends Controller
         }
 
         return redirect()
-            ->route('mantenimientos.index')
+            ->route('mantenimientos.show', $mantenimiento)
             ->with('message', 'Mantenimiento actualizado exitosamente.');
     }
 

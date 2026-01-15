@@ -12,7 +12,8 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule): void
     {
-        // $schedule->command('inspire')->hourly();
+        // Inactivar automáticamente usuarios expirados (diario)
+        $schedule->command('users:deactivate-expired')->dailyAt('00:10');
     }
 
     /**

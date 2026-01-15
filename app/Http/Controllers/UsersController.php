@@ -9,11 +9,9 @@ use App\Models\Role;
 use App\Models\Secretaria;
 use App\Models\Gerencia;
 use App\Models\User;
-use App\Models\UserDocumento;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
-use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -30,7 +28,7 @@ class UsersController extends Controller
             ->with(['role', 'cargo', 'gerencia.secretaria.piso', 'createdBy', 'updatedBy', 'creadoPor'])
             ->orderByDesc('id');
 
-        // Buscador (nombre, email, nombre/apellido, identidad, caso)
+        // Buscador (nombre, email, nombre/apellido, identidad, observaciones)
         if ($search !== '') {
             $q->where(function ($sub) use ($search) {
                 $sub->where('email', 'like', '%' . $search . '%')
@@ -38,7 +36,7 @@ class UsersController extends Controller
                     ->orWhere('nombre', 'like', '%' . $search . '%')
                     ->orWhere('apellido', 'like', '%' . $search . '%')
                     ->orWhere('n_identidad', 'like', '%' . $search . '%')
-                    ->orWhere('numero_caso', 'like', '%' . $search . '%');
+                    ->orWhere('observaciones', 'like', '%' . $search . '%');
             });
         }
 
@@ -54,6 +52,7 @@ class UsersController extends Controller
                 'fecha_expiracion' => $u->fecha_expiracion?->format('Y-m-d'),
                 'role' => $u->role ? ['id' => $u->role->id, 'name' => $u->role->name] : null,
                 'cargo' => $u->cargo ? ['id' => $u->cargo->id, 'name' => $u->cargo->name] : null,
+                'cargo_texto' => $u->cargo_texto,
                 'foto_perfil' => $u->foto_perfil,
                 'gerencia' => $u->gerencia ? [
                     'id' => $u->gerencia->id,
@@ -99,7 +98,7 @@ class UsersController extends Controller
 
         return Inertia::render('Users/Create', [
             'roles' => Role::query()
-                ->whereIn('name', ['funcionario', 'visitante'])
+                ->whereIn('name', ['visitante', 'servidor_publico', 'contratista', 'funcionario'])
                 ->orderBy('name')
                 ->get(['id', 'name']),
             'cargos' => Cargo::query()->orderBy('name')->get(['id', 'name']),
@@ -121,7 +120,7 @@ class UsersController extends Controller
         // role_id puede venir por role_name
         if (empty($data['role_id']) && !empty($data['role_name'])) {
             $data['role_id'] = Role::query()
-                ->whereIn('name', ['funcionario', 'visitante'])
+                ->whereIn('name', ['visitante', 'servidor_publico', 'contratista', 'funcionario'])
                 ->where('name', $data['role_name'])
                 ->value('id');
         }
@@ -142,6 +141,7 @@ class UsersController extends Controller
 
         if ($roleName === 'visitante') {
             $data['cargo_id'] = null;
+            $data['cargo_texto'] = null;
             $data['gerencia_id'] = null;
             $data['fecha_expiracion'] = null;
         }
@@ -164,63 +164,15 @@ class UsersController extends Controller
         $data['activo'] = array_key_exists('activo', $data) ? (bool) $data['activo'] : true;
         $data['es_discapacitado'] = array_key_exists('es_discapacitado', $data) ? (bool) $data['es_discapacitado'] : false;
 
-        // Evitar que array de archivos termine en mass assignment
-        unset($data['contratos']);
-
         // Auditoría
         $actorId = $request->user()?->id;
         $data['creado_por'] = $data['creado_por'] ?? $actorId; // compat (campo legacy)
         $data['created_by'] = $data['created_by'] ?? $actorId;
 
-        // tipo_contrato se guarda en el usuario incluso sin documento
+        // tipo_contrato se guarda en el usuario (sin documentos PDF)
         // Ya viene en $data desde el request validado
-        
+
         $user = User::query()->create($data);
-
-        // Si hay tipo_contrato pero no hay archivos, crear un registro en user_documentos sin path
-        // para que aparezca en el historial y se le pueda agregar un documento después
-        if ($tipoContrato && !$request->hasFile('contratos')) {
-            // Verificar si ya existe un contrato sin documento con este tipo_contrato
-            $existeContratoSinDocumento = UserDocumento::query()
-                ->where('user_id', $user->id)
-                ->where('tipo', 'contrato')
-                ->where('tipo_contrato', $tipoContrato)
-                ->whereNull('path')
-                ->exists();
-            
-            if (!$existeContratoSinDocumento) {
-                UserDocumento::query()->create([
-                    'user_id' => $user->id,
-                    'tipo' => 'contrato',
-                    'tipo_contrato' => $tipoContrato,
-                    'nombre_original' => null,
-                    'mime' => null,
-                    'size' => null,
-                    'path' => null,
-                    'subido_por' => $request->user()?->id,
-                ]);
-            }
-        }
-
-        // Subir contratos PDF opcionales (si hay archivos, también guardamos el tipo_contrato en el documento)
-        if ($request->hasFile('contratos')) {
-            foreach (($request->file('contratos') ?? []) as $file) {
-                if (!$file) {
-                    continue;
-                }
-                $path = $file->store("user_documentos/{$user->id}/contratos");
-                UserDocumento::query()->create([
-                    'user_id' => $user->id,
-                    'tipo' => 'contrato',
-                    'tipo_contrato' => $tipoContrato ?? $user->tipo_contrato,
-                    'nombre_original' => $file->getClientOriginalName(),
-                    'mime' => $file->getClientMimeType(),
-                    'size' => $file->getSize(),
-                    'path' => $path,
-                    'subido_por' => $request->user()?->id,
-                ]);
-            }
-        }
 
         return redirect()->route('usuarios.index')->with('success', 'Usuario creado.');
     }
@@ -236,9 +188,6 @@ class UsersController extends Controller
             'createdBy',
             'updatedBy',
             'creadoPor',
-            'documentos' => function ($q) {
-                $q->where('tipo', 'contrato')->orderBy('created_at', 'desc');
-            },
         ]);
 
         // Agregar nombres de auditoría para facilitar el acceso en la vista
@@ -273,7 +222,7 @@ class UsersController extends Controller
                 'nombre' => $user->nombre,
                 'apellido' => $user->apellido,
                 'n_identidad' => $user->n_identidad,
-                'numero_caso' => $user->numero_caso,
+                'observaciones' => $user->observaciones,
                 'gerencia_id' => $user->gerencia_id,
                 'secretaria_id' => $user->gerencia?->secretaria_id ?? null,
                 'foto_perfil' => $user->foto_perfil,
@@ -282,22 +231,11 @@ class UsersController extends Controller
                 'fecha_expiracion' => $user->fecha_expiracion?->format('Y-m-d'),
                 'tipo_contrato' => $user->tipo_contrato,
                 'role_id' => $user->role_id,
-                'cargo_id' => $user->cargo_id,
-            ],
-            'documentos' => $user->documentos()
-                ->where('tipo', 'contrato')
-                ->orderBy('created_at', 'desc')
-                ->get()
-                ->map(fn(UserDocumento $d) => [
-                    'id' => $d->id,
-                    'nombre' => $d->nombre_original,
-                    'tipo_contrato' => $d->tipo_contrato,
-                    'size' => $d->size,
-                    'path' => $d->path,
-                    'created_at' => $d->created_at?->format('d/m/Y H:i'),
-                ]),
-            'roles' => Role::query()
-                ->whereIn('name', ['funcionario', 'visitante'])
+            'cargo_id' => $user->cargo_id,
+            'cargo_texto' => $user->cargo_texto,
+        ],
+        'roles' => Role::query()
+                ->whereIn('name', ['visitante', 'servidor_publico', 'contratista', 'funcionario'])
                 ->orderBy('name')
                 ->get(['id', 'name']),
             'cargos' => Cargo::query()->orderBy('name')->get(['id', 'name']),
@@ -318,7 +256,7 @@ class UsersController extends Controller
 
         if (empty($data['role_id']) && !empty($data['role_name'])) {
             $data['role_id'] = Role::query()
-                ->whereIn('name', ['funcionario', 'visitante'])
+                ->whereIn('name', ['visitante', 'servidor_publico', 'contratista', 'funcionario'])
                 ->where('name', $data['role_name'])
                 ->value('id');
         }
@@ -342,6 +280,7 @@ class UsersController extends Controller
         $roleNameFinal = $roleIdFinal ? Role::query()->whereKey($roleIdFinal)->value('name') : null;
         if ($roleNameFinal === 'visitante') {
             $data['cargo_id'] = null;
+            $data['cargo_texto'] = null;
             $data['gerencia_id'] = null;
             $data['fecha_expiracion'] = null;
         }
@@ -360,149 +299,15 @@ class UsersController extends Controller
             $data['name'] = trim($nombre . ' ' . $apellido) ?: $user->name;
         }
 
-        // Evitar que array de archivos termine en mass assignment
-        unset($data['contratos']);
-
         // Auditoría (última edición) - debe ir ANTES del update()
         $data['updated_by'] = $request->user()?->id;
 
-        // tipo_contrato se guarda en el usuario incluso sin documento
+        // tipo_contrato se guarda en el usuario (sin documentos PDF)
         // Ya viene en $data desde el request validado
-        
+
         $user->update($data);
 
-        // Si hay tipo_contrato pero no hay archivos nuevos, crear/actualizar registro en user_documentos sin path
-        // para que aparezca en el historial y se le pueda agregar un documento después
-        if ($tipoContrato && !$request->hasFile('contratos')) {
-            // Buscar si ya existe un contrato sin documento con el nuevo tipo_contrato
-            $contratoSinDocumentoExistente = UserDocumento::query()
-                ->where('user_id', $user->id)
-                ->where('tipo', 'contrato')
-                ->where('tipo_contrato', $tipoContrato)
-                ->whereNull('path')
-                ->first();
-            
-            if (!$contratoSinDocumentoExistente) {
-                // Si no existe uno con el nuevo tipo_contrato, buscar si hay alguno sin documento con otro tipo
-                $contratoSinDocumentoAnterior = UserDocumento::query()
-                    ->where('user_id', $user->id)
-                    ->where('tipo', 'contrato')
-                    ->whereNull('path')
-                    ->first();
-                
-                if ($contratoSinDocumentoAnterior) {
-                    // Si existe uno con otro tipo_contrato, actualizarlo al nuevo
-                    $contratoSinDocumentoAnterior->update([
-                        'tipo_contrato' => $tipoContrato,
-                        'subido_por' => $request->user()?->id,
-                    ]);
-                } else {
-                    // Si no existe ninguno sin documento, crear uno nuevo
-                    UserDocumento::query()->create([
-                        'user_id' => $user->id,
-                        'tipo' => 'contrato',
-                        'tipo_contrato' => $tipoContrato,
-                        'nombre_original' => null,
-                        'mime' => null,
-                        'size' => null,
-                        'path' => null,
-                        'subido_por' => $request->user()?->id,
-                    ]);
-                }
-            }
-            // Si ya existe uno con el tipo_contrato correcto, no hacer nada
-        }
-
-        // Subir contratos PDF opcionales (si hay archivos, también guardamos el tipo_contrato en el documento)
-        if ($request->hasFile('contratos')) {
-            foreach (($request->file('contratos') ?? []) as $file) {
-                if (!$file) {
-                    continue;
-                }
-                $path = $file->store("user_documentos/{$user->id}/contratos");
-                UserDocumento::query()->create([
-                    'user_id' => $user->id,
-                    'tipo' => 'contrato',
-                    'tipo_contrato' => $tipoContrato ?? $user->tipo_contrato,
-                    'nombre_original' => $file->getClientOriginalName(),
-                    'mime' => $file->getClientMimeType(),
-                    'size' => $file->getSize(),
-                    'path' => $path,
-                    'subido_por' => $request->user()?->id,
-                ]);
-            }
-        }
-
-        return redirect()->route('usuarios.index')->with('success', 'Usuario actualizado.');
-    }
-
-    public function downloadDocumento(Request $request, User $user, UserDocumento $documento)
-    {
-        $this->authorize('update', $user);
-
-        if ($documento->user_id !== $user->id) {
-            abort(404);
-        }
-
-        if (!$documento->path || !Storage::exists($documento->path)) {
-            abort(404, 'Archivo no encontrado o no hay documento adjunto.');
-        }
-
-        $filename = $documento->nombre_original ?: ('contrato_' . $documento->id . '.pdf');
-        return Storage::download($documento->path, $filename);
-    }
-
-    public function updateDocumento(Request $request, User $user, UserDocumento $documento): RedirectResponse
-    {
-        $this->authorize('update', $user);
-
-        if ($documento->user_id !== $user->id) {
-            abort(404);
-        }
-
-        $request->validate([
-            'documento' => ['required', 'file', 'mimes:pdf', 'max:10240'],
-        ]);
-
-        if (!$request->hasFile('documento')) {
-            return redirect()->back()->with('error', 'No se proporcionó ningún archivo.');
-        }
-
-        $file = $request->file('documento');
-
-        // Si ya existe un archivo, eliminarlo
-        if ($documento->path && Storage::exists($documento->path)) {
-            Storage::delete($documento->path);
-        }
-
-        $path = $file->store("user_documentos/{$user->id}/contratos");
-
-        $documento->update([
-            'nombre_original' => $file->getClientOriginalName(),
-            'mime' => $file->getClientMimeType(),
-            'size' => $file->getSize(),
-            'path' => $path,
-            'subido_por' => $request->user()?->id,
-        ]);
-
-        return redirect()->back()->with('success', 'Documento agregado correctamente.');
-    }
-
-    public function destroyDocumento(Request $request, User $user, UserDocumento $documento): RedirectResponse
-    {
-        $this->authorize('update', $user);
-
-        if ($documento->user_id !== $user->id) {
-            abort(404);
-        }
-
-        if ($documento->path && Storage::exists($documento->path)) {
-            Storage::delete($documento->path);
-        }
-
-        $documento->delete();
-
-        return redirect()->back()->with('success', 'Documento eliminado.');
+        return redirect()->route('usuarios.show', $user)->with('message', 'Usuario actualizado exitosamente.');
     }
 
     public function destroy(User $user): RedirectResponse

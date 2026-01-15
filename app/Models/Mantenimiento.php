@@ -16,7 +16,7 @@ class Mantenimiento extends Model
         'fecha_mantenimiento',
         'fecha_fin_programada',
         'tipo',
-        'falla',
+        'descripcion_mantenimiento',
         'created_by',
         'updated_by',
     ];

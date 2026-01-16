@@ -222,6 +222,28 @@ class TarjetasNfcController extends Controller
             },
         ]);
 
+        $pisoIds = $tarjetaNfc->puertas
+            ->pluck('piso_id')
+            ->unique()
+            ->filter()
+            ->values()
+            ->toArray();
+
+        $pisosAutorizados = [];
+        if (count($pisoIds) > 0) {
+            // Ordenar por "orden" si existe, y luego por nombre
+            $pisosAutorizados = Piso::query()
+                ->whereIn('id', $pisoIds)
+                ->orderBy('orden')
+                ->orderBy('nombre')
+                ->get(['id', 'nombre'])
+                ->map(fn (Piso $p) => [
+                    'id' => $p->id,
+                    'nombre' => $p->nombre,
+                ])
+                ->toArray();
+        }
+
         return Inertia::render('TarjetasNfc/Show', [
             'tarjeta' => [
                 'id' => $tarjetaNfc->id,
@@ -254,6 +276,7 @@ class TarjetasNfcController extends Controller
                     'id' => $tarjetaNfc->asignadoPor->id,
                     'name' => $tarjetaNfc->asignadoPor->name,
                 ] : null,
+                'pisos_autorizados' => $pisosAutorizados,
                 'puertas' => $tarjetaNfc->puertas->map(fn($p) => [
                     'id' => $p->id,
                     'nombre' => $p->nombre,

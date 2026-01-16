@@ -152,20 +152,24 @@
                         </div>
                     </div>
 
-                    <div v-if="tarjeta.puertas && tarjeta.puertas.length > 0">
-                        <h2 class="text-sm font-semibold text-slate-900 dark:text-slate-100 mb-3">Puertas Autorizadas ({{ tarjeta.puertas.length }})</h2>
-                        <div class="space-y-2">
-                            <div
-                                v-for="p in tarjeta.puertas"
-                                :key="p.id"
-                                class="p-3 bg-slate-50 dark:bg-slate-700 rounded-lg border border-slate-200 dark:border-slate-600"
+                    <div v-if="tarjeta.pisos_autorizados && tarjeta.pisos_autorizados.length > 0">
+                        <h2 class="text-sm font-semibold text-slate-900 dark:text-slate-100 mb-3">
+                            Pisos Autorizados ({{ tarjeta.pisos_autorizados.length }})
+                        </h2>
+
+                        <div class="flex flex-wrap gap-2">
+                            <span
+                                v-for="piso in tarjeta.pisos_autorizados"
+                                :key="piso.id"
+                                class="inline-flex items-center px-3 py-1 rounded-full text-sm border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 text-slate-800 dark:text-slate-100"
                             >
-                                <div class="font-medium text-slate-900 dark:text-slate-100">{{ p.nombre }}</div>
-                                <div v-if="p.pivot.hora_inicio || p.pivot.hora_fin" class="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                                    Horario: {{ p.pivot.hora_inicio || "00:00" }} - {{ p.pivot.hora_fin || "23:59" }}
-                                </div>
-                            </div>
+                                {{ piso.nombre }}
+                            </span>
                         </div>
+
+                        <p class="mt-2 text-xs text-slate-500 dark:text-slate-400">
+                            Nota: los permisos se aplican a las puertas activas de estos pisos.
+                        </p>
                     </div>
 
                     <div v-if="tarjeta.observaciones">

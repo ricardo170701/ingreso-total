@@ -260,10 +260,7 @@ class IngresoController extends Controller
             }
         }
 
-        // Para visitantes: registrar a qué gerencia va (solo cuando se genera para otros)
-        if ($puedeCrearParaOtros && $targetRole === 'visitante' && empty($data['gerencia_id'])) {
-            return back()->withErrors(['gerencia_id' => 'Para visitantes debes seleccionar la gerencia destino.']);
-        }
+        // Para visitantes: si no se envía gerencia, se registra como "Despacho" (null)
 
         // Validar cargo para no visitantes
         if ($targetRole !== 'visitante' && !$hasPuertas && !$targetUser->cargo_id) {

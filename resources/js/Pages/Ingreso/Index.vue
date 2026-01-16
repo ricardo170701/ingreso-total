@@ -120,10 +120,10 @@
                                     Para funcionarios: el código QR está activo hasta la fecha de expiración del usuario. Para visitantes: el QR es válido por 15 días desde su generación.
                                 </li>
                                 <li>
-                                    Usa este QR para acceder a las puertas autorizadas.
+                                    Usa este QR para acceder a los accesos autorizados.
                                 </li>
                                 <li>
-                                    Puedes descargar o imprimir el código QR mostrado.
+                                    Muestra este QR en portería para permitir el ingreso.
                                 </li>
                             </ul>
                         </div>
@@ -292,16 +292,15 @@
                                 </select>
                             </FormField>
                             <FormField
-                                label="Gerencia destino (obligatorio para visitantes)"
+                                label="Gerencia destino (opcional)"
                                 :error="form.errors.gerencia_id"
                             >
                                 <select
                                     v-model="form.gerencia_id"
                                     :disabled="!form.secretaria_id"
                                     class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-transparent transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                                    required
                                 >
-                                    <option :value="null">Selecciona una gerencia</option>
+                                    <option :value="null">Despacho</option>
                                     <option
                                         v-for="ger in gerenciasFiltradas"
                                         :key="ger.id"
@@ -314,7 +313,7 @@
                                     Selecciona una secretaría primero
                                 </p>
                                 <p v-else class="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                                    Este dato se registra en el QR del visitante.
+                                    Si no seleccionas gerencia, el destino se registrará como <strong>Despacho</strong>.
                                 </p>
                             </FormField>
                         </div>
@@ -525,21 +524,6 @@
                                 />
                             </FormField>
                         </div>
-                        <FormField
-                            label="Días de la Semana"
-                            :error="form.errors.dias_semana"
-                        >
-                            <input
-                                v-model="form.dias_semana"
-                                type="text"
-                                class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-transparent transition-colors duration-200"
-                                placeholder="Ej: 1,2,3,4,5 (1=Lunes, 7=Domingo)"
-                            />
-                            <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                                Deja vacío para todos los días. Formato: números
-                                separados por comas (1-7)
-                            </p>
-                        </FormField>
                     </div>
 
                     <!-- Mensaje informativo para staff -->
@@ -624,11 +608,11 @@
                                 </li>
                                 <li>
                                     El usuario puede usar este QR para acceder a
-                                    las puertas autorizadas.
+                                    los accesos autorizados.
                                 </li>
                                 <li>
-                                    Puedes descargar o imprimir el código QR
-                                    mostrado.
+                                    Muestra este QR en portería para permitir el
+                                    ingreso.
                                 </li>
                             </ul>
                         </div>
@@ -886,6 +870,13 @@ watch(
     }
 );
 
+const toIsoDateLocal = (d) => {
+    const pad = (n) => String(n).padStart(2, "0");
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+};
+
+const todayIsoLocal = () => toIsoDateLocal(new Date());
+
 // Si no puede crear para otros, pre-seleccionar el usuario actual
 onMounted(() => {
     if (!props.puedeCrearParaOtros && currentUser.value && usuariosLocal.value.length === 1) {
@@ -895,41 +886,6 @@ onMounted(() => {
     // showMiQr ya se inicializa antes del onMounted, pero aquí lo confirmamos por si acaso
     if (!props.puedeCrearParaOtros && props.qrPersonal && props.qrPersonal.id && !showMiQr.value) {
         showMiQr.value = true;
-    }
-
-    // Si el usuario actual es visitante, establecer valores por defecto de seguridad
-    if (esVisitante.value) {
-        const hoy = new Date();
-        const fechaHoy = hoy.toISOString().split('T')[0]; // Formato YYYY-MM-DD
-
-        form.hora_inicio = '08:00';
-        form.hora_fin = '19:00';
-        form.fecha_inicio = fechaHoy;
-        form.fecha_fin = fechaHoy;
-    }
-
-    // Si hay un usuario seleccionado y es visitante, establecer valores por defecto
-    if (form.user_id) {
-        const usuario = usuariosLocal.value.find((u) => u.id === form.user_id);
-        if (usuario?.role?.name === 'visitante') {
-            const hoy = new Date();
-            const fechaHoy = hoy.toISOString().split('T')[0];
-
-            if (!form.hora_inicio) form.hora_inicio = '08:00';
-            if (!form.hora_fin) form.hora_fin = '19:00';
-            if (!form.fecha_inicio) form.fecha_inicio = fechaHoy;
-            if (!form.fecha_fin) form.fecha_fin = fechaHoy;
-
-            // Seleccionar automáticamente el piso 1 (ID 3) si está disponible
-            if (props.pisos && props.pisos.length > 0) {
-                // Buscar primero por ID 3 (piso 1)
-                const piso1 = props.pisos.find(p => p.id === 3);
-
-                if (piso1 && form.pisos.length === 0) {
-                    form.pisos = [piso1.id];
-                }
-            }
-        }
     }
 
     // Sincronizar formTarjetaNfc con form cuando cambia el usuario seleccionado
@@ -1209,8 +1165,7 @@ watch(
             form.pisos = [];
         } else {
             // Cuando se selecciona un visitante, establecer valores por defecto de seguridad
-            const hoy = new Date();
-            const fechaHoy = hoy.toISOString().split('T')[0]; // Formato YYYY-MM-DD
+            const fechaHoy = todayIsoLocal(); // Formato YYYY-MM-DD (local)
 
             // Solo establecer si no tienen valores ya asignados
             if (!form.hora_inicio) {
@@ -1223,7 +1178,8 @@ watch(
                 form.fecha_inicio = fechaHoy;
             }
             if (!form.fecha_fin) {
-                form.fecha_fin = fechaHoy;
+                // Predeterminado: el día vigente (mismo día de inicio)
+                form.fecha_fin = form.fecha_inicio || fechaHoy;
             }
 
             // Seleccionar automáticamente el piso 1 (ID 3) si está disponible
@@ -1252,6 +1208,8 @@ watch(
 );
 
 const submit = () => {
+    // Siempre: todos los días
+    form.dias_semana = "1,2,3,4,5,6,7";
     form.post(route("ingreso.generate"), {
         preserveScroll: true,
     });
@@ -1428,7 +1386,8 @@ const asignarTarjetaNfc = async () => {
     formTarjetaNfc.pisos = [...form.pisos];
     formTarjetaNfc.hora_inicio = form.hora_inicio;
     formTarjetaNfc.hora_fin = form.hora_fin;
-    formTarjetaNfc.dias_semana = form.dias_semana;
+    // Siempre: todos los días
+    formTarjetaNfc.dias_semana = "1,2,3,4,5,6,7";
     formTarjetaNfc.fecha_inicio = form.fecha_inicio;
     formTarjetaNfc.fecha_fin = form.fecha_fin;
 

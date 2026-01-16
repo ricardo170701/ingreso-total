@@ -119,7 +119,7 @@ class CodigoQrController extends Controller
         // Para staff (servidor público/contratista):
         // - Si tiene fecha_expiracion: usar esa fecha
         // - Si NO tiene fecha_expiracion (contrato indefinido): null (el acceso se controla solo por campo 'activo')
-        // Para visitantes: mantener 15 días
+        // Para visitantes: si envía fecha_fin (y opcional hora_fin), usarla como expiración; si no, mantener 15 días
         $staffRoles = ['servidor_publico', 'contratista', 'funcionario']; // 'funcionario' legado
         $isStaff = in_array($targetRole, $staffRoles, true);
 
@@ -131,7 +131,17 @@ class CodigoQrController extends Controller
                 $expiresAt = null;
             }
         } else {
-            $expiresAt = $now->copy()->addDays(15);
+            $fechaFin = $data['fecha_fin'] ?? $data['fecha_inicio'] ?? null;
+            $horaFin = $data['hora_fin'] ?? null;
+            if ($fechaFin) {
+                if ($horaFin) {
+                    $expiresAt = Carbon::createFromFormat('Y-m-d H:i', $fechaFin . ' ' . $horaFin)->setSecond(59);
+                } else {
+                    $expiresAt = Carbon::parse($fechaFin)->endOfDay();
+                }
+            } else {
+                $expiresAt = $now->copy()->addDays(15);
+            }
         }
 
         // Token opaco (para QR) + hash (para BD)

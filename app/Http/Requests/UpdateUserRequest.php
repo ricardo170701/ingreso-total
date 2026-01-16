@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Models\Role;
 use App\Models\User;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -24,10 +25,20 @@ class UpdateUserRequest extends FormRequest
     public function rules(): array
     {
         $userParam = $this->route('user');
-        $userId = $userParam instanceof User ? $userParam->id : $userParam;
+        $user = $userParam instanceof User ? $userParam : null;
+        $userId = $user?->id ?? $userParam;
+
+        $roleName = $this->inputRoleName($user);
 
         return [
-            'email' => ['sometimes', 'required', 'email', 'max:255', Rule::unique('users', 'email')->ignore($userId)],
+            // Visitantes pueden no tener correo (no podrán iniciar sesión ni generar QR)
+            'email' => array_values(array_filter([
+                'sometimes',
+                $roleName === 'visitante' ? 'nullable' : 'required',
+                'email',
+                'max:255',
+                Rule::unique('users', 'email')->ignore($userId),
+            ])),
             'password' => ['nullable', 'string', 'min:8', 'max:255'],
 
             'role_id' => [
@@ -70,5 +81,36 @@ class UpdateUserRequest extends FormRequest
             'fecha_expiracion' => ['nullable', 'date'],
             'es_discapacitado' => ['nullable', 'boolean'],
         ];
+    }
+
+    protected function prepareForValidation(): void
+    {
+        // Convertir "" -> null para que "nullable" funcione como se espera
+        if ($this->has('email')) {
+            $email = $this->input('email');
+            if (is_string($email) && trim($email) === '') {
+                $this->merge(['email' => null]);
+            }
+        }
+    }
+
+    private function inputRoleName(?User $user): ?string
+    {
+        $roleName = $this->input('role_name');
+        if (is_string($roleName) && $roleName !== '') {
+            return $roleName;
+        }
+
+        $roleId = $this->input('role_id');
+        if ($roleId) {
+            return Role::query()->whereKey($roleId)->value('name');
+        }
+
+        $roleIdFromUser = $user?->role_id;
+        if ($roleIdFromUser) {
+            return Role::query()->whereKey($roleIdFromUser)->value('name');
+        }
+
+        return null;
     }
 }

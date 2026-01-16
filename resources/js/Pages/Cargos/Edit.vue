@@ -108,21 +108,32 @@
                     asignado según las reglas de horario y vigencia.
                 </p>
                 <form @submit.prevent="submitPiso">
-                    <FormField label="Piso" :error="formPiso.errors.piso_id">
-                        <select
-                            v-model="formPiso.piso_id"
-                            class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-transparent transition-colors duration-200"
-                            required
+                    <FormField
+                        label="Pisos"
+                        :error="formPiso.errors.pisos || formPiso.errors.piso_id"
+                    >
+                        <div
+                            class="space-y-2 max-h-56 overflow-y-auto border border-slate-200 dark:border-slate-700 rounded-lg p-3 bg-white dark:bg-slate-700 transition-colors duration-200"
                         >
-                            <option value="">Selecciona un piso</option>
-                            <option
+                            <label
                                 v-for="piso in todosLosPisos"
                                 :key="piso.id"
-                                :value="piso.id"
+                                class="flex items-center gap-2 p-2 hover:bg-slate-50 dark:hover:bg-slate-600 rounded transition-colors duration-200 cursor-pointer"
                             >
-                                {{ piso.nombre }}
-                            </option>
-                        </select>
+                                <input
+                                    type="checkbox"
+                                    :value="piso.id"
+                                    v-model="formPiso.pisos"
+                                    class="h-4 w-4 text-green-600 dark:text-green-500 border-slate-300 dark:border-slate-600 rounded focus:ring-green-500 dark:focus:ring-green-400"
+                                />
+                                <span class="font-medium text-slate-900 dark:text-white">
+                                    {{ piso.nombre }}
+                                </span>
+                            </label>
+                        </div>
+                        <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                            Puedes seleccionar varios pisos. Se aplicarán las mismas reglas de horario/vigencia a todos.
+                        </p>
                     </FormField>
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
@@ -568,7 +579,7 @@ const formCargo = useForm({
 });
 
 const formPiso = useForm({
-    piso_id: null,
+    pisos: [],
     hora_inicio: null,
     hora_fin: null,
     dias_semana: "1,2,3,4,5,6,7",
@@ -585,6 +596,8 @@ const submitPiso = () => {
     formPiso.post(route("cargos.pisos.store", { cargo: props.cargo.id }), {
         onSuccess: () => {
             formPiso.reset();
+            // Resetear a estructura esperada (arrays)
+            formPiso.pisos = [];
         },
     });
 };

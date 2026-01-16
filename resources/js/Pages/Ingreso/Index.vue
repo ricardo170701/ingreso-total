@@ -540,6 +540,7 @@
 
                     <div class="flex items-center justify-end gap-2 pt-2">
                         <button
+                            v-if="!visitanteSinCorreoSeleccionado"
                             type="submit"
                             :disabled="form.processing"
                             class="w-full sm:w-auto px-6 py-2 rounded-lg bg-green-600 dark:bg-green-700 text-white hover:bg-green-700 dark:hover:bg-green-600 disabled:opacity-50 font-medium transition-colors duration-200"
@@ -548,6 +549,12 @@
                                 form.processing ? "Generando..." : "Generar QR"
                             }}
                         </button>
+                        <div
+                            v-else
+                            class="w-full sm:w-auto px-4 py-2 rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/30 text-amber-800 dark:text-amber-200 text-sm"
+                        >
+                            Este visitante no tiene correo: no se genera QR. Asigna una tarjeta NFC.
+                        </div>
                     </div>
                 </form>
             </div>
@@ -691,14 +698,16 @@
                         </FormField>
                     </div>
 
-                    <FormField label="Email" :error="visitanteErrors.email">
+                    <FormField label="Email (opcional)" :error="visitanteErrors.email">
                         <input
                             v-model="visitanteForm.email"
                             type="email"
                             class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-transparent transition-colors duration-200"
                             placeholder="correo@ejemplo.com"
-                            required
                         />
+                        <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                            Si no tiene correo, se creará como <strong>visitante sin correo</strong>: no tendrá login ni QR, solo se le puede asignar tarjeta NFC.
+                        </p>
                     </FormField>
 
                     <FormField label="Foto (opcional)" :error="visitanteErrors.foto">
@@ -941,6 +950,13 @@ const usuarioSeleccionado = computed(() => {
 const isStaffUsuarioSeleccionado = computed(() => {
     const roleName = usuarioSeleccionado.value?.role?.name;
     return ["servidor_publico", "contratista", "funcionario"].includes(roleName);
+});
+
+const visitanteSinCorreoSeleccionado = computed(() => {
+    return (
+        usuarioSeleccionado.value?.role?.name === "visitante" &&
+        !usuarioSeleccionado.value?.email
+    );
 });
 
 // ===== Selector buscable de usuarios (Ingreso) =====

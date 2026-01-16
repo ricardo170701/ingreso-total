@@ -240,6 +240,13 @@ class IngresoController extends Controller
 
         $targetRole = $targetUser->role?->name;
 
+        // Nuevo tipo: visitante sin correo -> no se genera QR (solo tarjeta NFC)
+        if ($targetRole === 'visitante' && empty($targetUser->email)) {
+            return back()->withErrors([
+                'user_id' => 'Este visitante no tiene correo electrónico. No requiere QR: solo se puede asignar tarjeta NFC.',
+            ]);
+        }
+
         $puertas = $data['puertas'] ?? [];
         $pisos = $data['pisos'] ?? [];
         $hasPuertas = is_array($puertas) && count($puertas) > 0;
@@ -525,6 +532,11 @@ class IngresoController extends Controller
             return response()->json(['message' => 'No autenticado.'], 401);
         }
 
+        // Normalizar email: "" -> null
+        if (is_string($request->input('email')) && trim((string) $request->input('email')) === '') {
+            $request->merge(['email' => null]);
+        }
+
         // Visitante no puede crear visitantes
         if (($actor?->role?->name ?? null) === 'visitante') {
             return response()->json(['message' => 'No autorizado.'], 403);
@@ -537,7 +549,8 @@ class IngresoController extends Controller
         $data = $request->validate([
             'nombre' => ['required', 'string', 'max:100'],
             'apellido' => ['required', 'string', 'max:100'],
-            'email' => ['required', 'email', 'max:255', 'unique:users,email'],
+            // Email opcional: si no se proporciona, el visitante NO podrá iniciar sesión ni generar QR.
+            'email' => ['nullable', 'email', 'max:255', 'unique:users,email'],
             'n_identidad' => ['required', 'string', 'max:50', 'unique:users,n_identidad'],
             'observaciones' => ['nullable', 'string', 'max:500'],
             'foto' => ['nullable', 'file', 'image', 'max:4096'],
@@ -563,7 +576,7 @@ class IngresoController extends Controller
 
         $user = User::query()->create([
             'name' => $name,
-            'email' => $data['email'],
+            'email' => $data['email'] ?? null,
             'password' => $randomPassword,
             'role_id' => $roleVisitanteId,
             'cargo_id' => null,

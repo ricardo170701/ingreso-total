@@ -9,7 +9,7 @@
                         {{ user.name || user.email }}
                     </h1>
                     <p class="text-sm text-slate-600 dark:text-slate-400">
-                        {{ user.email }}
+                        {{ user.email || "Sin correo" }}
                     </p>
                 </div>
                 <div class="flex gap-2 flex-wrap">
@@ -133,6 +133,12 @@
                             >
                                 Visitante
                             </span>
+                            <span
+                                v-if="user.role?.name === 'visitante' && !user.email"
+                                class="px-2.5 py-1 rounded-full text-xs font-semibold border shadow-sm bg-amber-50/90 dark:bg-amber-900/50 text-amber-800 dark:text-amber-300 border-amber-200 dark:border-amber-800 backdrop-blur"
+                            >
+                                Sin correo (solo NFC)
+                            </span>
                         </div>
                     </div>
 
@@ -170,7 +176,13 @@
                                     <p
                                         class="text-sm text-slate-700 dark:text-slate-300 break-all"
                                     >
-                                        {{ user.email || "-" }}
+                                        {{ user.email || "Sin correo" }}
+                                    </p>
+                                    <p
+                                        v-if="user.role?.name === 'visitante' && !user.email"
+                                        class="mt-1 text-xs text-slate-500 dark:text-slate-400"
+                                    >
+                                        Este visitante no puede iniciar sesión ni requiere QR. Solo se le puede asignar tarjeta NFC.
                                     </p>
                                 </div>
                                 <div>

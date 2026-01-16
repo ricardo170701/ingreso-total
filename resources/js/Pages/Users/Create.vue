@@ -43,13 +43,23 @@
                     </div>
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <FormField label="Email" :error="form.errors.email">
+                        <FormField
+                            :label="esVisitante ? 'Email (opcional)' : 'Email'"
+                            :error="form.errors.email"
+                        >
                             <input
                                 v-model="form.email"
                                 type="email"
                                 class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-transparent transition-colors duration-200"
                                 placeholder="correo@dominio.com"
+                                :required="!esVisitante"
                             />
+                            <p
+                                v-if="esVisitante"
+                                class="mt-1 text-xs text-slate-500 dark:text-slate-400"
+                            >
+                                Si no tiene correo, no podrá iniciar sesión ni tener QR. Solo se le puede asignar tarjeta NFC.
+                            </p>
                         </FormField>
                         <FormField
                             label="Cédula"

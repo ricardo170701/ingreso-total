@@ -22,7 +22,10 @@ class UpsertCargoPisoAccesoRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'piso_id' => ['required', 'integer', 'exists:pisos,id'],
+            // Permitir uno o varios pisos
+            'piso_id' => ['required_without:pisos', 'integer', 'exists:pisos,id'],
+            'pisos' => ['required_without:piso_id', 'array', 'min:1'],
+            'pisos.*' => ['integer', 'exists:pisos,id'],
             'hora_inicio' => ['nullable', 'date_format:H:i'],
             'hora_fin' => ['nullable', 'date_format:H:i'],
             'dias_semana' => ['nullable', 'string', 'max:20'], // "1,2,3,4,5"

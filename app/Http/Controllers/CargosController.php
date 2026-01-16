@@ -143,7 +143,12 @@ class CargosController extends Controller
         $this->authorize('update', $cargo);
 
         $data = $request->validated();
-        $pisoId = (int) $data['piso_id'];
+        $pisoIds = [];
+        if (!empty($data['pisos']) && is_array($data['pisos'])) {
+            $pisoIds = array_values(array_unique(array_map('intval', $data['pisos'])));
+        } elseif (!empty($data['piso_id'])) {
+            $pisoIds = [(int) $data['piso_id']];
+        }
 
         $pivot = [
             'hora_inicio' => $data['hora_inicio'] ?? null,
@@ -154,13 +159,18 @@ class CargosController extends Controller
             'activo' => $data['activo'] ?? true,
         ];
 
-        $cargo->pisos()->syncWithoutDetaching([
-            $pisoId => $pivot,
-        ]);
+        $syncData = [];
+        foreach ($pisoIds as $pid) {
+            $syncData[$pid] = $pivot;
+        }
+
+        if (count($syncData) > 0) {
+            $cargo->pisos()->syncWithoutDetaching($syncData);
+        }
 
         return redirect()
             ->route('cargos.edit', $cargo)
-            ->with('message', 'Permiso de piso actualizado.');
+            ->with('message', count($pisoIds) > 1 ? 'Permisos de pisos actualizados.' : 'Permiso de piso actualizado.');
     }
 
     /**

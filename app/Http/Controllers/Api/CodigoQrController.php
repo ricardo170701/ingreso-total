@@ -60,6 +60,14 @@ class CodigoQrController extends Controller
 
         $targetRole = $targetUser->role?->name;
 
+        // Nuevo tipo: visitante sin correo -> no se genera QR (solo tarjeta NFC)
+        if ($targetRole === 'visitante' && empty($targetUser->email)) {
+            return response()->json([
+                'message' => 'Este visitante no tiene correo electrónico. No requiere QR: solo se puede asignar tarjeta NFC.',
+                'errors' => ['user_id' => ['Este visitante no tiene correo electrónico. No requiere QR: solo se puede asignar tarjeta NFC.']],
+            ], 422);
+        }
+
         // Autorización por permisos (los roles solo representan tipo de vinculación)
         if (!$actor || !$actor->hasPermission('create_ingreso')) {
             return response()->json(['message' => 'No autorizado.'], 403);
@@ -96,13 +104,7 @@ class CodigoQrController extends Controller
             }
         }
 
-        // Regla: si se genera para visitante y es "para otros", debe indicar departamento destino
-        if ($actor->id !== $targetUser->id && $targetRole === 'visitante' && empty($data['gerencia_id'])) {
-            return response()->json([
-                'message' => 'Para visitantes debes seleccionar la gerencia destino.',
-                'errors' => ['gerencia_id' => ['Para visitantes debes seleccionar la gerencia destino.']],
-            ], 422);
-        }
+        // Para visitantes: si no se envía gerencia, se registra como "Despacho" (null)
 
         // Regla: para no visitantes, si no envían puertas, el usuario debe tener cargo (se validará por cargo->puerta)
         if ($targetRole !== 'visitante' && !$hasPuertas && !$targetUser->cargo_id) {

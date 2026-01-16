@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Models\Role;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -24,8 +25,16 @@ class StoreUserRequest extends FormRequest
      */
     public function rules(): array
     {
+        $roleName = $this->inputRoleName();
+
         return [
-            'email' => ['required', 'email', 'max:255', 'unique:users,email'],
+            // Visitantes pueden no tener correo (no podrán iniciar sesión ni generar QR)
+            'email' => array_values(array_filter([
+                $roleName === 'visitante' ? 'nullable' : 'required',
+                'email',
+                'max:255',
+                Rule::unique('users', 'email'),
+            ])),
             'password' => ['required', 'string', 'min:8', 'max:255'],
 
             // Aceptamos role por id o por name para facilidad
@@ -79,5 +88,29 @@ class StoreUserRequest extends FormRequest
             'role_name.exists' => 'El role_name no existe.',
             'cargo_id.exists' => 'El cargo_id no existe.',
         ];
+    }
+
+    protected function prepareForValidation(): void
+    {
+        // Convertir "" -> null para que "nullable" funcione como se espera
+        $email = $this->input('email');
+        if (is_string($email) && trim($email) === '') {
+            $this->merge(['email' => null]);
+        }
+    }
+
+    private function inputRoleName(): ?string
+    {
+        $roleName = $this->input('role_name');
+        if (is_string($roleName) && $roleName !== '') {
+            return $roleName;
+        }
+
+        $roleId = $this->input('role_id');
+        if ($roleId) {
+            return Role::query()->whereKey($roleId)->value('name');
+        }
+
+        return null;
     }
 }

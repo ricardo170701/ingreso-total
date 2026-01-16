@@ -14,6 +14,7 @@ class ExampleTest extends TestCase
     {
         $response = $this->get('/');
 
-        $response->assertStatus(200);
+        // En este proyecto "/" redirige (por ejemplo a login/dashboard).
+        $response->assertStatus(302);
     }
 }

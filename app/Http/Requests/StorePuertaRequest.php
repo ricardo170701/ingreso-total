@@ -28,7 +28,7 @@ class StorePuertaRequest extends FormRequest
             'material_id' => ['nullable', 'integer', 'exists:materials,id'],
             'ip_entrada' => ['nullable', 'ip'],
             'ip_salida' => ['nullable', 'ip'],
-            'imagen' => ['nullable', 'image', 'mimes:jpeg,jpg,png,gif', 'max:2048'], // Max 2MB
+            'imagen' => ['nullable', 'image', 'mimes:jpeg,jpg,png,gif,webp', 'max:2048'], // Max 2MB
             'tiempo_apertura' => ['nullable', 'integer', 'min:1', 'max:300'], // Entre 1 y 300 segundos
             'tiempo_discapacitados' => ['nullable', 'integer', 'min:1', 'max:600'], // Entre 1 y 600 segundos (10 minutos)
             'alto' => ['nullable', 'numeric', 'min:0', 'max:1000'], // En centímetros

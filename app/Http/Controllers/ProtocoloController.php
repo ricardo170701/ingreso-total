@@ -693,6 +693,8 @@ class ProtocoloController extends Controller
     /**
      * Igual que checkTcpTargets, pero preserva el "lado" (entrada/salida).
      *
+     * SIMPLIFICADO: Usa fsockopen() confiable en lugar de streams asíncronos
+     *
      * @param array<int, array{puerta_id:int,lado:string,ip:string}> $targets
      * @return array<int, array{puerta_id:int,lado:string,ip:string,ok:bool}>
      */
@@ -702,131 +704,41 @@ class ProtocoloController extends Controller
             return [];
         }
 
-        // Fallback secuencial
-        if (!function_exists('socket_import_stream')) {
-            $out = [];
-            foreach ($targets as $t) {
-                $ok = false;
-                $conexion = @fsockopen($t['ip'], $port, $errno, $errstr, $timeoutSeconds);
-                if ($conexion) {
-                    fclose($conexion);
-                    $ok = true;
-                }
-                $out[] = [
-                    'puerta_id' => (int) $t['puerta_id'],
-                    'lado' => (string) $t['lado'],
-                    'ip' => (string) $t['ip'],
-                    'ok' => $ok,
-                ];
-            }
-            return $out;
-        }
-
-        $streams = [];
-        $meta = [];
+        // Usar siempre fsockopen() que es más confiable
+        // (mismo método que usa diagnosticarConexiones y funciona perfectamente)
         $out = [];
-        $start = microtime(true);
-
         foreach ($targets as $t) {
-            $errno = 0;
-            $errstr = '';
-            $uri = "tcp://{$t['ip']}:{$port}";
+            $ok = false;
+            $start = microtime(true);
+            $conexion = @fsockopen($t['ip'], $port, $errno, $errstr, $timeoutSeconds);
+            $tiempo = round((microtime(true) - $start) * 1000, 2);
 
-            $stream = @stream_socket_client(
-                $uri,
-                $errno,
-                $errstr,
-                $timeoutSeconds,
-                STREAM_CLIENT_ASYNC_CONNECT | STREAM_CLIENT_CONNECT
-            );
-
-            if ($stream === false) {
-                $out[] = [
-                    'puerta_id' => (int) $t['puerta_id'],
-                    'lado' => (string) $t['lado'],
-                    'ip' => (string) $t['ip'],
-                    'ok' => false,
-                ];
-                continue;
+            if ($conexion) {
+                fclose($conexion);
+                $ok = true;
             }
 
-            stream_set_blocking($stream, false);
-            $key = (int) $stream;
-            $streams[$key] = $stream;
-            $meta[$key] = $t;
-        }
+            $out[] = [
+                'puerta_id' => (int) $t['puerta_id'],
+                'lado' => (string) $t['lado'],
+                'ip' => (string) $t['ip'],
+                'ok' => $ok,
+            ];
 
-        while (count($streams) > 0) {
-            $elapsed = microtime(true) - $start;
-            $left = $timeoutSeconds - $elapsed;
-            if ($left <= 0) {
-                break;
-            }
-
-            $sec = (int) floor($left);
-            $usec = (int) floor(($left - $sec) * 1_000_000);
-
-            $write = array_values($streams);
-            $except = array_values($streams);
-            $read = [];
-
-            $n = @stream_select($read, $write, $except, $sec, $usec);
-            if ($n === false) {
-                break;
-            }
-
-            foreach ($write as $s) {
-                $key = (int) $s;
-                $t = $meta[$key] ?? null;
-                if (!$t) {
-                    @fclose($s);
-                    unset($streams[$key], $meta[$key]);
-                    continue;
-                }
-
-                $ok = false;
-                try {
-                    $sock = @socket_import_stream($s);
-                    if ($sock !== false) {
-                        if (defined('SOL_SOCKET') && defined('SO_ERROR')) {
-                            $err = @socket_get_option($sock, SOL_SOCKET, SO_ERROR);
-                            $ok = ($err === 0);
-                        } else {
-                            $ok = true;
-                        }
-                        @socket_close($sock);
-                    }
-                } catch (\Exception $e) {
-                    $ok = false;
-                }
-
-                $out[] = [
-                    'puerta_id' => (int) $t['puerta_id'],
-                    'lado' => (string) $t['lado'],
-                    'ip' => (string) $t['ip'],
-                    'ok' => $ok,
-                ];
-
-                @fclose($s);
-                unset($streams[$key], $meta[$key]);
+            // Log detallado si falla
+            if (!$ok) {
+                Log::debug("Conexión fallida en checkTcpTargetsLados", [
+                    'puerta_id' => $t['puerta_id'],
+                    'lado' => $t['lado'],
+                    'ip' => $t['ip'],
+                    'port' => $port,
+                    'errno' => $errno,
+                    'error' => $errstr,
+                    'tiempo_ms' => $tiempo,
+                ]);
             }
         }
-
-        // Timeouts pendientes
-        foreach ($streams as $s) {
-            @fclose($s);
-            $key = (int) $s;
-            $t = $meta[$key] ?? null;
-            if ($t) {
-                $out[] = [
-                    'puerta_id' => (int) $t['puerta_id'],
-                    'lado' => (string) $t['lado'],
-                    'ip' => (string) $t['ip'],
-                    'ok' => false,
-                ];
-            }
-        }
-
         return $out;
     }
+
 }

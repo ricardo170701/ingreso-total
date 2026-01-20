@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Database\QueryException;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -21,36 +22,29 @@ class ProtocoloController extends Controller
      */
     public function index(Request $request): Response
     {
+        $this->authorize('viewAny', ProtocolRun::class);
+
+        $user = $request->user();
+
+        // Verificar permiso
+        if (!$user || !$user->hasPermission('protocol_emergencia_open_all')) {
+            abort(403, 'No tienes permiso para acceder a esta sección.');
+        }
+
+        $puertas = collect();
+        $ultimasCorridas = collect();
+
         try {
-            $this->authorize('viewAny', ProtocolRun::class);
-
-            $user = $request->user();
-
-            // Verificar permiso
-            if (!$user || !$user->hasPermission('protocol_emergencia_open_all')) {
-                abort(403, 'No tienes permiso para acceder a esta sección.');
-            }
-
             // Obtener puertas activas con IP de entrada
-            $puertas = Puerta::query()
+            $puertasAll = Puerta::query()
                 ->where('activo', true)
                 ->whereNotNull('ip_entrada')
                 ->orderBy('nombre')
                 ->get();
 
-            // Verificar conexiones en paralelo (con caché de 2 minutos)
-            try {
-                $puertasConectadas = $this->verificarConexionesPuertas($puertas);
-            } catch (\Exception $e) {
-                // Si hay error en la verificación, usar todas las puertas (fallback)
-                Log::error('Error verificando conexiones de puertas en protocolo: ' . $e->getMessage(), [
-                    'exception' => $e,
-                    'trace' => $e->getTraceAsString(),
-                ]);
-                $puertasConectadas = $puertas;
-            }
+            // Verificar conexiones (optimizado). Si falla, caer a lista vacía (no 500).
+            $puertasConectadas = $this->verificarConexionesPuertas($puertasAll);
 
-            // Filtrar y mapear solo las puertas con conexión
             $puertas = $puertasConectadas
                 ->map(function ($puerta) {
                     return [
@@ -60,7 +54,15 @@ class ProtocoloController extends Controller
                     ];
                 })
                 ->values();
+        } catch (QueryException | \Throwable $e) {
+            Log::error('Protocolo@index: error cargando/verificando puertas: ' . $e->getMessage(), [
+                'exception' => $e,
+            ]);
+            session()->flash('message', 'No se pudieron verificar las puertas en este momento. Intenta nuevamente.');
+            $puertas = collect();
+        }
 
+        try {
             // Últimas corridas de emergencia (últimas 5)
             $ultimasCorridas = ProtocolRun::query()
                 ->with('user')
@@ -79,18 +81,18 @@ class ProtocoloController extends Controller
                         'fecha' => $run->created_at->format('d/m/Y H:i'),
                     ];
                 });
-
-            return Inertia::render('Protocolo/Index', [
-                'puertas' => $puertas,
-                'ultimasCorridas' => $ultimasCorridas,
-            ]);
-        } catch (\Exception $e) {
-            Log::error('Error en ProtocoloController@index: ' . $e->getMessage(), [
+        } catch (QueryException | \Throwable $e) {
+            Log::error('Protocolo@index: error cargando corridas: ' . $e->getMessage(), [
                 'exception' => $e,
-                'trace' => $e->getTraceAsString(),
             ]);
-            throw $e; // Re-lanzar para que Laravel maneje el error apropiadamente
+            session()->flash('message', 'No se pudo cargar el historial del protocolo. Revisa migraciones/BD.');
+            $ultimasCorridas = collect();
         }
+
+        return Inertia::render('Protocolo/Index', [
+            'puertas' => $puertas,
+            'ultimasCorridas' => $ultimasCorridas,
+        ]);
     }
 
     /**
@@ -120,7 +122,8 @@ class ProtocoloController extends Controller
             ->get();
 
         // Verificar conexiones en paralelo (sin caché para activación, queremos estado actual)
-        $puertas = $this->verificarConexionesPuertas($puertas, useCache: false);
+        // Evitar argumentos nombrados (compatibilidad PHP). Sin caché para estado actual.
+        $puertas = $this->verificarConexionesPuertas($puertas, false);
 
         if ($puertas->isEmpty()) {
             return back()->withErrors(['error' => 'No hay puertas activas con conexión disponible.']);

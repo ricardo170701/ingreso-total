@@ -51,7 +51,26 @@ class CargosController extends Controller
     {
         $this->authorize('create', Cargo::class);
 
-        return Inertia::render('Cargos/Create');
+        // Cargar permisos del sistema para el formulario
+        $permissions = \App\Models\Permission::query()
+            ->where('activo', true)
+            ->orderBy('group')
+            ->orderBy('name')
+            ->get();
+        $permissionsGrouped = $permissions->groupBy('group')->toArray();
+
+        // Cargar pisos activos para el formulario
+        $todosLosPisos = Piso::query()
+            ->where('activo', true)
+            ->orderBy('orden')
+            ->orderBy('nombre')
+            ->get();
+
+        return Inertia::render('Cargos/Create', [
+            'permissions' => $permissions,
+            'permissionsGrouped' => $permissionsGrouped,
+            'todosLosPisos' => $todosLosPisos,
+        ]);
     }
 
     /**
@@ -61,7 +80,41 @@ class CargosController extends Controller
     {
         $this->authorize('create', Cargo::class);
 
-        $cargo = Cargo::query()->create($request->validated());
+        $data = $request->validated();
+        $permissions = $data['permissions'] ?? [];
+        $pisos = $data['pisos'] ?? [];
+        
+        // Extraer campos de configuración de pisos
+        $pisoConfig = [
+            'hora_inicio' => $data['hora_inicio'] ?? null,
+            'hora_fin' => $data['hora_fin'] ?? null,
+            'dias_semana' => $data['dias_semana'] ?? '1,2,3,4,5,6,7',
+            'fecha_inicio' => $data['fecha_inicio'] ?? null,
+            'fecha_fin' => $data['fecha_fin'] ?? null,
+            'activo' => true,
+        ];
+
+        // Eliminar campos que no son del modelo Cargo
+        unset($data['permissions'], $data['pisos'], $data['hora_inicio'], $data['hora_fin'], $data['dias_semana'], $data['fecha_inicio'], $data['fecha_fin']);
+
+        $cargo = Cargo::query()->create($data);
+
+        // Sincronizar permisos si se proporcionaron
+        if (!empty($permissions)) {
+            $cargo->permissions()->sync($permissions);
+        }
+
+        // Sincronizar pisos si se proporcionaron
+        if (!empty($pisos) && is_array($pisos)) {
+            $pisoIds = array_values(array_unique(array_map('intval', $pisos)));
+            $syncData = [];
+            foreach ($pisoIds as $pisoId) {
+                $syncData[$pisoId] = $pisoConfig;
+            }
+            if (count($syncData) > 0) {
+                $cargo->pisos()->sync($syncData);
+            }
+        }
 
         return redirect()
             ->route('cargos.index')
@@ -124,9 +177,22 @@ class CargosController extends Controller
     /**
      * Eliminar cargo
      */
-    public function destroy(Cargo $cargo)
+    public function destroy(Request $request, Cargo $cargo)
     {
         $this->authorize('delete', $cargo);
+
+        // Validar que se proporcione la contraseña
+        $request->validate([
+            'password' => ['required', 'string'],
+        ]);
+
+        // Verificar que la contraseña sea correcta
+        $user = $request->user();
+        if (!\Illuminate\Support\Facades\Hash::check($request->password, $user->password)) {
+            return back()->withErrors([
+                'password' => 'La contraseña es incorrecta.',
+            ]);
+        }
 
         $cargo->delete();
 

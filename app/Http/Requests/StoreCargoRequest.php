@@ -25,6 +25,16 @@ class StoreCargoRequest extends FormRequest
             'name' => ['required', 'string', 'max:100', 'unique:cargos,name'],
             'description' => ['nullable', 'string'],
             'activo' => ['nullable', 'boolean'],
+            'permissions' => ['nullable', 'array'],
+            'permissions.*' => ['integer', 'exists:permissions,id'],
+            // Campos para pisos
+            'pisos' => ['nullable', 'array'],
+            'pisos.*' => ['integer', 'exists:pisos,id'],
+            'hora_inicio' => ['nullable', 'date_format:H:i'],
+            'hora_fin' => ['nullable', 'date_format:H:i'],
+            'dias_semana' => ['nullable', 'string', 'max:20'],
+            'fecha_inicio' => ['nullable', 'date'],
+            'fecha_fin' => ['nullable', 'date'],
         ];
     }
 }

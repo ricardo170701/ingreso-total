@@ -43,8 +43,7 @@
                         Activar Protocolo de Emergencia
                     </h2>
                     <p class="text-sm text-slate-600 dark:text-slate-400">
-                        Se abrirán <strong class="text-slate-900 dark:text-slate-100">{{ puertas.length }}</strong> puerta(s) activa(s) con IPs
-                        configuradas
+                        Se abrirán <strong class="text-slate-900 dark:text-slate-100">{{ puertas.length }}</strong> puerta(s) con conexión activa
                     </p>
 
                     <form @submit.prevent="activarEmergencia" class="space-y-4">
@@ -114,7 +113,7 @@
                     </div>
                 </div>
                 <p v-else class="text-sm text-slate-500 dark:text-slate-400 italic">
-                    No hay puertas activas con IPs configuradas
+                    No hay puertas con conexión activa disponibles
                 </p>
             </div>
 

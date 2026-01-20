@@ -41,9 +41,9 @@ class StoreUserRequest extends FormRequest
             'role_id' => [
                 'nullable',
                 'integer',
-                Rule::exists('roles', 'id')->whereIn('name', ['visitante', 'servidor_publico', 'contratista', 'funcionario']),
+                Rule::exists('roles', 'id')->whereIn('name', ['visitante', 'servidor_publico', 'proveedor', 'funcionario']),
             ],
-            'role_name' => ['nullable', 'string', 'max:50', Rule::in(['visitante', 'servidor_publico', 'contratista', 'funcionario'])],
+            'role_name' => ['nullable', 'string', 'max:50', Rule::in(['visitante', 'servidor_publico', 'proveedor', 'funcionario'])],
 
             'cargo_id' => ['nullable', 'integer', 'exists:cargos,id'],
             'cargo_texto' => ['nullable', 'string', 'max:150'],
@@ -78,6 +78,28 @@ class StoreUserRequest extends FormRequest
             'activo' => ['nullable', 'boolean'],
             'fecha_expiracion' => ['nullable', 'date'],
             'es_discapacitado' => ['nullable', 'boolean'],
+
+            // Campos para proveedor
+            'nombre_empresa' => [
+                'nullable',
+                'string',
+                'max:255',
+                function ($attribute, $value, $fail) use ($roleName) {
+                    if ($roleName === 'proveedor' && empty($value)) {
+                        $fail('El nombre de la empresa es requerido para proveedores.');
+                    }
+                },
+            ],
+            'cargo_empresa' => [
+                'nullable',
+                'string',
+                'max:255',
+                function ($attribute, $value, $fail) use ($roleName) {
+                    if ($roleName === 'proveedor' && empty($value)) {
+                        $fail('El cargo en la empresa es requerido para proveedores.');
+                    }
+                },
+            ],
         ];
     }
 

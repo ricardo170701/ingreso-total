@@ -136,7 +136,7 @@ class AccessController extends Controller
         // Para visitantes: verificar la fecha de expiración de la credencial (QR/Tarjeta)
         // Tipos de vinculación (compatibilidad: 'funcionario' legado)
         $userRole = $user->role?->name ?? null;
-        $staffRoles = ['servidor_publico', 'contratista', 'funcionario'];
+        $staffRoles = ['servidor_publico', 'proveedor', 'funcionario'];
         $isStaff = in_array($userRole, $staffRoles, true);
 
         if ($isStaff) {
@@ -192,7 +192,7 @@ class AccessController extends Controller
 
         // Determinar si el usuario es funcionario o visitante
         $userRole = $user->role?->name ?? null;
-        $staffRoles = $staffRoles ?? ['servidor_publico', 'contratista', 'funcionario'];
+        $staffRoles = $staffRoles ?? ['servidor_publico', 'proveedor', 'funcionario'];
         $isStaff = in_array($userRole, $staffRoles, true);
 
         $permitido = false;
@@ -201,7 +201,7 @@ class AccessController extends Controller
         // Para funcionarios: SIEMPRE usar permisos del cargo->piso (ignorar reglas de QR/Tarjeta NFC)
         // Para visitantes: usar reglas de la credencial (QR/Tarjeta NFC)
         if ($isStaff) {
-            // Staff (servidor público/contratista): usar permisos del cargo->piso
+            // Staff (servidor público/proveedor): usar permisos del cargo->piso
             if (!$user->cargo_id) {
                 $permitido = false;
                 $motivo = 'Sin cargo asignado';

@@ -98,7 +98,7 @@ class UsersController extends Controller
 
         return Inertia::render('Users/Create', [
             'roles' => Role::query()
-                ->whereIn('name', ['visitante', 'servidor_publico', 'contratista', 'funcionario'])
+                ->whereIn('name', ['visitante', 'servidor_publico', 'proveedor', 'funcionario'])
                 ->orderBy('name')
                 ->get(['id', 'name']),
             'cargos' => Cargo::query()->orderBy('name')->get(['id', 'name']),
@@ -120,7 +120,7 @@ class UsersController extends Controller
         // role_id puede venir por role_name
         if (empty($data['role_id']) && !empty($data['role_name'])) {
             $data['role_id'] = Role::query()
-                ->whereIn('name', ['visitante', 'servidor_publico', 'contratista', 'funcionario'])
+                ->whereIn('name', ['visitante', 'servidor_publico', 'proveedor', 'funcionario'])
                 ->where('name', $data['role_name'])
                 ->value('id');
         }
@@ -235,7 +235,7 @@ class UsersController extends Controller
             'cargo_texto' => $user->cargo_texto,
         ],
         'roles' => Role::query()
-                ->whereIn('name', ['visitante', 'servidor_publico', 'contratista', 'funcionario'])
+                ->whereIn('name', ['visitante', 'servidor_publico', 'proveedor', 'funcionario'])
                 ->orderBy('name')
                 ->get(['id', 'name']),
             'cargos' => Cargo::query()->orderBy('name')->get(['id', 'name']),
@@ -256,7 +256,7 @@ class UsersController extends Controller
 
         if (empty($data['role_id']) && !empty($data['role_name'])) {
             $data['role_id'] = Role::query()
-                ->whereIn('name', ['visitante', 'servidor_publico', 'contratista', 'funcionario'])
+                ->whereIn('name', ['visitante', 'servidor_publico', 'proveedor', 'funcionario'])
                 ->where('name', $data['role_name'])
                 ->value('id');
         }

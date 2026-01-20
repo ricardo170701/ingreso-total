@@ -33,38 +33,35 @@ class AuthController extends Controller
             'password' => ['required', 'string'],
         ]);
 
-        try {
-            $user = $this->authService->validateCredentials($data['email'], $data['password']);
+        $user = $this->authService->validateCredentials($data['email'], $data['password']);
 
-            if (!$user) {
-                return back()->withErrors([
-                    'email' => 'Credenciales inválidas.',
-                ])->onlyInput('email');
-            }
-
-            // Autenticar con sesión (en lugar de token)
-            Auth::login($user, $request->boolean('remember'));
-            $request->session()->regenerate();
-
-            // Si el usuario no ha cambiado su contraseña, forzar cambio
-            if (is_null($user->password_changed_at)) {
-                return redirect()->route('password.change');
-            }
-
-            // Visitantes: acceso limitado a Ingreso/Soporte
-            if (($user->role?->name ?? null) === 'visitante') {
-                return redirect()->route('ingreso.index');
-            }
-
-            return redirect()->intended('/dashboard');
-        } catch (\Exception $e) {
-            if ($e->getMessage() === 'Usuario inactivo.') {
-                return back()->withErrors([
-                    'email' => 'Usuario inactivo.',
-                ])->onlyInput('email');
-            }
-            throw $e;
+        if (!$user) {
+            $errorMessage = $this->authService->getLastError() ?? 'Credenciales inválidas.';
+            return back()->withErrors([
+                'email' => $errorMessage,
+            ])->onlyInput('email');
         }
+
+        // Autenticar con sesión (en lugar de token)
+        Auth::login($user, $request->boolean('remember'));
+        $request->session()->regenerate();
+
+        // Si el usuario no ha cambiado su contraseña, forzar cambio
+        if (is_null($user->password_changed_at)) {
+            return redirect()->route('password.change');
+        }
+
+        // Visitantes: acceso limitado a Ingreso/Soporte
+        if (($user->role?->name ?? null) === 'visitante') {
+            return redirect()->route('ingreso.index');
+        }
+
+        // Evaluar permisos: si tiene permiso de ingreso, redirigir a ingreso, sino al perfil
+        if ($user->hasPermission('view_ingreso')) {
+            return redirect()->route('ingreso.index');
+        }
+
+        return redirect()->route('profile.show');
     }
 
     /**
@@ -87,9 +84,13 @@ class AuthController extends Controller
     {
         $user = Auth::user();
         
-        // Si ya cambió la contraseña, redirigir al dashboard
+        // Si ya cambió la contraseña, evaluar permisos para redirigir
         if ($user && !is_null($user->password_changed_at)) {
-            return redirect()->route('dashboard');
+            // Evaluar permisos: si tiene permiso de ingreso, redirigir a ingreso, sino al perfil
+            if ($user->hasPermission('view_ingreso')) {
+                return redirect()->route('ingreso.index');
+            }
+            return redirect()->route('profile.show');
         }
 
         return Inertia::render('Auth/ChangePassword');
@@ -118,7 +119,13 @@ class AuthController extends Controller
                 ->with('success', 'Contraseña actualizada correctamente. Bienvenido.');
         }
 
-        return redirect()->route('dashboard')
+        // Evaluar permisos: si tiene permiso de ingreso, redirigir a ingreso, sino al perfil
+        if ($user->hasPermission('view_ingreso')) {
+            return redirect()->route('ingreso.index')
+                ->with('success', 'Contraseña actualizada correctamente. Bienvenido.');
+        }
+
+        return redirect()->route('profile.show')
             ->with('success', 'Contraseña actualizada correctamente. Bienvenido.');
     }
 }

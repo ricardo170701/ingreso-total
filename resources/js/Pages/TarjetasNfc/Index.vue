@@ -1,13 +1,6 @@
 <template>
     <AppLayout>
         <div class="max-w-7xl mx-auto space-y-4">
-            <div
-                v-if="flash?.success"
-                class="rounded-lg border border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/30 text-green-800 dark:text-green-200 px-4 py-3 transition-colors duration-200"
-            >
-                {{ flash.success }}
-            </div>
-
             <div class="flex items-center justify-between">
                 <div>
                     <h1 class="text-xl font-semibold text-slate-900 dark:text-slate-100">
@@ -129,6 +122,14 @@
                                         >
                                             Ver
                                         </Link>
+                                        <button
+                                            v-if="puedeEliminarTarjetaNfc"
+                                            type="button"
+                                            @click.prevent="eliminarTarjeta(t)"
+                                            class="inline-flex items-center px-3 py-1.5 rounded-md border border-red-200 dark:border-red-700 hover:bg-red-50 dark:hover:bg-red-900/30 text-red-700 dark:text-red-300 transition-colors duration-200"
+                                        >
+                                            Eliminar
+                                        </button>
                                     </div>
                                 </td>
                             </tr>
@@ -170,13 +171,160 @@
                 </div>
             </div>
         </div>
+
+        <!-- Modal de Confirmación para Eliminar Tarjeta NFC -->
+        <Teleport to="body">
+            <div
+                v-if="showDeleteModal"
+                @click="closeDeleteModal"
+                class="fixed inset-0 bg-black/60 dark:bg-black/70 flex items-center justify-center z-[9999] p-4 transition-colors duration-200"
+            >
+            <div
+                class="bg-white dark:bg-slate-800 rounded-xl shadow-2xl max-w-md w-full border border-slate-200 dark:border-slate-700 transition-colors duration-200"
+                @click.stop
+            >
+                <div class="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-700">
+                    <h3 class="text-lg font-semibold text-slate-900 dark:text-slate-100">
+                        Confirmar Eliminación
+                    </h3>
+                    <button
+                        type="button"
+                        @click="closeDeleteModal"
+                        class="w-9 h-9 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-colors duration-200 flex items-center justify-center"
+                        aria-label="Cerrar"
+                    >
+                        ×
+                    </button>
+                </div>
+
+                <div class="p-6">
+                    <div class="mb-4">
+                        <p class="text-sm text-slate-700 dark:text-slate-300 mb-2">
+                            ¿Estás seguro de que deseas eliminar la tarjeta NFC
+                            <strong class="text-slate-900 dark:text-slate-100">{{ tarjetaToDelete?.codigo }}</strong>?
+                        </p>
+                        <p v-if="tarjetaToDelete?.nombre" class="text-xs text-slate-600 dark:text-slate-400 mb-2">
+                            Nombre: {{ tarjetaToDelete.nombre }}
+                        </p>
+                        <p v-if="tarjetaToDelete?.user" class="text-xs text-slate-600 dark:text-slate-400 mb-2">
+                            Usuario asignado: {{ tarjetaToDelete.user.name }}
+                        </p>
+                        <p class="text-xs text-red-600 dark:text-red-400 font-medium">
+                            ⚠️ Esta acción no se puede deshacer.
+                        </p>
+                    </div>
+
+                    <div class="flex items-center justify-end gap-3">
+                        <button
+                            type="button"
+                            @click="closeDeleteModal"
+                            class="px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-colors duration-200"
+                        >
+                            Cancelar
+                        </button>
+                        <button
+                            type="button"
+                            @click="confirmDelete"
+                            :disabled="deleteForm.processing"
+                            class="px-4 py-2 rounded-lg bg-red-600 dark:bg-red-700 text-white hover:bg-red-700 dark:hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed font-medium transition-colors duration-200"
+                        >
+                            {{ deleteForm.processing ? "Eliminando..." : "Eliminar Tarjeta" }}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        </Teleport>
+
+        <!-- Sistema de Notificaciones -->
+        <Transition
+            enter-active-class="transition ease-out duration-300"
+            enter-from-class="opacity-0 translate-x-full"
+            enter-to-class="opacity-100 translate-x-0"
+            leave-active-class="transition ease-in duration-200"
+            leave-from-class="opacity-100 translate-x-0"
+            leave-to-class="opacity-0 translate-x-full"
+        >
+            <div
+                v-if="notification.show"
+                class="fixed top-4 right-4 z-50 max-w-md"
+            >
+                <div
+                    :class="[
+                        'rounded-xl border shadow-lg p-4 flex items-start gap-3 transition-colors duration-200',
+                        notification.type === 'success'
+                            ? 'bg-green-50 dark:bg-green-900/30 border-green-200 dark:border-green-800'
+                            : notification.type === 'error'
+                            ? 'bg-red-50 dark:bg-red-900/30 border-red-200 dark:border-red-800'
+                            : notification.type === 'warning'
+                            ? 'bg-yellow-50 dark:bg-yellow-900/30 border-yellow-200 dark:border-yellow-800'
+                            : 'bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-800',
+                    ]"
+                >
+                    <div class="shrink-0">
+                        <span
+                            v-if="notification.type === 'success'"
+                            class="text-2xl"
+                        >
+                            ✅
+                        </span>
+                        <span
+                            v-else-if="notification.type === 'error'"
+                            class="text-2xl"
+                        >
+                            ❌
+                        </span>
+                        <span
+                            v-else-if="notification.type === 'warning'"
+                            class="text-2xl"
+                        >
+                            ⚠️
+                        </span>
+                        <span v-else class="text-2xl">ℹ️</span>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <p
+                            :class="[
+                                'text-sm font-medium',
+                                notification.type === 'success'
+                                    ? 'text-green-800 dark:text-green-200'
+                                    : notification.type === 'error'
+                                    ? 'text-red-800 dark:text-red-200'
+                                    : notification.type === 'warning'
+                                    ? 'text-yellow-800 dark:text-yellow-200'
+                                    : 'text-blue-800 dark:text-blue-200',
+                            ]"
+                        >
+                            {{ notification.message }}
+                        </p>
+                    </div>
+                    <button
+                        type="button"
+                        @click="notification.show = false"
+                        :class="[
+                            'shrink-0 transition-colors',
+                            notification.type === 'success'
+                                ? 'text-green-600 dark:text-green-400 hover:text-green-800 dark:hover:text-green-200'
+                                : notification.type === 'error'
+                                ? 'text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-200'
+                                : notification.type === 'warning'
+                                ? 'text-yellow-600 dark:text-yellow-400 hover:text-yellow-800 dark:hover:text-yellow-200'
+                                : 'text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-200',
+                        ]"
+                        aria-label="Cerrar"
+                    >
+                        ×
+                    </button>
+                </div>
+            </div>
+        </Transition>
     </AppLayout>
 </template>
 
 <script setup>
 import AppLayout from "@/Layouts/AppLayout.vue";
-import { Link, usePage, useForm } from "@inertiajs/vue3";
-import { computed } from "vue";
+import { Link, usePage, useForm, router } from "@inertiajs/vue3";
+import { computed, ref, Teleport, Transition, onMounted, watch } from "vue";
 
 const props = defineProps({
     tarjetas: Object,
@@ -186,9 +334,39 @@ const props = defineProps({
 const page = usePage();
 const flash = computed(() => page.props.flash || {});
 
+const currentUser = computed(() => page.props.auth?.user || page.props.user);
+const userPermissions = computed(() => page.props.auth?.user?.permissions || []);
+const puedeEliminarTarjetaNfc = computed(() => {
+    return userPermissions.value.includes("delete_tarjetas_nfc");
+});
+
 const searchForm = useForm({
     search: props.filters?.search || "",
 });
+
+const showDeleteModal = ref(false);
+const tarjetaToDelete = ref(null);
+
+const deleteForm = useForm({});
+
+// Sistema de notificaciones
+const notification = ref({
+    show: false,
+    type: "success", // success, error, warning, info
+    message: "",
+});
+
+const showNotification = (message, type = "success") => {
+    notification.value = {
+        show: true,
+        type,
+        message,
+    };
+    // Auto-cerrar después de 5 segundos para success/info, 7 para error/warning
+    setTimeout(() => {
+        notification.value.show = false;
+    }, type === "error" || type === "warning" ? 7000 : 5000);
+};
 
 const applySearch = () => {
     searchForm.get(route("tarjetas-nfc.index"), {
@@ -202,4 +380,57 @@ const clearSearch = () => {
     searchForm.search = "";
     applySearch();
 };
+
+const eliminarTarjeta = (tarjeta) => {
+    tarjetaToDelete.value = tarjeta;
+    deleteForm.reset();
+    deleteForm.clearErrors();
+    showDeleteModal.value = true;
+};
+
+const closeDeleteModal = () => {
+    showDeleteModal.value = false;
+    tarjetaToDelete.value = null;
+    deleteForm.reset();
+    deleteForm.clearErrors();
+};
+
+const confirmDelete = () => {
+    if (!tarjetaToDelete.value) return;
+
+    router.delete(route("tarjetas-nfc.destroy", { tarjetaNfc: tarjetaToDelete.value.id }), {
+        preserveScroll: true,
+        onSuccess: () => {
+            closeDeleteModal();
+            showNotification("Tarjeta NFC eliminada exitosamente.", "success");
+        },
+        onError: (errors) => {
+            const errorMessage = errors?.message || "Error al eliminar la tarjeta NFC. Intenta nuevamente.";
+            showNotification(errorMessage, "error");
+        },
+    });
+};
+
+// Detectar y mostrar mensajes flash al cargar la página
+watch(
+    () => page.props.flash,
+    (newFlash) => {
+        if (newFlash?.message) {
+            showNotification(newFlash.message, "success");
+        } else if (newFlash?.success) {
+            showNotification(newFlash.success, "success");
+        }
+    },
+    { immediate: true }
+);
+
+onMounted(() => {
+    // También verificar al montar el componente
+    const flash = page.props.flash;
+    if (flash?.message) {
+        showNotification(flash.message, "success");
+    } else if (flash?.success) {
+        showNotification(flash.success, "success");
+    }
+});
 </script>

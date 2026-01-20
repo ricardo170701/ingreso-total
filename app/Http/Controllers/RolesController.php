@@ -18,7 +18,7 @@ class RolesController extends Controller
         $roles = Role::query()
             ->withCount('users')
             // Tipos de vinculación (compatibilidad: 'funcionario' legado)
-            ->whereIn('name', ['visitante', 'servidor_publico', 'contratista', 'funcionario'])
+            ->whereIn('name', ['visitante', 'servidor_publico', 'proveedor', 'funcionario'])
             ->orderBy('name')
             ->get();
 
@@ -32,6 +32,6 @@ class RolesController extends Controller
      */
     public function updatePermissions(Request $request, Role $role)
     {
-        abort(403, 'Los permisos se gestionan por Roles (antes Cargos). Los tipos de vinculación solo indican si el usuario es visitante/servidor público/contratista.');
+        abort(403, 'Los permisos se gestionan por Roles (antes Cargos). Los tipos de vinculación solo indican si el usuario es visitante/servidor público/proveedor.');
     }
 }

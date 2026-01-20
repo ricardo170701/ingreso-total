@@ -174,6 +174,14 @@
                             Mi QR
                         </button>
                         <button
+                            v-if="puedeAsignarTarjetasNfc"
+                            type="button"
+                            @click="abrirModalTarjetasAsignadas"
+                            class="w-full sm:w-auto px-4 py-2 rounded-lg border border-blue-200 dark:border-blue-700 bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-900/50 text-blue-700 dark:text-blue-300 font-medium transition-colors duration-200"
+                        >
+                            Tarjetas NFC asignadas
+                        </button>
+                        <button
                             v-if="puedeCrearVisitantes"
                             type="button"
                             @click="openVisitanteModal"
@@ -382,7 +390,7 @@
                                 </div>
                             </div>
                             <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                                Busca y selecciona un servidor público o contratista como responsable del ingreso del visitante (opcional)
+                                Busca y selecciona un servidor público o proveedor como responsable del ingreso del visitante (opcional)
                             </p>
                         </FormField>
 
@@ -482,28 +490,6 @@
                         </h3>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <FormField
-                                label="Hora Inicio"
-                                :error="form.errors.hora_inicio"
-                            >
-                                <input
-                                    v-model="form.hora_inicio"
-                                    type="time"
-                                    class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-transparent transition-colors duration-200"
-                                />
-                            </FormField>
-                            <FormField
-                                label="Hora Fin"
-                                :error="form.errors.hora_fin"
-                            >
-                                <input
-                                    v-model="form.hora_fin"
-                                    type="time"
-                                    class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-transparent transition-colors duration-200"
-                                />
-                            </FormField>
-                        </div>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                            <FormField
                                 label="Fecha Inicio"
                                 :error="form.errors.fecha_inicio"
                             >
@@ -533,7 +519,7 @@
                     >
                         <div class="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-lg p-3 transition-colors duration-200">
                             <p class="text-sm text-blue-800 dark:text-blue-200">
-                                <strong>Nota:</strong> Para servidor público/contratista, el código QR estará activo hasta la fecha de expiración del contrato del usuario o hasta que se marque como inactivo. No se requieren fechas ni horarios adicionales.
+                                <strong>Nota:</strong> Para servidor público/proveedor, el código QR estará activo hasta la fecha de expiración del contrato del usuario o hasta que se marque como inactivo. No se requieren fechas ni horarios adicionales.
                             </p>
                         </div>
                     </div>
@@ -636,6 +622,7 @@
                                 }}
                             </button>
                             <button
+                                v-if="!esVisitante"
                                 @click="generarNuevo"
                                 class="px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-colors duration-200"
                             >
@@ -711,14 +698,44 @@
                     </FormField>
 
                     <FormField label="Foto (opcional)" :error="visitanteErrors.foto">
+                        <div class="flex items-center gap-2 mb-2 flex-wrap">
+                            <button
+                                type="button"
+                                @click="openVisitanteCamera"
+                                class="px-3 py-2 rounded-lg bg-slate-900 dark:bg-slate-700 text-white hover:bg-slate-800 dark:hover:bg-slate-600 text-sm font-medium transition-colors duration-200"
+                            >
+                                Usar cámara
+                            </button>
+                            <button
+                                v-if="visitanteForm.foto"
+                                type="button"
+                                @click="clearVisitanteFoto"
+                                class="px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-sm font-medium transition-colors duration-200"
+                            >
+                                Quitar foto
+                            </button>
+                        </div>
                         <input
                             type="file"
                             accept="image/*"
                             @change="onVisitanteFotoChange"
                             class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-transparent transition-colors duration-200"
                         />
+                        <div
+                            v-if="visitanteFotoPreviewUrl"
+                            class="mt-3 p-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-700/40"
+                        >
+                            <div class="text-xs text-slate-600 dark:text-slate-300 mb-2">
+                                Vista previa
+                            </div>
+                            <img
+                                :src="visitanteFotoPreviewUrl"
+                                alt="Foto del visitante (vista previa)"
+                                class="w-full max-h-64 object-contain rounded-md bg-white dark:bg-slate-800"
+                            />
+                        </div>
                         <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                            JPG/PNG, máx 4MB.
+                            JPG/PNG/WEBP, máx 4MB. Para usar la cámara se requiere HTTPS (o localhost).
                         </p>
                     </FormField>
 
@@ -783,6 +800,315 @@
                         class="max-w-full max-h-[90vh] object-contain rounded-lg"
                         @click.stop
                     />
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal: Cámara (crear visitante) -->
+        <div
+            v-if="visitanteCameraOpen"
+            @click="closeVisitanteCamera"
+            class="fixed inset-0 bg-black/70 dark:bg-black/80 flex items-center justify-center z-50 p-4 transition-colors duration-200"
+        >
+            <div
+                class="w-full max-w-2xl bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-xl"
+                @click.stop
+            >
+                <div class="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-slate-200 dark:border-slate-700">
+                    <h3 class="text-lg font-semibold text-slate-900 dark:text-slate-100">
+                        Tomar foto del visitante
+                    </h3>
+                    <button
+                        type="button"
+                        @click="closeVisitanteCamera"
+                        class="w-9 h-9 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-colors duration-200"
+                        aria-label="Cerrar"
+                    >
+                        ×
+                    </button>
+                </div>
+
+                <div class="p-4 sm:p-6 space-y-4">
+                    <div
+                        v-if="visitanteCameraError"
+                        class="p-3 rounded-lg bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-sm text-red-800 dark:text-red-200"
+                    >
+                        {{ visitanteCameraError }}
+                    </div>
+
+                    <div class="rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 bg-black">
+                        <video
+                            ref="visitanteVideoRef"
+                            autoplay
+                            playsinline
+                            muted
+                            class="w-full h-auto"
+                        ></video>
+                        <canvas ref="visitanteCanvasRef" class="hidden"></canvas>
+                    </div>
+
+                    <div class="flex items-center justify-between gap-2 flex-wrap">
+                        <button
+                            type="button"
+                            @click="toggleVisitanteCameraFacing"
+                            class="px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-sm font-medium transition-colors duration-200"
+                        >
+                            Cambiar cámara
+                        </button>
+
+                        <div class="flex items-center gap-2">
+                            <button
+                                type="button"
+                                @click="closeVisitanteCamera"
+                                class="px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-sm font-medium transition-colors duration-200"
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                type="button"
+                                @click="takeVisitantePhoto"
+                                :disabled="visitanteCameraStarting"
+                                class="px-4 py-2 rounded-lg bg-green-600 dark:bg-green-700 text-white hover:bg-green-700 dark:hover:bg-green-600 disabled:opacity-50 text-sm font-medium transition-colors duration-200"
+                            >
+                                {{ visitanteCameraStarting ? "Iniciando..." : "Tomar foto" }}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal: Tarjetas NFC Asignadas -->
+        <div
+            v-if="modalTarjetasAsignadasOpen"
+            @click="closeModalTarjetasAsignadas"
+            class="fixed inset-0 bg-black/60 dark:bg-black/70 flex items-center justify-center z-50 p-4 transition-colors duration-200"
+        >
+            <div
+                class="bg-white dark:bg-slate-800 rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] flex flex-col border border-slate-200 dark:border-slate-700 transition-colors duration-200"
+                @click.stop
+            >
+                <div class="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-700">
+                    <h3 class="text-lg font-semibold text-slate-900 dark:text-slate-100">
+                        Tarjetas NFC Asignadas
+                    </h3>
+                    <button
+                        type="button"
+                        @click="closeModalTarjetasAsignadas"
+                        class="w-9 h-9 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-colors duration-200 flex items-center justify-center"
+                        aria-label="Cerrar"
+                    >
+                        ×
+                    </button>
+                </div>
+
+                <div class="flex-1 overflow-y-auto p-6">
+                    <div
+                        v-if="loadingTarjetasAsignadas"
+                        class="text-center py-8 text-slate-600 dark:text-slate-400"
+                    >
+                        Cargando tarjetas asignadas...
+                    </div>
+                    <div
+                        v-else-if="tarjetasAsignadas.length === 0"
+                        class="text-center py-8 text-slate-500 dark:text-slate-400"
+                    >
+                        No hay tarjetas NFC asignadas actualmente.
+                    </div>
+                    <div v-else class="space-y-4">
+                        <div
+                            v-for="tarjeta in tarjetasAsignadas"
+                            :key="tarjeta.id"
+                            class="border border-slate-200 dark:border-slate-700 rounded-lg p-4 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors duration-200"
+                        >
+                            <div class="flex items-start justify-between gap-4">
+                                <div class="flex-1 min-w-0">
+                                    <div class="flex items-center gap-2 mb-2">
+                                        <h4 class="font-semibold text-slate-900 dark:text-slate-100">
+                                            {{ tarjeta.codigo }}
+                                        </h4>
+                                        <span
+                                            v-if="tarjeta.nombre"
+                                            class="text-sm text-slate-600 dark:text-slate-400"
+                                        >
+                                            - {{ tarjeta.nombre }}
+                                        </span>
+                                    </div>
+                                    <div class="space-y-1 text-sm">
+                                        <p v-if="tarjeta.user" class="text-slate-700 dark:text-slate-300">
+                                            <span class="font-medium text-slate-900 dark:text-slate-100">Usuario:</span>
+                                            <span class="ml-2">{{ tarjeta.user.name }}</span>
+                                            <span v-if="tarjeta.user.email" class="ml-2 text-slate-500 dark:text-slate-400">
+                                                ({{ tarjeta.user.email }})
+                                            </span>
+                                        </p>
+                                        <p v-if="tarjeta.user?.n_identidad" class="text-slate-700 dark:text-slate-300">
+                                            <span class="font-medium text-slate-900 dark:text-slate-100">Identidad:</span>
+                                            <span class="ml-2">{{ tarjeta.user.n_identidad }}</span>
+                                        </p>
+                                        <p v-if="tarjeta.gerencia" class="text-slate-700 dark:text-slate-300">
+                                            <span class="font-medium text-slate-900 dark:text-slate-100">Gerencia:</span>
+                                            <span class="ml-2">
+                                                {{ tarjeta.gerencia.nombre }}
+                                                <span v-if="tarjeta.gerencia.secretaria" class="text-slate-500 dark:text-slate-400">
+                                                    - {{ tarjeta.gerencia.secretaria.nombre }}
+                                                </span>
+                                            </span>
+                                        </p>
+                                        <p v-if="tarjeta.fecha_asignacion" class="text-slate-700 dark:text-slate-300">
+                                            <span class="font-medium text-slate-900 dark:text-slate-100">Asignada:</span>
+                                            <span class="ml-2">{{ tarjeta.fecha_asignacion }}</span>
+                                        </p>
+                                        <p v-if="tarjeta.fecha_expiracion" class="text-slate-700 dark:text-slate-300">
+                                            <span class="font-medium text-slate-900 dark:text-slate-100">Expira:</span>
+                                            <span class="ml-2">{{ tarjeta.fecha_expiracion }}</span>
+                                        </p>
+                                    </div>
+                                </div>
+                                <button
+                                    v-if="puedeAsignarTarjetasNfc"
+                                    type="button"
+                                    @click="desasignarTarjetaDesdeModal(tarjeta)"
+                                    :disabled="tarjetaNfcProcessing"
+                                    class="shrink-0 px-3 py-1.5 rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/30 hover:bg-red-100 dark:hover:bg-red-900/50 text-red-700 dark:text-red-400 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium transition-colors duration-200"
+                                >
+                                    Desasignar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sistema de Notificaciones -->
+        <Transition
+            enter-active-class="transition ease-out duration-300"
+            enter-from-class="opacity-0 translate-x-full"
+            enter-to-class="opacity-100 translate-x-0"
+            leave-active-class="transition ease-in duration-200"
+            leave-from-class="opacity-100 translate-x-0"
+            leave-to-class="opacity-0 translate-x-full"
+        >
+            <div
+                v-if="notification.show"
+                class="fixed top-4 right-4 z-50 max-w-md"
+            >
+                <div
+                    :class="[
+                        'rounded-xl border shadow-lg p-4 flex items-start gap-3 transition-colors duration-200',
+                        notification.type === 'success'
+                            ? 'bg-green-50 dark:bg-green-900/30 border-green-200 dark:border-green-800'
+                            : notification.type === 'error'
+                            ? 'bg-red-50 dark:bg-red-900/30 border-red-200 dark:border-red-800'
+                            : notification.type === 'warning'
+                            ? 'bg-yellow-50 dark:bg-yellow-900/30 border-yellow-200 dark:border-yellow-800'
+                            : 'bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-800',
+                    ]"
+                >
+                    <div class="shrink-0">
+                        <span
+                            v-if="notification.type === 'success'"
+                            class="text-2xl"
+                        >
+                            ✅
+                        </span>
+                        <span
+                            v-else-if="notification.type === 'error'"
+                            class="text-2xl"
+                        >
+                            ❌
+                        </span>
+                        <span
+                            v-else-if="notification.type === 'warning'"
+                            class="text-2xl"
+                        >
+                            ⚠️
+                        </span>
+                        <span v-else class="text-2xl">ℹ️</span>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <p
+                            :class="[
+                                'text-sm font-medium',
+                                notification.type === 'success'
+                                    ? 'text-green-800 dark:text-green-200'
+                                    : notification.type === 'error'
+                                    ? 'text-red-800 dark:text-red-200'
+                                    : notification.type === 'warning'
+                                    ? 'text-yellow-800 dark:text-yellow-200'
+                                    : 'text-blue-800 dark:text-blue-200',
+                            ]"
+                        >
+                            {{ notification.message }}
+                        </p>
+                    </div>
+                    <button
+                        type="button"
+                        @click="notification.show = false"
+                        :class="[
+                            'shrink-0 transition-colors',
+                            notification.type === 'success'
+                                ? 'text-green-600 dark:text-green-400 hover:text-green-800 dark:hover:text-green-200'
+                                : notification.type === 'error'
+                                ? 'text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-200'
+                                : notification.type === 'warning'
+                                ? 'text-yellow-600 dark:text-yellow-400 hover:text-yellow-800 dark:hover:text-yellow-200'
+                                : 'text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-200',
+                        ]"
+                        aria-label="Cerrar"
+                    >
+                        ×
+                    </button>
+                </div>
+            </div>
+        </Transition>
+
+        <!-- Modal de Confirmación -->
+        <div
+            v-if="confirmModal.show"
+            @click="confirmModal.show = false"
+            class="fixed inset-0 bg-black/60 dark:bg-black/70 flex items-center justify-center z-50 p-4 transition-colors duration-200"
+        >
+            <div
+                class="bg-white dark:bg-slate-800 rounded-xl shadow-2xl max-w-md w-full border border-slate-200 dark:border-slate-700 transition-colors duration-200"
+                @click.stop
+            >
+                <div class="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-700">
+                    <h3 class="text-lg font-semibold text-slate-900 dark:text-slate-100">
+                        Confirmar
+                    </h3>
+                    <button
+                        type="button"
+                        @click="confirmModal.show = false"
+                        class="w-9 h-9 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-colors duration-200 flex items-center justify-center"
+                        aria-label="Cerrar"
+                    >
+                        ×
+                    </button>
+                </div>
+
+                <div class="p-6">
+                    <p class="text-sm text-slate-700 dark:text-slate-300 mb-4">
+                        {{ confirmModal.message }}
+                    </p>
+
+                    <div class="flex items-center justify-end gap-3">
+                        <button
+                            type="button"
+                            @click="confirmModal.show = false"
+                            class="px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-colors duration-200"
+                        >
+                            Cancelar
+                        </button>
+                        <button
+                            type="button"
+                            @click="confirmModalConfirm"
+                            class="px-4 py-2 rounded-lg bg-red-600 dark:bg-red-700 text-white hover:bg-red-700 dark:hover:bg-red-600 font-medium transition-colors duration-200"
+                        >
+                            Confirmar
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -852,6 +1178,52 @@ const formTarjetaNfc = useForm({
 });
 
 const tarjetaNfcProcessing = ref(false);
+
+// Modal de tarjetas asignadas
+const modalTarjetasAsignadasOpen = ref(false);
+const tarjetasAsignadas = ref([]);
+const loadingTarjetasAsignadas = ref(false);
+
+// Sistema de notificaciones
+const notification = ref({
+    show: false,
+    type: "success", // success, error, warning, info
+    message: "",
+});
+
+const showNotification = (message, type = "success") => {
+    notification.value = {
+        show: true,
+        type,
+        message,
+    };
+    // Auto-cerrar después de 5 segundos para success/info, 7 para error/warning
+    setTimeout(() => {
+        notification.value.show = false;
+    }, type === "error" || type === "warning" ? 7000 : 5000);
+};
+
+// Modal de confirmación
+const confirmModal = ref({
+    show: false,
+    message: "",
+    callback: null,
+});
+
+const showConfirm = (message, callback) => {
+    confirmModal.value = {
+        show: true,
+        message,
+        callback,
+    };
+};
+
+const confirmModalConfirm = () => {
+    if (confirmModal.value.callback) {
+        confirmModal.value.callback();
+    }
+    confirmModal.value.show = false;
+};
 
 const tarjetaNfcAsignadaAUsuarioSeleccionado = computed(() => {
     if (!form.user_id) return null;
@@ -949,7 +1321,7 @@ const usuarioSeleccionado = computed(() => {
 
 const isStaffUsuarioSeleccionado = computed(() => {
     const roleName = usuarioSeleccionado.value?.role?.name;
-    return ["servidor_publico", "contratista", "funcionario"].includes(roleName);
+    return ["servidor_publico", "proveedor", "funcionario"].includes(roleName);
 });
 
 const visitanteSinCorreoSeleccionado = computed(() => {
@@ -1153,6 +1525,10 @@ onUnmounted(() => {
     if (typeof window !== "undefined") {
         window.removeEventListener("keydown", onKeyDownGlobal);
     }
+
+    // Limpiar recursos de cámara / preview
+    revokeVisitanteFotoPreviewUrl();
+    stopVisitanteCameraStream();
 });
 
 const storageUrl = (path) => {
@@ -1183,13 +1559,10 @@ watch(
             // Cuando se selecciona un visitante, establecer valores por defecto de seguridad
             const fechaHoy = todayIsoLocal(); // Formato YYYY-MM-DD (local)
 
-            // Solo establecer si no tienen valores ya asignados
-            if (!form.hora_inicio) {
-                form.hora_inicio = '08:00';
-            }
-            if (!form.hora_fin) {
-                form.hora_fin = '19:00';
-            }
+            // Para visitantes, no establecer hora_inicio ni hora_fin
+            form.hora_inicio = null;
+            form.hora_fin = null;
+
             if (!form.fecha_inicio) {
                 form.fecha_inicio = fechaHoy;
             }
@@ -1212,8 +1585,8 @@ watch(
             }
         }
 
-        // Si se selecciona staff (servidor público/contratista), limpiar campos de fecha y horario
-        if (["servidor_publico", "contratista", "funcionario"].includes(roleName)) {
+        // Si se selecciona staff (servidor público/proveedor), limpiar campos de fecha y horario
+        if (["servidor_publico", "proveedor", "funcionario"].includes(roleName)) {
             form.hora_inicio = null;
             form.hora_fin = null;
             form.fecha_inicio = null;
@@ -1259,7 +1632,7 @@ const enviarCorreo = () => {
     if (!email) return;
 
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-        alert("Por favor ingresa un correo electrónico válido.");
+        showNotification("Por favor ingresa un correo electrónico válido.", "error");
         return;
     }
 
@@ -1291,6 +1664,17 @@ const visitanteModalOpen = ref(false);
 const visitanteProcessing = ref(false);
 const visitanteServerError = ref("");
 const visitanteErrors = ref({});
+const visitanteFotoPreviewUrl = ref("");
+const revokeVisitanteFotoPreviewUrl = () => {
+    if (visitanteFotoPreviewUrl.value) {
+        try {
+            URL.revokeObjectURL(visitanteFotoPreviewUrl.value);
+        } catch {
+            // ignore
+        }
+        visitanteFotoPreviewUrl.value = "";
+    }
+};
 const visitanteForm = ref({
     nombre: "",
     apellido: "",
@@ -1300,9 +1684,148 @@ const visitanteForm = ref({
     foto: null,
 });
 
+const setVisitanteFoto = (file) => {
+    visitanteForm.value.foto = file instanceof File ? file : null;
+    revokeVisitanteFotoPreviewUrl();
+    if (visitanteForm.value.foto) {
+        visitanteFotoPreviewUrl.value = URL.createObjectURL(visitanteForm.value.foto);
+    }
+};
+
 const onVisitanteFotoChange = (e) => {
     const file = e?.target?.files?.[0] || null;
-    visitanteForm.value.foto = file;
+    setVisitanteFoto(file);
+};
+
+const clearVisitanteFoto = () => {
+    setVisitanteFoto(null);
+};
+
+// ===== Cámara para foto de visitante =====
+const visitanteCameraOpen = ref(false);
+const visitanteCameraError = ref("");
+const visitanteCameraStarting = ref(false);
+const visitanteVideoRef = ref(null);
+const visitanteCanvasRef = ref(null);
+const visitanteCameraStream = ref(null);
+const visitanteCameraFacing = ref("environment"); // 'environment' | 'user'
+
+const stopVisitanteCameraStream = () => {
+    const stream = visitanteCameraStream.value;
+    if (stream && typeof stream.getTracks === "function") {
+        for (const t of stream.getTracks()) {
+            try { t.stop(); } catch { /* ignore */ }
+        }
+    }
+    visitanteCameraStream.value = null;
+    if (visitanteVideoRef.value) {
+        try { visitanteVideoRef.value.srcObject = null; } catch { /* ignore */ }
+    }
+};
+
+const startVisitanteCamera = async () => {
+    visitanteCameraError.value = "";
+    visitanteCameraStarting.value = true;
+
+    try {
+        if (typeof window === "undefined") {
+            visitanteCameraError.value = "La cámara no está disponible en este entorno.";
+            return;
+        }
+        // Requisito típico del navegador: contexto seguro (HTTPS) o localhost
+        if (!window.isSecureContext) {
+            visitanteCameraError.value = "La cámara requiere HTTPS (o localhost).";
+            return;
+        }
+        const md = navigator?.mediaDevices;
+        if (!md?.getUserMedia) {
+            visitanteCameraError.value = "Este navegador no soporta acceso a cámara.";
+            return;
+        }
+
+        stopVisitanteCameraStream();
+
+        // Preferir cámara trasera; si falla, caer a video:true
+        let stream = null;
+        try {
+            stream = await md.getUserMedia({
+                video: { facingMode: { ideal: visitanteCameraFacing.value } },
+                audio: false,
+            });
+        } catch {
+            stream = await md.getUserMedia({ video: true, audio: false });
+        }
+
+        visitanteCameraStream.value = stream;
+        await nextTick();
+        if (visitanteVideoRef.value) {
+            visitanteVideoRef.value.srcObject = stream;
+            try { await visitanteVideoRef.value.play(); } catch { /* ignore */ }
+        }
+    } catch (e) {
+        visitanteCameraError.value =
+            "No se pudo acceder a la cámara. Revisa permisos del navegador y vuelve a intentar.";
+    } finally {
+        visitanteCameraStarting.value = false;
+    }
+};
+
+const openVisitanteCamera = async () => {
+    visitanteCameraOpen.value = true;
+    await nextTick();
+    await startVisitanteCamera();
+};
+
+const closeVisitanteCamera = () => {
+    stopVisitanteCameraStream();
+    visitanteCameraOpen.value = false;
+    visitanteCameraError.value = "";
+};
+
+const toggleVisitanteCameraFacing = async () => {
+    visitanteCameraFacing.value =
+        visitanteCameraFacing.value === "environment" ? "user" : "environment";
+    if (visitanteCameraOpen.value) {
+        await startVisitanteCamera();
+    }
+};
+
+const takeVisitantePhoto = async () => {
+    visitanteCameraError.value = "";
+    const video = visitanteVideoRef.value;
+    const canvas = visitanteCanvasRef.value;
+    if (!video || !canvas) {
+        visitanteCameraError.value = "La cámara aún no está lista.";
+        return;
+    }
+
+    const w = video.videoWidth || 1280;
+    const h = video.videoHeight || 720;
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) {
+        visitanteCameraError.value = "No se pudo inicializar el canvas.";
+        return;
+    }
+    ctx.drawImage(video, 0, 0, w, h);
+
+    const blob = await new Promise((resolve) => {
+        canvas.toBlob(
+            (b) => resolve(b),
+            "image/jpeg",
+            0.9
+        );
+    });
+
+    if (!blob) {
+        visitanteCameraError.value = "No se pudo capturar la foto.";
+        return;
+    }
+
+    const file = new File([blob], `visitante_${Date.now()}.jpg`, { type: blob.type });
+    setVisitanteFoto(file);
+    closeVisitanteCamera();
 };
 
 const openVisitanteModal = () => {
@@ -1313,10 +1836,12 @@ const openVisitanteModal = () => {
 
 const closeVisitanteModal = () => {
     if (visitanteProcessing.value) return;
+    if (visitanteCameraOpen.value) closeVisitanteCamera();
     visitanteModalOpen.value = false;
 };
 
 const resetVisitanteForm = () => {
+    revokeVisitanteFotoPreviewUrl();
     visitanteForm.value = {
         nombre: "",
         apellido: "",
@@ -1392,7 +1917,7 @@ const submitVisitante = async () => {
 // ===== Asignar Tarjeta NFC =====
 const asignarTarjetaNfc = async () => {
     if (!formTarjetaNfc.tarjeta_nfc_id || !form.user_id) {
-        alert("Por favor selecciona un usuario y una tarjeta NFC.");
+        showNotification("Por favor selecciona un usuario y una tarjeta NFC.", "warning");
         return;
     }
 
@@ -1423,12 +1948,32 @@ const asignarTarjetaNfc = async () => {
             fecha_fin: formTarjetaNfc.fecha_fin,
         });
 
-        alert("Tarjeta NFC asignada correctamente.");
-        formTarjetaNfc.tarjeta_nfc_id = null;
-        router.reload({ only: ["tarjetasNfcDisponibles"], preserveScroll: true });
+        showNotification("Tarjeta NFC asignada correctamente.", "success");
+
+        // Actualizar estado local para que se refleje sin recargar toda la página
+        const assignedUserId = formTarjetaNfc.user_id;
+        const assignedTarjetaId = formTarjetaNfc.tarjeta_nfc_id;
+        const tarjetaObj =
+            (props.tarjetasNfcDisponibles || []).find((t) => t.id === assignedTarjetaId) ||
+            { id: assignedTarjetaId, codigo: String(assignedTarjetaId) };
+        usuariosLocal.value = (usuariosLocal.value || []).map((u) =>
+            u.id === assignedUserId ? { ...u, tarjeta_nfc_asignada: tarjetaObj } : u
+        );
+
+        // Limpiar los datos del formulario para buscar a otro visitante
+        form.reset();
+        formTarjetaNfc.reset();
+
+        // Recargar también usuarios para mantener consistencia con el backend
+        router.reload({ only: ["tarjetasNfcDisponibles", "usuarios"], preserveScroll: true });
     } catch (err) {
         const status = err?.response?.status;
         if (status === 422) {
+            const msg = err?.response?.data?.message;
+            if (msg) {
+                showNotification(msg, "error");
+                return;
+            }
             const raw = err?.response?.data?.errors || {};
             for (const key of Object.keys(raw)) {
                 const val = raw[key];
@@ -1436,9 +1981,9 @@ const asignarTarjetaNfc = async () => {
                 if (msg) formTarjetaNfc.setError(key, msg);
             }
         } else if (status === 403) {
-            alert("No tienes permiso para asignar tarjetas NFC.");
+            showNotification("No tienes permiso para asignar tarjetas NFC.", "error");
         } else {
-            alert("Error al asignar la tarjeta NFC. Intenta nuevamente.");
+            showNotification("Error al asignar la tarjeta NFC. Intenta nuevamente.", "error");
         }
     } finally {
         tarjetaNfcProcessing.value = false;
@@ -1447,7 +1992,13 @@ const asignarTarjetaNfc = async () => {
 
 const desasignarTarjetaNfc = async () => {
     if (!tarjetaNfcAsignadaAUsuarioSeleccionado.value || !form.user_id) return;
-    if (!confirm("¿Desasignar esta tarjeta NFC del visitante seleccionado?")) return;
+
+    showConfirm("¿Desasignar esta tarjeta NFC del visitante seleccionado?", () => {
+        ejecutarDesasignarTarjetaNfc();
+    });
+};
+
+const ejecutarDesasignarTarjetaNfc = async () => {
 
     tarjetaNfcProcessing.value = true;
     formTarjetaNfc.clearErrors();
@@ -1458,19 +2009,82 @@ const desasignarTarjetaNfc = async () => {
             user_id: form.user_id,
         });
 
-        alert("Tarjeta NFC desasignada correctamente.");
+        showNotification("Tarjeta NFC desasignada correctamente.", "success");
         router.reload({ only: ["tarjetasNfcDisponibles", "usuarios"], preserveScroll: true });
     } catch (err) {
         const status = err?.response?.status;
         if (status === 422) {
-            alert(err?.response?.data?.message || "No se pudo desasignar la tarjeta.");
+            showNotification(err?.response?.data?.message || "No se pudo desasignar la tarjeta.", "error");
         } else if (status === 403) {
-            alert("No tienes permiso para desasignar tarjetas NFC.");
+            showNotification("No tienes permiso para desasignar tarjetas NFC.", "error");
         } else {
-            alert("Error al desasignar la tarjeta NFC. Intenta nuevamente.");
+            showNotification("Error al desasignar la tarjeta NFC. Intenta nuevamente.", "error");
         }
     } finally {
         tarjetaNfcProcessing.value = false;
     }
+};
+
+// ===== Modal Tarjetas Asignadas =====
+const abrirModalTarjetasAsignadas = async () => {
+    modalTarjetasAsignadasOpen.value = true;
+    loadingTarjetasAsignadas.value = true;
+    tarjetasAsignadas.value = [];
+
+    try {
+        const response = await window.axios.get(route("ingreso.tarjetas-nfc.asignadas"));
+        tarjetasAsignadas.value = response.data.data || [];
+    } catch (err) {
+        const status = err?.response?.status;
+        if (status === 403) {
+            showNotification("No tienes permiso para ver las tarjetas asignadas.", "error");
+            modalTarjetasAsignadasOpen.value = false;
+        } else {
+            showNotification("Error al cargar las tarjetas asignadas. Intenta nuevamente.", "error");
+        }
+    } finally {
+        loadingTarjetasAsignadas.value = false;
+    }
+};
+
+const closeModalTarjetasAsignadas = () => {
+    modalTarjetasAsignadasOpen.value = false;
+};
+
+const desasignarTarjetaDesdeModal = (tarjeta) => {
+    if (!tarjeta.user) return;
+
+    showConfirm(
+        `¿Desasignar la tarjeta NFC "${tarjeta.codigo}" del usuario "${tarjeta.user.name}"?`,
+        async () => {
+            tarjetaNfcProcessing.value = true;
+
+            try {
+                await window.axios.post(route("ingreso.tarjetas-nfc.desasignar"), {
+                    tarjeta_nfc_id: tarjeta.id,
+                    user_id: tarjeta.user.id,
+                });
+
+                showNotification("Tarjeta NFC desasignada correctamente.", "success");
+
+                // Remover la tarjeta de la lista local
+                tarjetasAsignadas.value = tarjetasAsignadas.value.filter((t) => t.id !== tarjeta.id);
+
+                // Recargar datos necesarios
+                router.reload({ only: ["tarjetasNfcDisponibles", "usuarios"], preserveScroll: true });
+            } catch (err) {
+                const status = err?.response?.status;
+                if (status === 422) {
+                    showNotification(err?.response?.data?.message || "No se pudo desasignar la tarjeta.", "error");
+                } else if (status === 403) {
+                    showNotification("No tienes permiso para desasignar tarjetas NFC.", "error");
+                } else {
+                    showNotification("Error al desasignar la tarjeta NFC. Intenta nuevamente.", "error");
+                }
+            } finally {
+                tarjetaNfcProcessing.value = false;
+            }
+        }
+    );
 };
 </script>

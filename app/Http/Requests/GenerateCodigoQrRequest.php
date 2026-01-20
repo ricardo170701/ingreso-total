@@ -43,7 +43,7 @@ class GenerateCodigoQrRequest extends FormRequest
                 'nullable',
                 'integer',
                 Rule::exists('users', 'id'),
-                // Validar que el responsable sea un usuario servidor público o contratista
+                // Validar que el responsable sea un usuario servidor público o proveedor
                 function ($attribute, $value, $fail) {
                     if ($value) {
                         $responsable = \App\Models\User::query()
@@ -54,9 +54,9 @@ class GenerateCodigoQrRequest extends FormRequest
                             return;
                         }
                         $roleName = $responsable->role?->name ?? '';
-                        $staffRoles = ['servidor_publico', 'contratista', 'funcionario']; // 'funcionario' legado
+                        $staffRoles = ['servidor_publico', 'proveedor', 'funcionario']; // 'funcionario' legado
                         if (!in_array($roleName, $staffRoles, true)) {
-                            $fail('El responsable debe ser un servidor público o contratista.');
+                            $fail('El responsable debe ser un servidor público o proveedor.');
                         }
                     }
                 },

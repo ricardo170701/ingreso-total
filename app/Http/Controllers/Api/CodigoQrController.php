@@ -116,11 +116,11 @@ class CodigoQrController extends Controller
 
         $now = Carbon::now();
 
-        // Para staff (servidor público/contratista):
+        // Para staff (servidor público/proveedor):
         // - Si tiene fecha_expiracion: usar esa fecha
         // - Si NO tiene fecha_expiracion (contrato indefinido): null (el acceso se controla solo por campo 'activo')
         // Para visitantes: si envía fecha_fin (y opcional hora_fin), usarla como expiración; si no, mantener 15 días
-        $staffRoles = ['servidor_publico', 'contratista', 'funcionario']; // 'funcionario' legado
+        $staffRoles = ['servidor_publico', 'proveedor', 'funcionario']; // 'funcionario' legado
         $isStaff = in_array($targetRole, $staffRoles, true);
 
         if ($isStaff) {

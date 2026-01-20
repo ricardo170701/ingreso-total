@@ -244,7 +244,8 @@ const formatTipoVinculacion = (name) => {
     const map = {
         visitante: "Visitante",
         servidor_publico: "Servidor público",
-        contratista: "Contratista",
+        proveedor: "Proveedor",
+        contratista: "Proveedor", // Compatibilidad
         // compatibilidad histórica
         funcionario: "Servidor público",
     };

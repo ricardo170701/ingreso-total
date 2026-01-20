@@ -37,6 +37,8 @@ class User extends Authenticatable
         'activo',
         'fecha_expiracion',
         'tipo_contrato',
+        'nombre_empresa',
+        'cargo_empresa',
         'creado_por',
         'created_by',
         'updated_by',

@@ -21,7 +21,7 @@ class AccessControlSeeder extends Seeder
             // Roles del sistema (bandera de tipo de vinculación)
             $roles = [
                 ['name' => 'servidor_publico', 'description' => 'Servidor público (permisos por rol)'],
-                ['name' => 'contratista', 'description' => 'Contratista (mismas reglas que servidor público)'],
+                ['name' => 'proveedor', 'description' => 'Proveedor (mismas reglas que servidor público)'],
                 ['name' => 'visitante', 'description' => 'Visitante (QR por correo / accesos embebidos)'],
             ];
 

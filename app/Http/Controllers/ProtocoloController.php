@@ -8,6 +8,7 @@ use App\Models\ProtocolRunItem;
 use App\Models\Puerta;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Bus;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -28,19 +29,26 @@ class ProtocoloController extends Controller
             abort(403, 'No tienes permiso para acceder a esta sección.');
         }
 
-        // Obtener puertas activas con IP de entrada (solo entrada para protocolo de emergencia)
+        // Obtener puertas activas con IP de entrada
         $puertas = Puerta::query()
             ->where('activo', true)
             ->whereNotNull('ip_entrada')
             ->orderBy('nombre')
-            ->get()
+            ->get();
+
+        // Verificar conexiones en paralelo (con caché de 2 minutos)
+        $puertasConectadas = $this->verificarConexionesPuertas($puertas);
+
+        // Filtrar y mapear solo las puertas con conexión
+        $puertas = $puertasConectadas
             ->map(function ($puerta) {
                 return [
                     'id' => $puerta->id,
                     'nombre' => $puerta->nombre,
                     'ip_entrada' => $puerta->ip_entrada,
                 ];
-            });
+            })
+            ->values();
 
         // Últimas corridas de emergencia (últimas 5)
         $ultimasCorridas = ProtocolRun::query()
@@ -87,14 +95,17 @@ class ProtocoloController extends Controller
 
         $durationSeconds = $request->input('duration_seconds', 900); // 15 minutos por defecto
 
-        // Obtener todas las puertas activas con IP de entrada (solo entrada para protocolo de emergencia)
+        // Obtener todas las puertas activas con IP de entrada
         $puertas = Puerta::query()
             ->where('activo', true)
             ->whereNotNull('ip_entrada')
             ->get();
 
+        // Verificar conexiones en paralelo (sin caché para activación, queremos estado actual)
+        $puertas = $this->verificarConexionesPuertas($puertas, useCache: false);
+
         if ($puertas->isEmpty()) {
-            return back()->withErrors(['error' => 'No hay puertas activas con IP de entrada configurada.']);
+            return back()->withErrors(['error' => 'No hay puertas activas con conexión disponible.']);
         }
 
         DB::beginTransaction();
@@ -140,14 +151,30 @@ class ProtocoloController extends Controller
 
             // Disparar todos los jobs en paralelo usando batch
             if (!empty($jobs)) {
-                $batch = Bus::batch($jobs)
-                    ->name("Protocolo Emergencia - {$user->name}")
-                    ->dispatch();
+                // Si la conexión es 'sync', disparar directamente sin batch
+                $queueConnection = config('queue.default', 'sync');
 
-                $protocolRun->update([
-                    'estado' => 'en_proceso',
-                    'observaciones' => "Batch ID: {$batch->id}",
-                ]);
+                if ($queueConnection === 'sync') {
+                    // Para desarrollo: ejecutar jobs directamente
+                    foreach ($jobs as $job) {
+                        dispatch($job);
+                    }
+
+                    $protocolRun->update([
+                        'estado' => 'en_proceso',
+                        'observaciones' => 'Ejecutado en modo sync (desarrollo)',
+                    ]);
+                } else {
+                    // Para producción: usar batch
+                    $batch = Bus::batch($jobs)
+                        ->name("Protocolo Emergencia - {$user->name}")
+                        ->dispatch();
+
+                    $protocolRun->update([
+                        'estado' => 'en_proceso',
+                        'observaciones' => "Batch ID: {$batch->id}",
+                    ]);
+                }
             } else {
                 $protocolRun->update([
                     'estado' => 'fallido',
@@ -162,5 +189,215 @@ class ProtocoloController extends Controller
             DB::rollBack();
             return back()->withErrors(['error' => 'Error al iniciar el protocolo: ' . $e->getMessage()]);
         }
+    }
+
+    /**
+     * Verifica las conexiones de las puertas en paralelo (optimizado)
+     *
+     * @param \Illuminate\Database\Eloquent\Collection $puertas
+     * @param bool $useCache Si usar caché (por defecto true, con TTL de 2 minutos)
+     * @return \Illuminate\Database\Eloquent\Collection Puertas con conexión activa
+     */
+    private function verificarConexionesPuertas($puertas, bool $useCache = true)
+    {
+        if ($puertas->isEmpty()) {
+            return collect();
+        }
+
+        $port = (int) (config('app.door_emergency_port') ?? env('DOOR_EMERGENCY_PORT', 8000));
+        $timeoutSeconds = 2.0; // Timeout de 2 segundos por puerta
+
+        // Preparar targets para verificación
+        $targets = [];
+        $puertasMap = [];
+
+        foreach ($puertas as $puerta) {
+            if (!$puerta->ip_entrada) {
+                continue;
+            }
+
+            $cacheKey = "protocolo_puerta_conexion_{$puerta->id}";
+
+            // Si usamos caché, verificar primero
+            if ($useCache) {
+                $cached = Cache::get($cacheKey);
+                if ($cached !== null) {
+                    // Si está en caché y es true, incluirla directamente
+                    if ($cached === true) {
+                        $puertasMap[$puerta->id] = $puerta;
+                    }
+                    continue;
+                }
+            }
+
+            $targets[] = [
+                'puerta_id' => $puerta->id,
+                'ip' => $puerta->ip_entrada,
+            ];
+        }
+
+        // Si no hay targets que verificar (todo estaba en caché), retornar
+        if (empty($targets)) {
+            return collect($puertasMap);
+        }
+
+        // Verificar conexiones en paralelo
+        $resultados = $this->checkTcpTargets($targets, $port, $timeoutSeconds);
+
+        // Procesar resultados y actualizar caché
+        foreach ($resultados as $resultado) {
+            $puertaId = $resultado['puerta_id'];
+            $conectada = $resultado['ok'] ?? false;
+
+            // Actualizar caché si usamos caché
+            if ($useCache) {
+                $cacheKey = "protocolo_puerta_conexion_{$puertaId}";
+                Cache::put($cacheKey, $conectada, now()->addMinutes(2));
+            }
+
+            // Si está conectada, agregarla al mapa
+            if ($conectada) {
+                $puerta = $puertas->firstWhere('id', $puertaId);
+                if ($puerta) {
+                    $puertasMap[$puertaId] = $puerta;
+                }
+            }
+        }
+
+        return collect($puertasMap);
+    }
+
+    /**
+     * Verifica conexiones TCP en paralelo (reutilizado de PuertasController)
+     *
+     * @param array<int, array{puerta_id:int,ip:string}> $targets
+     * @param int $port
+     * @param float $timeoutSeconds
+     * @return array<int, array{puerta_id:int,ip:string,ok:bool}>
+     */
+    private function checkTcpTargets(array $targets, int $port, float $timeoutSeconds): array
+    {
+        if (count($targets) === 0) {
+            return [];
+        }
+
+        // Fallback secuencial si no hay soporte para sockets asíncronos
+        if (!function_exists('socket_import_stream')) {
+            $out = [];
+            foreach ($targets as $t) {
+                $ok = false;
+                $conexion = @fsockopen($t['ip'], $port, $errno, $errstr, $timeoutSeconds);
+                if ($conexion) {
+                    fclose($conexion);
+                    $ok = true;
+                }
+                $out[] = [
+                    'puerta_id' => $t['puerta_id'],
+                    'ip' => $t['ip'],
+                    'ok' => $ok,
+                ];
+            }
+            return $out;
+        }
+
+        // Verificación en paralelo usando streams
+        $streams = [];
+        $meta = [];
+        $out = [];
+        $start = microtime(true);
+
+        // Crear conexiones asíncronas
+        foreach ($targets as $t) {
+            $errno = 0;
+            $errstr = '';
+            $uri = "tcp://{$t['ip']}:{$port}";
+
+            $stream = @stream_socket_client(
+                $uri,
+                $errno,
+                $errstr,
+                $timeoutSeconds,
+                STREAM_CLIENT_ASYNC_CONNECT | STREAM_CLIENT_CONNECT
+            );
+
+            if ($stream === false) {
+                $out[] = [
+                    'puerta_id' => $t['puerta_id'],
+                    'ip' => $t['ip'],
+                    'ok' => false,
+                ];
+                continue;
+            }
+
+            stream_set_blocking($stream, false);
+            $key = (int) $stream;
+            $streams[$key] = $stream;
+            $meta[$key] = $t;
+        }
+
+        // Loop hasta agotar streams o timeout global
+        while (count($streams) > 0) {
+            $elapsed = microtime(true) - $start;
+            $left = $timeoutSeconds - $elapsed;
+            if ($left <= 0) {
+                break;
+            }
+
+            $sec = (int) floor($left);
+            $usec = (int) floor(($left - $sec) * 1_000_000);
+
+            $write = array_values($streams);
+            $except = array_values($streams);
+            $read = [];
+
+            $n = @stream_select($read, $write, $except, $sec, $usec);
+            if ($n === false) {
+                break;
+            }
+
+            // Streams "writable" => connect success o failure
+            foreach ($write as $s) {
+                $key = (int) $s;
+                $t = $meta[$key] ?? null;
+                if (!$t) {
+                    @fclose($s);
+                    unset($streams[$key], $meta[$key]);
+                    continue;
+                }
+
+                $ok = false;
+                $sock = @socket_import_stream($s);
+                if ($sock !== false) {
+                    $err = @socket_get_option($sock, SOL_SOCKET, SO_ERROR);
+                    $ok = ($err === 0);
+                    @socket_close($sock);
+                }
+
+                $out[] = [
+                    'puerta_id' => $t['puerta_id'],
+                    'ip' => $t['ip'],
+                    'ok' => $ok,
+                ];
+
+                @fclose($s);
+                unset($streams[$key], $meta[$key]);
+            }
+        }
+
+        // Cerrar streams restantes (timeout)
+        foreach ($streams as $s) {
+            @fclose($s);
+            $key = (int) $s;
+            $t = $meta[$key] ?? null;
+            if ($t) {
+                $out[] = [
+                    'puerta_id' => $t['puerta_id'],
+                    'ip' => $t['ip'],
+                    'ok' => false,
+                ];
+            }
+        }
+
+        return $out;
     }
 }

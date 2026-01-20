@@ -100,6 +100,7 @@ Route::middleware(['auth', 'force.password.change', 'visitante.restrict', 'permi
     Route::post('/ingreso/visitantes', [IngresoController::class, 'storeVisitante'])->name('ingreso.visitantes.store');
     Route::post('/ingreso/tarjetas-nfc/asignar', [IngresoController::class, 'asignarTarjetaNfc'])->name('ingreso.tarjetas-nfc.asignar');
     Route::post('/ingreso/tarjetas-nfc/desasignar', [IngresoController::class, 'desasignarTarjetaNfc'])->name('ingreso.tarjetas-nfc.desasignar');
+    Route::get('/ingreso/tarjetas-nfc/asignadas', [IngresoController::class, 'obtenerTarjetasAsignadas'])->name('ingreso.tarjetas-nfc.asignadas');
     Route::post('/ingreso/{qr}/enviar-correo', [IngresoController::class, 'sendEmail'])->name('ingreso.send-email');
 
     // Tarjetas NFC
@@ -138,16 +139,16 @@ Route::middleware(['auth', 'force.password.change', 'visitante.restrict', 'permi
 
     // Dependencias (nombre del módulo, pero gestiona Secretarías como recurso principal)
     Route::get('/dependencias', [DependenciasController::class, 'index'])->name('dependencias.index');
-    
+
     // Secretarías (recurso principal)
     Route::resource('secretarias', SecretariasController::class);
-    
+
     // Gerencias (nivel secundario: anidadas dentro de Secretarías)
     Route::prefix('secretarias/{secretaria}')->group(function () {
         Route::get('gerencias', [GerenciasController::class, 'index'])->name('gerencias.index');
         Route::get('gerencias/crear', [GerenciasController::class, 'create'])->name('gerencias.create');
         Route::post('gerencias', [GerenciasController::class, 'store'])->name('gerencias.store');
-        
+
         Route::prefix('gerencias/{gerencia}')->group(function () {
             Route::get('/', [GerenciasController::class, 'show'])->name('gerencias.show');
             Route::get('/editar', [GerenciasController::class, 'edit'])->name('gerencias.edit');

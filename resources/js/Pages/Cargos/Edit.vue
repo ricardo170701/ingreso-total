@@ -132,71 +132,7 @@
                             </label>
                         </div>
                         <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                            Puedes seleccionar varios pisos. Se aplicarán las mismas reglas de horario/vigencia a todos.
-                        </p>
-                    </FormField>
-
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                        <FormField
-                            label="Hora Inicio (opcional)"
-                            :error="formPiso.errors.hora_inicio"
-                        >
-                            <input
-                                v-model="formPiso.hora_inicio"
-                                type="time"
-                                class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-transparent transition-colors duration-200"
-                            />
-                        </FormField>
-                        <FormField
-                            label="Hora Fin (opcional)"
-                            :error="formPiso.errors.hora_fin"
-                        >
-                            <input
-                                v-model="formPiso.hora_fin"
-                                type="time"
-                                class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-transparent transition-colors duration-200"
-                            />
-                        </FormField>
-                    </div>
-
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <FormField
-                            label="Fecha Inicio (opcional)"
-                            :error="formPiso.errors.fecha_inicio"
-                        >
-                            <input
-                                v-model="formPiso.fecha_inicio"
-                                type="date"
-                                class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-transparent transition-colors duration-200"
-                            />
-                        </FormField>
-                        <FormField
-                            label="Fecha Fin (opcional)"
-                            :error="formPiso.errors.fecha_fin"
-                        >
-                            <input
-                                v-model="formPiso.fecha_fin"
-                                type="date"
-                                class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-transparent transition-colors duration-200"
-                            />
-                        </FormField>
-                    </div>
-
-                    <FormField
-                        label="Días de la Semana (opcional)"
-                        :error="formPiso.errors.dias_semana"
-                    >
-                        <input
-                            v-model="formPiso.dias_semana"
-                            type="text"
-                            class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-transparent transition-colors duration-200"
-                            placeholder="Ej: 1,2,3,4,5 (1=Lunes, 7=Domingo)"
-                        />
-                        <p
-                            class="mt-1 text-xs text-slate-500 dark:text-slate-400"
-                        >
-                            Deja vacío para todos los días. Formato: números
-                            separados por comas (1-7)
+                            Puedes seleccionar varios pisos. Se aplicarán las mismas reglas a todos.
                         </p>
                     </FormField>
 
@@ -261,46 +197,10 @@
                                     </span>
                                 </div>
                                 <div
-                                    class="text-sm text-slate-600 dark:text-slate-400 space-y-1"
+                                    class="text-sm text-slate-600 dark:text-slate-400"
                                 >
-                                    <p
-                                        v-if="
-                                            piso.pivot.hora_inicio ||
-                                            piso.pivot.hora_fin
-                                        "
-                                    >
-                                        <span class="font-medium"
-                                            >Horario:</span
-                                        >
-                                        {{
-                                            piso.pivot.hora_inicio || "00:00"
-                                        }}
-                                        -
-                                        {{ piso.pivot.hora_fin || "23:59" }}
-                                    </p>
-                                    <p v-if="piso.pivot.dias_semana">
-                                        <span class="font-medium">Días:</span>
-                                        {{
-                                            formatDiasSemana(
-                                                piso.pivot.dias_semana
-                                            )
-                                        }}
-                                    </p>
-                                    <p
-                                        v-if="
-                                            piso.pivot.fecha_inicio ||
-                                            piso.pivot.fecha_fin
-                                        "
-                                    >
-                                        <span class="font-medium"
-                                            >Período:</span
-                                        >
-                                        {{
-                                            piso.pivot.fecha_inicio ||
-                                            "Sin inicio"
-                                        }}
-                                        -
-                                        {{ piso.pivot.fecha_fin || "Sin fin" }}
+                                    <p class="text-slate-500 dark:text-slate-400">
+                                        Acceso todos los días de la semana
                                     </p>
                                 </div>
                             </div>

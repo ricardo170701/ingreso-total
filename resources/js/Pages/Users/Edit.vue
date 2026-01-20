@@ -234,6 +234,28 @@
                         </FormField>
                     </div>
 
+                    <!-- Campos para proveedor -->
+                    <div v-if="esProveedor" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <FormField label="Nombre de Empresa" :error="form.errors.nombre_empresa">
+                            <input
+                                v-model="form.nombre_empresa"
+                                type="text"
+                                class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-transparent transition-colors duration-200"
+                                placeholder="Nombre de la empresa"
+                                required
+                            />
+                        </FormField>
+                        <FormField label="Cargo en la Empresa" :error="form.errors.cargo_empresa">
+                            <input
+                                v-model="form.cargo_empresa"
+                                type="text"
+                                class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-transparent transition-colors duration-200"
+                                placeholder="Cargo en la empresa"
+                                required
+                            />
+                        </FormField>
+                    </div>
+
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <FormField
                             v-if="!esVisitante && form.tipo_contrato !== 'contrato_indefinido'"
@@ -373,9 +395,10 @@ const formatTipoVinculacion = (name) => {
     const map = {
         visitante: "Visitante",
         servidor_publico: "Servidor público",
-        contratista: "Contratista",
+        proveedor: "Proveedor",
         // compatibilidad histórica
         funcionario: "Servidor público",
+        contratista: "Proveedor", // Compatibilidad: mostrar como "Proveedor"
     };
     return map[name] || name;
 };
@@ -383,6 +406,11 @@ const formatTipoVinculacion = (name) => {
 const esVisitante = computed(() => {
     const role = props.roles?.find((r) => r.id === form.role_id);
     return role?.name === "visitante";
+});
+
+const esProveedor = computed(() => {
+    const role = props.roles?.find((r) => r.id === form.role_id);
+    return role?.name === "proveedor";
 });
 
 const form = useForm({
@@ -402,6 +430,8 @@ const form = useForm({
     tipo_contrato: props.user.tipo_contrato || null,
     activo: !!props.user.activo,
     es_discapacitado: !!props.user.es_discapacitado,
+    nombre_empresa: props.user.nombre_empresa || "",
+    cargo_empresa: props.user.cargo_empresa || "",
 });
 
 // Filtrar gerencias por secretaría seleccionada

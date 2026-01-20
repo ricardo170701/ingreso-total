@@ -513,6 +513,6 @@ class TarjetasNfcController extends Controller
 
         return redirect()
             ->route('tarjetas-nfc.index')
-            ->with('success', 'Tarjeta NFC eliminada exitosamente.');
+            ->with('message', 'Tarjeta NFC eliminada exitosamente.');
     }
 }

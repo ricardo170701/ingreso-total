@@ -43,7 +43,7 @@ class OpenDoorEmergencyJob implements ShouldQueue
             'intentos' => $item->intentos + 1,
         ]);
 
-        $apiKey = config('app.door_api_key', env('DOOR_API_KEY', 'cambia_esto'));
+        $apiKey = env('DOOR_API_KEY', 'D8738A38CC8FC927C5EC594F47A22787');
         $port = config('app.door_emergency_port', env('DOOR_EMERGENCY_PORT', 8000));
         $url = "http://{$this->ip}:{$port}/api/emergency/activate";
 

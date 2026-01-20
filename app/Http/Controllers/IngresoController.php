@@ -81,11 +81,11 @@ class IngresoController extends Controller
             ->orderBy('nombre')
             ->get(['id', 'nombre', 'secretaria_id']);
 
-        // Obtener usuarios servidores públicos y contratistas para selector de responsable
+        // Obtener usuarios servidores públicos y proveedores para selector de responsable
         $responsables = User::query()
             ->where('activo', true)
             ->whereHas('role', function ($q) {
-                $q->whereIn('name', ['servidor_publico', 'contratista', 'funcionario']); // 'funcionario' legado
+                $q->whereIn('name', ['servidor_publico', 'proveedor', 'funcionario']); // 'funcionario' legado
             })
             ->with(['role', 'cargo'])
             ->orderBy('name')
@@ -95,7 +95,7 @@ class IngresoController extends Controller
         $qrPersonal = null;
         if ($actor) {
             $actorRole = $actor->role?->name;
-            $staffRoles = ['servidor_publico', 'contratista', 'funcionario']; // 'funcionario' legado
+            $staffRoles = ['servidor_publico', 'proveedor', 'funcionario']; // 'funcionario' legado
             $isStaff = in_array($actorRole, $staffRoles, true);
 
             // IMPORTANTE:
@@ -116,6 +116,54 @@ class IngresoController extends Controller
             }
 
             $qrPersonal = $qrQ->first();
+
+            // Si es servidor público o proveedor y no tiene QR activo, generar uno automáticamente
+            if (!$qrPersonal && in_array($actorRole, ['servidor_publico', 'proveedor'], true)) {
+                $now = Carbon::now();
+
+                // Generar token único
+                do {
+                    $plainToken = $this->makeShortToken(10);
+                    $tokenHash = hash('sha256', $plainToken);
+                } while (CodigoQr::query()->where('codigo', $tokenHash)->exists());
+
+                // Calcular fecha de expiración (usar fecha_expiracion del usuario o null)
+                $expiresAt = null;
+                if ($actor->fecha_expiracion) {
+                    $expiresAt = Carbon::parse($actor->fecha_expiracion)->endOfDay();
+                }
+
+                DB::transaction(function () use (&$qrPersonal, $actor, $tokenHash, $plainToken, $now, $expiresAt) {
+                    // Desactivar cualquier QR activo previo del usuario
+                    CodigoQr::query()
+                        ->where('user_id', $actor->id)
+                        ->where('activo', true)
+                        ->update([
+                            'activo' => false,
+                            'uso_actual' => 'expirado',
+                            'updated_at' => now(),
+                        ]);
+
+                    // Crear nuevo QR
+                    $qrPersonal = new CodigoQr();
+                    $qrPersonal->user_id = $actor->id;
+                    $qrPersonal->gerencia_id = null;
+                    $qrPersonal->responsable_id = null;
+                    $qrPersonal->codigo = $tokenHash;
+                    $qrPersonal->setTokenOriginal($plainToken);
+                    $qrPersonal->fecha_generacion = $now;
+                    $qrPersonal->fecha_expiracion = $expiresAt;
+                    $qrPersonal->usado = false;
+                    $qrPersonal->activo = true;
+                    $qrPersonal->generado_por = $actor->id;
+                    $qrPersonal->tipo = 'temporal';
+                    $qrPersonal->uso_actual = 'pendiente';
+                    $qrPersonal->intentos_fallidos = 0;
+                    $qrPersonal->save();
+
+                    // Para servidor público/proveedor, las puertas se obtienen del cargo, no se asignan explícitamente aquí
+                });
+            }
         }
 
         // Si tiene QR personal activo, prepararlo para mostrar
@@ -135,7 +183,7 @@ class IngresoController extends Controller
             }
 
             $actorRole = $actor->role?->name;
-            $staffRoles = ['servidor_publico', 'contratista', 'funcionario']; // 'funcionario' legado
+            $staffRoles = ['servidor_publico', 'proveedor', 'funcionario']; // 'funcionario' legado
             $isStaff = in_array($actorRole, $staffRoles, true);
 
             // Mostrar expiración:
@@ -147,7 +195,7 @@ class IngresoController extends Controller
                 if ($actor->fecha_expiracion) {
                     $expires = Carbon::parse($actor->fecha_expiracion)->endOfDay();
                     $expiresAtIso = $expires->toIso8601String();
-                    $expiresAtFormatted = $expires->format('d/m/Y H:i');
+                    $expiresAtFormatted = $expires->format('d/m/Y');
                 } else {
                     $expiresAtIso = null;
                     $expiresAtFormatted = 'Hasta fin de contrato o inactivación';
@@ -155,7 +203,7 @@ class IngresoController extends Controller
             } else {
                 $expiresAtIso = $qrPersonal->fecha_expiracion?->toIso8601String();
                 $expiresAtFormatted = $qrPersonal->fecha_expiracion
-                    ? $qrPersonal->fecha_expiracion->format('d/m/Y H:i')
+                    ? $qrPersonal->fecha_expiracion->format('d/m/Y')
                     : 'No definido';
             }
 
@@ -167,7 +215,7 @@ class IngresoController extends Controller
                 'token' => $tokenOriginal,
                 'expires_at' => $expiresAtIso,
                 'expires_at_formatted' => $expiresAtFormatted,
-                'fecha_generacion' => $qrPersonal->fecha_generacion?->format('d/m/Y H:i'),
+                'fecha_generacion' => $qrPersonal->fecha_generacion?->format('d/m/Y'),
                 'svg' => $qrSvg,
             ];
         }
@@ -276,11 +324,11 @@ class IngresoController extends Controller
 
         $now = Carbon::now();
 
-        // Para staff (servidor público/contratista):
+        // Para staff (servidor público/proveedor):
         // - Si tiene fecha_expiracion: usar esa fecha
         // - Si NO tiene fecha_expiracion (contrato indefinido): null (el acceso se controla solo por campo 'activo')
         // Para visitantes: si envía fecha_fin (y opcional hora_fin), usarla como expiración; si no, mantener 15 días
-        $staffRoles = ['servidor_publico', 'contratista', 'funcionario']; // 'funcionario' legado
+        $staffRoles = ['servidor_publico', 'proveedor', 'funcionario']; // 'funcionario' legado
         $isStaff = in_array($targetRole, $staffRoles, true);
         if ($isStaff) {
             if ($targetUser->fecha_expiracion) {
@@ -352,9 +400,9 @@ class IngresoController extends Controller
             }
 
             if (is_array($puertas) && count($puertas) > 0) {
-                // Para staff (servidor público/contratista): no guardar fechas ni horarios
+                // Para staff (servidor público/proveedor): no guardar fechas ni horarios
                 // El QR es válido hasta la fecha de expiración del usuario o hasta que esté inactivo
-                $staffRoles = ['servidor_publico', 'contratista', 'funcionario']; // 'funcionario' legado
+                $staffRoles = ['servidor_publico', 'proveedor', 'funcionario']; // 'funcionario' legado
                 $isStaff = in_array($targetRole, $staffRoles, true);
                 if ($isStaff) {
                     $pivot = [
@@ -446,11 +494,11 @@ class IngresoController extends Controller
             ->orderBy('nombre')
             ->get(['id', 'nombre', 'secretaria_id']);
 
-        // Obtener usuarios servidores públicos y contratistas para selector de responsable
+        // Obtener usuarios servidores públicos y proveedores para selector de responsable
         $responsables = User::query()
             ->where('activo', true)
             ->whereHas('role', function ($q) {
-                $q->whereIn('name', ['servidor_publico', 'contratista', 'funcionario']); // 'funcionario' legado
+                $q->whereIn('name', ['servidor_publico', 'proveedor', 'funcionario']); // 'funcionario' legado
             })
             ->with(['role', 'cargo'])
             ->orderBy('name')
@@ -477,8 +525,8 @@ class IngresoController extends Controller
                 'token' => $plainToken,
                 'expires_at' => $expiresAt?->toIso8601String(),
                 'expires_at_formatted' => $expiresAt
-                    ? $expiresAt->format('d/m/Y H:i')
-                    : (in_array($targetRole, ['servidor_publico', 'contratista', 'funcionario'], true)
+                    ? $expiresAt->format('d/m/Y')
+                    : (in_array($targetRole, ['servidor_publico', 'proveedor', 'funcionario'], true)
                         ? 'Hasta fin de contrato o inactivación'
                         : 'No definido'),
                 'svg' => (string) $qrSvg, // Asegurar que sea string
@@ -660,6 +708,19 @@ class IngresoController extends Controller
             return response()->json(['message' => 'La tarjeta ya está asignada a otro usuario.'], 422);
         }
 
+        // No permitir asignar 2 tarjetas NFC al mismo usuario (solo 1 activa a la vez)
+        $otraTarjetaActiva = TarjetaNfc::query()
+            ->activas()
+            ->where('user_id', $targetUser->id)
+            ->where('id', '!=', $tarjeta->id)
+            ->first();
+        if ($otraTarjetaActiva) {
+            $codigo = $otraTarjetaActiva->codigo ?? ('ID ' . $otraTarjetaActiva->id);
+            return response()->json([
+                'message' => 'El usuario ya tiene una tarjeta NFC asignada (' . $codigo . '). Primero desasígnala para poder asignar otra.',
+            ], 422);
+        }
+
         $now = Carbon::now();
         $expiresAt = $now->copy()->addDays(15); // Similar a QR de visitantes
 
@@ -799,6 +860,61 @@ class IngresoController extends Controller
                 'nombre' => $tarjeta->nombre,
                 'user_id' => $tarjeta->user_id,
             ],
+        ], 200);
+    }
+
+    /**
+     * Obtener todas las tarjetas NFC asignadas
+     * Requiere permiso: asignar_tarjetas_nfc (para desasignar)
+     */
+    public function obtenerTarjetasAsignadas(Request $request): JsonResponse
+    {
+        $actor = $request->user();
+        if (!$actor) {
+            return response()->json(['message' => 'No autenticado.'], 401);
+        }
+
+        // Solo usuarios con permiso pueden ver tarjetas asignadas
+        if (!$actor->hasPermission('asignar_tarjetas_nfc')) {
+            return response()->json(['message' => 'No autorizado.'], 403);
+        }
+
+        $tarjetasAsignadas = TarjetaNfc::query()
+            ->where('activo', true)
+            ->whereNotNull('user_id')
+            ->with(['user.role', 'gerencia.secretaria'])
+            ->orderBy('codigo')
+            ->get()
+            ->map(function ($tarjeta) {
+                return [
+                    'id' => $tarjeta->id,
+                    'codigo' => $tarjeta->codigo,
+                    'nombre' => $tarjeta->nombre,
+                    'user' => $tarjeta->user ? [
+                        'id' => $tarjeta->user->id,
+                        'name' => $tarjeta->user->name,
+                        'email' => $tarjeta->user->email,
+                        'n_identidad' => $tarjeta->user->n_identidad,
+                        'role' => $tarjeta->user->role ? [
+                            'id' => $tarjeta->user->role->id,
+                            'name' => $tarjeta->user->role->name,
+                        ] : null,
+                    ] : null,
+                    'gerencia' => $tarjeta->gerencia ? [
+                        'id' => $tarjeta->gerencia->id,
+                        'nombre' => $tarjeta->gerencia->nombre,
+                        'secretaria' => $tarjeta->gerencia->secretaria ? [
+                            'id' => $tarjeta->gerencia->secretaria->id,
+                            'nombre' => $tarjeta->gerencia->secretaria->nombre,
+                        ] : null,
+                    ] : null,
+                    'fecha_asignacion' => $tarjeta->fecha_asignacion?->format('d/m/Y H:i'),
+                    'fecha_expiracion' => $tarjeta->fecha_expiracion?->format('d/m/Y H:i'),
+                ];
+            });
+
+        return response()->json([
+            'data' => $tarjetasAsignadas,
         ], 200);
     }
 

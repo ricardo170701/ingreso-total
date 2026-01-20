@@ -7,7 +7,7 @@
                         Tipos de Vinculación
                     </h1>
                     <p class="text-sm text-slate-600 dark:text-slate-400">
-                        Los tipos de vinculación solo indican si un usuario es <b>Visitante</b>, <b>Servidor público</b> o <b>Contratista</b>. Los permisos del sistema se gestionan por <b>Roles</b> (antes “Cargos”).
+                        Los tipos de vinculación solo indican si un usuario es <b>Visitante</b>, <b>Servidor público</b> o <b>Proveedor</b>. Los permisos del sistema se gestionan por <b>Roles</b> (antes “Cargos”).
                     </p>
                 </div>
                 <Link
@@ -63,7 +63,8 @@ const formatTipoVinculacion = (name) => {
     const map = {
         visitante: "Visitante",
         servidor_publico: "Servidor público",
-        contratista: "Contratista",
+        proveedor: "Proveedor",
+        contratista: "Proveedor", // Compatibilidad
         // compatibilidad histórica
         funcionario: "Servidor público",
     };

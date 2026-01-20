@@ -55,7 +55,7 @@
                                     <li>Ingresa el <strong>correo electrónico</strong> del usuario</li>
                                     <li>Establece una <strong>contraseña</strong> temporal</li>
                                     <li>Completa los datos personales: nombre, apellido, departamento</li>
-                                    <li>Selecciona el <strong>tipo de vinculación</strong> del usuario (visitante, servidor_publico, contratista)</li>
+                                    <li>Selecciona el <strong>tipo de vinculación</strong> del usuario (visitante, servidor_publico, proveedor)</li>
                                     <li>Asigna un <strong>cargo</strong> para definir sus permisos físicos (acceso a puertas)</li>
                                     <li>Configura la <strong>fecha de expiración</strong> si es necesario</li>
                                     <li>Marca como <strong>activo</strong> para habilitar el acceso</li>

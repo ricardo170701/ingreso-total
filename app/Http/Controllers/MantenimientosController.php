@@ -245,6 +245,9 @@ class MantenimientosController extends Controller
     {
         $this->authorize('delete', $mantenimiento);
 
+        // Obtener el puerta_id antes de eliminar
+        $puertaId = $mantenimiento->puerta_id;
+
         // Eliminar documentos asociados
         foreach ($mantenimiento->documentos as $documento) {
             if (Storage::disk('public')->exists($documento->ruta_documento)) {
@@ -254,6 +257,14 @@ class MantenimientosController extends Controller
 
         $mantenimiento->delete();
 
+        // Redirigir a la puerta del mantenimiento
+        if ($puertaId) {
+            return redirect()
+                ->route('puertas.show', ['puerta' => $puertaId])
+                ->with('message', 'Mantenimiento eliminado exitosamente.');
+        }
+
+        // Si no tiene puerta asociada, redirigir al índice
         return redirect()
             ->route('mantenimientos.index')
             ->with('message', 'Mantenimiento eliminado exitosamente.');

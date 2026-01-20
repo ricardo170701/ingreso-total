@@ -178,7 +178,7 @@
                     <div class="flex items-center justify-end gap-2 pt-2">
                         <button
                             type="button"
-                            @click="destroy"
+                            @click="showDeleteModal = true"
                             class="px-4 py-2 rounded-lg border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors duration-200"
                         >
                             Eliminar
@@ -252,6 +252,64 @@
                 </div>
             </div>
         </div>
+
+        <!-- Modal de Confirmación para Eliminar Mantenimiento -->
+        <div
+            v-if="showDeleteModal"
+            @click="showDeleteModal = false"
+            class="fixed inset-0 bg-black/60 dark:bg-black/70 flex items-center justify-center z-50 p-4 transition-colors duration-200"
+        >
+            <div
+                class="bg-white dark:bg-slate-800 rounded-xl shadow-2xl max-w-md w-full border border-slate-200 dark:border-slate-700 transition-colors duration-200"
+                @click.stop
+            >
+                <div class="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-700">
+                    <h3 class="text-lg font-semibold text-slate-900 dark:text-slate-100">
+                        Confirmar Eliminación
+                    </h3>
+                    <button
+                        type="button"
+                        @click="showDeleteModal = false"
+                        class="w-9 h-9 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-colors duration-200 flex items-center justify-center"
+                        aria-label="Cerrar"
+                    >
+                        ×
+                    </button>
+                </div>
+
+                <div class="p-6">
+                    <div class="mb-4">
+                        <p class="text-sm text-slate-700 dark:text-slate-300 mb-2">
+                            ¿Estás seguro de que deseas eliminar el mantenimiento
+                            <strong class="text-slate-900 dark:text-slate-100">#{{ mantenimiento.id }}</strong>?
+                        </p>
+                        <p v-if="mantenimiento.puerta" class="text-xs text-slate-600 dark:text-slate-400 mb-2">
+                            Puerta: {{ mantenimiento.puerta.nombre }}
+                        </p>
+                        <p class="text-xs text-red-600 dark:text-red-400 font-medium">
+                            ⚠️ Esta acción no se puede deshacer. Se eliminarán todos los documentos asociados.
+                        </p>
+                    </div>
+
+                    <div class="flex items-center justify-end gap-3">
+                        <button
+                            type="button"
+                            @click="showDeleteModal = false"
+                            class="px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-colors duration-200"
+                        >
+                            Cancelar
+                        </button>
+                        <button
+                            type="button"
+                            @click="confirmDelete"
+                            class="px-4 py-2 rounded-lg bg-red-600 dark:bg-red-700 text-white hover:bg-red-700 dark:hover:bg-red-600 font-medium transition-colors duration-200"
+                        >
+                            Eliminar Mantenimiento
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
     </AppLayout>
 </template>
 
@@ -270,6 +328,7 @@ const props = defineProps({
 
 const documentosPreview = ref([]);
 const documentosFiles = ref([]);
+const showDeleteModal = ref(false);
 
 const form = useForm({
     puerta_id: props.mantenimiento.puerta_id,
@@ -352,8 +411,8 @@ const confirmSubmit = () => {
     );
 };
 
-const destroy = () => {
-    if (!confirm("¿Eliminar este mantenimiento?")) return;
+const confirmDelete = () => {
+    showDeleteModal.value = false;
     router.delete(route("mantenimientos.destroy", { mantenimiento: props.mantenimiento.id }));
 };
 </script>

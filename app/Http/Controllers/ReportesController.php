@@ -31,7 +31,7 @@ class ReportesController extends Controller
 
         // Obtener datos para los filtros
         $roles = Role::query()
-            ->whereIn('name', ['visitante', 'servidor_publico', 'contratista', 'funcionario'])
+            ->whereIn('name', ['visitante', 'servidor_publico', 'proveedor', 'funcionario'])
             ->orderBy('name')
             ->get(['id', 'name']);
         $cargos = Cargo::query()->orderBy('name')->get(['id', 'name']);

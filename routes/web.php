@@ -168,4 +168,5 @@ Route::middleware(['auth', 'force.password.change', 'visitante.restrict', 'permi
     // Protocolo de Emergencia
     Route::get('/protocolo', [ProtocoloController::class, 'index'])->name('protocolo.index');
     Route::post('/protocolo/emergencia', [ProtocoloController::class, 'activateEmergency'])->name('protocolo.emergencia.activate');
+    Route::get('/protocolo/diagnosticar', [ProtocoloController::class, 'diagnosticarConexiones'])->name('protocolo.diagnosticar');
 });

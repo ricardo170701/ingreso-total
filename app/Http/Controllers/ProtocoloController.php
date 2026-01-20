@@ -104,6 +104,74 @@ class ProtocoloController extends Controller
     }
 
     /**
+     * Diagnosticar conexiones de puertas (para debugging)
+     */
+    public function diagnosticarConexiones(Request $request)
+    {
+        $this->authorize('viewAny', ProtocolRun::class);
+
+        $puertas = Puerta::query()
+            ->where('activo', true)
+            ->where(function ($q) {
+                $q->whereNotNull('ip_entrada')
+                    ->orWhereNotNull('ip_salida');
+            })
+            ->get();
+
+        $port = 8000;
+        $timeoutSeconds = 1.5;
+        $resultados = [];
+
+        foreach ($puertas as $puerta) {
+            $entradaStatus = null;
+            $salidaStatus = null;
+
+            if ($puerta->ip_entrada) {
+                $start = microtime(true);
+                $conexion = @fsockopen($puerta->ip_entrada, $port, $errno, $errstr, $timeoutSeconds);
+                $tiempo = round((microtime(true) - $start) * 1000, 2);
+                
+                if ($conexion) {
+                    fclose($conexion);
+                    $entradaStatus = ['ok' => true, 'tiempo_ms' => $tiempo];
+                } else {
+                    $entradaStatus = ['ok' => false, 'error' => "$errno: $errstr", 'tiempo_ms' => $tiempo];
+                }
+            }
+
+            if ($puerta->ip_salida) {
+                $start = microtime(true);
+                $conexion = @fsockopen($puerta->ip_salida, $port, $errno, $errstr, $timeoutSeconds);
+                $tiempo = round((microtime(true) - $start) * 1000, 2);
+                
+                if ($conexion) {
+                    fclose($conexion);
+                    $salidaStatus = ['ok' => true, 'tiempo_ms' => $tiempo];
+                } else {
+                    $salidaStatus = ['ok' => false, 'error' => "$errno: $errstr", 'tiempo_ms' => $tiempo];
+                }
+            }
+
+            $resultados[] = [
+                'id' => $puerta->id,
+                'nombre' => $puerta->nombre,
+                'ip_entrada' => $puerta->ip_entrada,
+                'ip_salida' => $puerta->ip_salida,
+                'entrada_status' => $entradaStatus,
+                'salida_status' => $salidaStatus,
+            ];
+        }
+
+        return response()->json([
+            'ok' => true,
+            'puerto_verificado' => $port,
+            'timeout_segundos' => $timeoutSeconds,
+            'total_puertas' => $puertas->count(),
+            'puertas' => $resultados,
+        ]);
+    }
+
+    /**
      * Activar protocolo de emergencia (abrir todas las puertas)
      */
     public function activateEmergency(Request $request)
@@ -119,9 +187,11 @@ class ProtocoloController extends Controller
 
         $request->validate([
             'duration_seconds' => ['nullable', 'integer', 'min:10', 'max:3600'],
+            'force' => ['nullable', 'boolean'], // Forzar ejecución sin verificar conexiones
         ]);
 
         $durationSeconds = $request->input('duration_seconds', 900); // 15 minutos por defecto
+        $force = $request->boolean('force', false);
 
         // Obtener todas las puertas activas con IP (entrada o salida)
         $puertasAll = Puerta::query()
@@ -132,11 +202,52 @@ class ProtocoloController extends Controller
             })
             ->get();
 
-        // Sin caché: queremos estado actual
-        $puertasElegibles = $this->verificarPuertasParaEmergencia($puertasAll, false);
+        Log::info('Protocolo emergencia: verificando conexiones', [
+            'total_puertas' => $puertasAll->count(),
+            'puertas' => $puertasAll->map(fn($p) => [
+                'id' => $p->id,
+                'nombre' => $p->nombre,
+                'ip_entrada' => $p->ip_entrada,
+                'ip_salida' => $p->ip_salida,
+            ])->toArray(),
+        ]);
 
-        if ($puertasElegibles->isEmpty()) {
-            return back()->withErrors(['error' => 'No hay puertas activas con conexión disponible.']);
+        // Sin caché: queremos estado actual (a menos que se fuerce)
+        if ($force) {
+            // Modo forzado: usar todas las puertas sin verificar
+            Log::warning('Protocolo emergencia: FORZADO - sin verificación de conexiones');
+            $puertasElegibles = $puertasAll->map(function ($puerta) {
+                // Preferir IP entrada si existe, sino salida
+                $ipUsada = $puerta->ip_entrada ?? $puerta->ip_salida;
+                $tipoIp = $puerta->ip_entrada ? 'entrada' : 'salida';
+                
+                return [
+                    'puerta' => $puerta,
+                    'ip_usada' => $ipUsada,
+                    'tipo_ip_usada' => $tipoIp,
+                    'entrada_ok' => null,
+                    'salida_ok' => null,
+                ];
+            });
+        } else {
+            // Modo normal: verificar conexiones
+            $puertasElegibles = $this->verificarPuertasParaEmergencia($puertasAll, false);
+
+            Log::info('Protocolo emergencia: resultado verificación', [
+                'puertas_elegibles' => $puertasElegibles->count(),
+                'detalles' => $puertasElegibles->map(fn($p) => [
+                    'puerta_id' => $p['puerta']->id,
+                    'nombre' => $p['puerta']->nombre,
+                    'ip_usada' => $p['ip_usada'],
+                    'tipo_ip_usada' => $p['tipo_ip_usada'],
+                ])->toArray(),
+            ]);
+
+            if ($puertasElegibles->isEmpty()) {
+                return back()->withErrors([
+                    'error' => 'No hay puertas con servidor de emergencia activo (puerto 8000). Verifica que ingreso.py esté corriendo en las Raspberries. Usa el botón "Diagnosticar Conexiones" para más detalles.'
+                ]);
+            }
         }
 
         DB::beginTransaction();
@@ -335,9 +446,10 @@ class ProtocoloController extends Controller
             return collect();
         }
 
-        // Alinear con módulo "Puertas" (TCP: 8000, timeout corto)
+        // Puerto donde corre el servidor HTTP de emergencia (ingreso.py)
         $port = 8000;
-        $timeoutSeconds = 0.35;
+        // Timeout aumentado para redes lentas o Raspberries cargadas
+        $timeoutSeconds = 1.5;
 
         $targets = [];
         foreach ($puertas as $puerta) {
@@ -380,6 +492,19 @@ class ProtocoloController extends Controller
 
         if (count($faltantes) > 0) {
             $resultados = $this->checkTcpTargetsLados($faltantes, $port, $timeoutSeconds);
+            
+            // Log detallado de resultados
+            Log::debug('Verificación TCP puerto 8000', [
+                'port' => $port,
+                'timeout' => $timeoutSeconds,
+                'resultados' => array_map(fn($r) => [
+                    'puerta_id' => $r['puerta_id'],
+                    'lado' => $r['lado'],
+                    'ip' => $r['ip'],
+                    'ok' => $r['ok'] ?? false,
+                ], $resultados),
+            ]);
+            
             foreach ($resultados as $r) {
                 $pid = (int) $r['puerta_id'];
                 $lado = (string) $r['lado'];

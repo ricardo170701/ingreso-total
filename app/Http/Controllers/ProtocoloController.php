@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -20,59 +21,76 @@ class ProtocoloController extends Controller
      */
     public function index(Request $request): Response
     {
-        $this->authorize('viewAny', ProtocolRun::class);
+        try {
+            $this->authorize('viewAny', ProtocolRun::class);
 
-        $user = $request->user();
+            $user = $request->user();
 
-        // Verificar permiso
-        if (!$user || !$user->hasPermission('protocol_emergencia_open_all')) {
-            abort(403, 'No tienes permiso para acceder a esta sección.');
+            // Verificar permiso
+            if (!$user || !$user->hasPermission('protocol_emergencia_open_all')) {
+                abort(403, 'No tienes permiso para acceder a esta sección.');
+            }
+
+            // Obtener puertas activas con IP de entrada
+            $puertas = Puerta::query()
+                ->where('activo', true)
+                ->whereNotNull('ip_entrada')
+                ->orderBy('nombre')
+                ->get();
+
+            // Verificar conexiones en paralelo (con caché de 2 minutos)
+            try {
+                $puertasConectadas = $this->verificarConexionesPuertas($puertas);
+            } catch (\Exception $e) {
+                // Si hay error en la verificación, usar todas las puertas (fallback)
+                Log::error('Error verificando conexiones de puertas en protocolo: ' . $e->getMessage(), [
+                    'exception' => $e,
+                    'trace' => $e->getTraceAsString(),
+                ]);
+                $puertasConectadas = $puertas;
+            }
+
+            // Filtrar y mapear solo las puertas con conexión
+            $puertas = $puertasConectadas
+                ->map(function ($puerta) {
+                    return [
+                        'id' => $puerta->id,
+                        'nombre' => $puerta->nombre,
+                        'ip_entrada' => $puerta->ip_entrada,
+                    ];
+                })
+                ->values();
+
+            // Últimas corridas de emergencia (últimas 5)
+            $ultimasCorridas = ProtocolRun::query()
+                ->with('user')
+                ->where('tipo', 'emergencia')
+                ->orderBy('created_at', 'desc')
+                ->limit(5)
+                ->get()
+                ->map(function ($run) {
+                    return [
+                        'id' => $run->id,
+                        'usuario' => $run->user->name ?? 'N/A',
+                        'estado' => $run->estado,
+                        'total_puertas' => $run->total_puertas,
+                        'puertas_exitosas' => $run->puertas_exitosas,
+                        'puertas_fallidas' => $run->puertas_fallidas,
+                        'fecha' => $run->created_at->format('d/m/Y H:i'),
+                    ];
+                });
+
+            return Inertia::render('Protocolo/Index', [
+                'puertas' => $puertas,
+                'ultimasCorridas' => $ultimasCorridas,
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error en ProtocoloController@index: ' . $e->getMessage(), [
+                'exception' => $e,
+                'trace' => $e->getTraceAsString(),
+            ]);
+            throw $e; // Re-lanzar para que Laravel maneje el error apropiadamente
         }
-
-        // Obtener puertas activas con IP de entrada
-        $puertas = Puerta::query()
-            ->where('activo', true)
-            ->whereNotNull('ip_entrada')
-            ->orderBy('nombre')
-            ->get();
-
-        // Verificar conexiones en paralelo (con caché de 2 minutos)
-        $puertasConectadas = $this->verificarConexionesPuertas($puertas);
-
-        // Filtrar y mapear solo las puertas con conexión
-        $puertas = $puertasConectadas
-            ->map(function ($puerta) {
-                return [
-                    'id' => $puerta->id,
-                    'nombre' => $puerta->nombre,
-                    'ip_entrada' => $puerta->ip_entrada,
-                ];
-            })
-            ->values();
-
-        // Últimas corridas de emergencia (últimas 5)
-        $ultimasCorridas = ProtocolRun::query()
-            ->with('user')
-            ->where('tipo', 'emergencia')
-            ->orderBy('created_at', 'desc')
-            ->limit(5)
-            ->get()
-            ->map(function ($run) {
-                return [
-                    'id' => $run->id,
-                    'usuario' => $run->user->name ?? 'N/A',
-                    'estado' => $run->estado,
-                    'total_puertas' => $run->total_puertas,
-                    'puertas_exitosas' => $run->puertas_exitosas,
-                    'puertas_fallidas' => $run->puertas_fallidas,
-                    'fecha' => $run->created_at->format('d/m/Y H:i'),
-                ];
-            });
-
-        return Inertia::render('Protocolo/Index', [
-            'puertas' => $puertas,
-            'ultimasCorridas' => $ultimasCorridas,
-        ]);
     }
 
     /**
@@ -200,71 +218,93 @@ class ProtocoloController extends Controller
      */
     private function verificarConexionesPuertas($puertas, bool $useCache = true)
     {
-        if ($puertas->isEmpty()) {
-            return collect();
-        }
-
-        $port = (int) (config('app.door_emergency_port') ?? env('DOOR_EMERGENCY_PORT', 8000));
-        $timeoutSeconds = 2.0; // Timeout de 2 segundos por puerta
-
-        // Preparar targets para verificación
-        $targets = [];
-        $puertasMap = [];
-
-        foreach ($puertas as $puerta) {
-            if (!$puerta->ip_entrada) {
-                continue;
+        try {
+            if ($puertas->isEmpty()) {
+                return collect();
             }
 
-            $cacheKey = "protocolo_puerta_conexion_{$puerta->id}";
+            $port = (int) (config('app.door_emergency_port') ?? env('DOOR_EMERGENCY_PORT', 8000));
+            $timeoutSeconds = 2.0; // Timeout de 2 segundos por puerta
 
-            // Si usamos caché, verificar primero
-            if ($useCache) {
-                $cached = Cache::get($cacheKey);
-                if ($cached !== null) {
-                    // Si está en caché y es true, incluirla directamente
-                    if ($cached === true) {
-                        $puertasMap[$puerta->id] = $puerta;
-                    }
+            // Preparar targets para verificación
+            $targets = [];
+            $puertasMap = [];
+
+            foreach ($puertas as $puerta) {
+                if (!$puerta || !$puerta->ip_entrada) {
                     continue;
                 }
+
+                $cacheKey = "protocolo_puerta_conexion_{$puerta->id}";
+
+                // Si usamos caché, verificar primero
+                if ($useCache) {
+                    try {
+                        $cached = Cache::get($cacheKey);
+                        if ($cached !== null) {
+                            // Si está en caché y es true, incluirla directamente
+                            if ($cached === true) {
+                                $puertasMap[$puerta->id] = $puerta;
+                            }
+                            continue;
+                        }
+                    } catch (\Exception $e) {
+                        // Si hay error con caché, continuar sin caché
+                        Log::warning('Error accediendo a caché de puerta: ' . $e->getMessage());
+                    }
+                }
+
+                $targets[] = [
+                    'puerta_id' => $puerta->id,
+                    'ip' => $puerta->ip_entrada,
+                ];
             }
 
-            $targets[] = [
-                'puerta_id' => $puerta->id,
-                'ip' => $puerta->ip_entrada,
-            ];
-        }
-
-        // Si no hay targets que verificar (todo estaba en caché), retornar
-        if (empty($targets)) {
-            return collect($puertasMap);
-        }
-
-        // Verificar conexiones en paralelo
-        $resultados = $this->checkTcpTargets($targets, $port, $timeoutSeconds);
-
-        // Procesar resultados y actualizar caché
-        foreach ($resultados as $resultado) {
-            $puertaId = $resultado['puerta_id'];
-            $conectada = $resultado['ok'] ?? false;
-
-            // Actualizar caché si usamos caché
-            if ($useCache) {
-                $cacheKey = "protocolo_puerta_conexion_{$puertaId}";
-                Cache::put($cacheKey, $conectada, now()->addMinutes(2));
+            // Si no hay targets que verificar (todo estaba en caché), retornar
+            if (empty($targets)) {
+                return collect($puertasMap);
             }
 
-            // Si está conectada, agregarla al mapa
-            if ($conectada) {
-                $puerta = $puertas->firstWhere('id', $puertaId);
-                if ($puerta) {
-                    $puertasMap[$puertaId] = $puerta;
+            // Verificar conexiones en paralelo
+            $resultados = $this->checkTcpTargets($targets, $port, $timeoutSeconds);
+
+            // Procesar resultados y actualizar caché
+            foreach ($resultados as $resultado) {
+                if (!isset($resultado['puerta_id'])) {
+                    continue;
+                }
+
+                $puertaId = $resultado['puerta_id'];
+                $conectada = $resultado['ok'] ?? false;
+
+                // Actualizar caché si usamos caché
+                if ($useCache) {
+                    try {
+                        $cacheKey = "protocolo_puerta_conexion_{$puertaId}";
+                        Cache::put($cacheKey, $conectada, now()->addMinutes(2));
+                    } catch (\Exception $e) {
+                        // Si hay error con caché, continuar sin actualizar
+                        Log::warning('Error actualizando caché de puerta: ' . $e->getMessage());
+                    }
+                }
+
+                // Si está conectada, agregarla al mapa
+                if ($conectada) {
+                    $puerta = $puertas->firstWhere('id', $puertaId);
+                    if ($puerta) {
+                        $puertasMap[$puertaId] = $puerta;
+                    }
                 }
             }
-        }
 
-        return collect($puertasMap);
+            return collect($puertasMap);
+        } catch (\Exception $e) {
+            Log::error('Error en verificarConexionesPuertas: ' . $e->getMessage(), [
+                'exception' => $e,
+            ]);
+            // Retornar colección vacía en caso de error
+            return collect();
+        }
     }
 
     /**
@@ -366,11 +406,22 @@ class ProtocoloController extends Controller
                 }
 
                 $ok = false;
-                $sock = @socket_import_stream($s);
-                if ($sock !== false) {
-                    $err = @socket_get_option($sock, SOL_SOCKET, SO_ERROR);
-                    $ok = ($err === 0);
-                    @socket_close($sock);
+                try {
+                    $sock = @socket_import_stream($s);
+                    if ($sock !== false) {
+                        // Verificar que las constantes estén definidas
+                        if (defined('SOL_SOCKET') && defined('SO_ERROR')) {
+                            $err = @socket_get_option($sock, SOL_SOCKET, SO_ERROR);
+                            $ok = ($err === 0);
+                        } else {
+                            // Fallback: si la conexión se estableció, asumir que está OK
+                            $ok = true;
+                        }
+                        @socket_close($sock);
+                    }
+                } catch (\Exception $e) {
+                    // Si hay error, considerar como no conectada
+                    $ok = false;
                 }
 
                 $out[] = [

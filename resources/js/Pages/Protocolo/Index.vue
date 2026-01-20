@@ -101,6 +101,10 @@
                             {{ puerta.nombre }}
                         </p>
                         <div class="mt-2 space-y-1 text-xs text-slate-600 dark:text-slate-400">
+                            <p v-if="puerta.ip_usada && puerta.tipo_ip_usada">
+                                <span class="font-medium text-slate-700 dark:text-slate-300">Se usará:</span>
+                                {{ puerta.tipo_ip_usada }} ({{ puerta.ip_usada }})
+                            </p>
                             <p v-if="puerta.ip_entrada">
                                 <span class="font-medium text-slate-700 dark:text-slate-300">IP Entrada:</span>
                                 {{ puerta.ip_entrada }}

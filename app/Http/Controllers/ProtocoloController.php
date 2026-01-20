@@ -130,7 +130,7 @@ class ProtocoloController extends Controller
                 $start = microtime(true);
                 $conexion = @fsockopen($puerta->ip_entrada, $port, $errno, $errstr, $timeoutSeconds);
                 $tiempo = round((microtime(true) - $start) * 1000, 2);
-                
+
                 if ($conexion) {
                     fclose($conexion);
                     $entradaStatus = ['ok' => true, 'tiempo_ms' => $tiempo];
@@ -143,7 +143,7 @@ class ProtocoloController extends Controller
                 $start = microtime(true);
                 $conexion = @fsockopen($puerta->ip_salida, $port, $errno, $errstr, $timeoutSeconds);
                 $tiempo = round((microtime(true) - $start) * 1000, 2);
-                
+
                 if ($conexion) {
                     fclose($conexion);
                     $salidaStatus = ['ok' => true, 'tiempo_ms' => $tiempo];
@@ -220,7 +220,7 @@ class ProtocoloController extends Controller
                 // Preferir IP entrada si existe, sino salida
                 $ipUsada = $puerta->ip_entrada ?? $puerta->ip_salida;
                 $tipoIp = $puerta->ip_entrada ? 'entrada' : 'salida';
-                
+
                 return [
                     'puerta' => $puerta,
                     'ip_usada' => $ipUsada,
@@ -492,7 +492,7 @@ class ProtocoloController extends Controller
 
         if (count($faltantes) > 0) {
             $resultados = $this->checkTcpTargetsLados($faltantes, $port, $timeoutSeconds);
-            
+
             // Log detallado de resultados
             Log::debug('Verificación TCP puerto 8000', [
                 'port' => $port,
@@ -504,7 +504,7 @@ class ProtocoloController extends Controller
                     'ok' => $r['ok'] ?? false,
                 ], $resultados),
             ]);
-            
+
             foreach ($resultados as $r) {
                 $pid = (int) $r['puerta_id'];
                 $lado = (string) $r['lado'];

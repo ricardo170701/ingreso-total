@@ -30,9 +30,15 @@ class EliminarPisosEspecificosSeeder extends Seeder
 
         $this->command->info('🗑️  Eliminando pisos específicos...');
 
+        // Convertir nombres a mayúsculas para búsqueda insensible
+        $nombresUpper = array_map('strtoupper', $nombresPisosAEliminar);
+        
         // Eliminar directamente usando SQL (búsqueda insensible a mayúsculas/minúsculas)
+        // Construir placeholders para cada nombre
+        $placeholders = implode(',', array_fill(0, count($nombresUpper), '?'));
+        
         $eliminados = DB::table('pisos')
-            ->whereRaw('UPPER(nombre) IN (?)', [array_map('strtoupper', $nombresPisosAEliminar)])
+            ->whereRaw("UPPER(nombre) IN ({$placeholders})", $nombresUpper)
             ->delete();
 
         $this->command->info("✓ Pisos eliminados: {$eliminados}");

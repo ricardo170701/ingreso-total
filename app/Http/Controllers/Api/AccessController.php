@@ -264,7 +264,41 @@ class AccessController extends Controller
             }
         }
 
-        $this->registrarAcceso($user->id, $puerta->id, $qr?->id, $tarjetaNfc?->id, $permitido, $motivo, $data['codigo_fisico'], $tipoEvento, $dispositivoId);
+        $this->registrarAcceso(
+            $user->id,
+            $puerta->id,
+            $qr?->id,
+            $tarjetaNfc?->id,
+            $permitido,
+            $motivo,
+            $data['codigo_fisico'],
+            $tipoEvento,
+            $dispositivoId,
+            $now
+        );
+
+        // Puertas con solo ip_entrada (sin ip_salida): el egreso se hace con botón físico,
+        // así que registramos una salida automática para no dejar la "entrada" activa.
+        if (
+            $permitido
+            && $tipoEvento === 'entrada'
+            && !empty($puerta->ip_entrada)
+            && empty($puerta->ip_salida)
+        ) {
+            $this->registrarAcceso(
+                $user->id,
+                $puerta->id,
+                $qr?->id,
+                $tarjetaNfc?->id,
+                true,
+                null,
+                $data['codigo_fisico'],
+                'salida',
+                $dispositivoId,
+                $now->copy()->addSecond(),
+                'Auto-salida: puerta sin lector de salida (solo ip_entrada).'
+            );
+        }
 
         // Determinar el tiempo de apertura según si el usuario es discapacitado
         $tiempoApertura = $puerta->tiempo_apertura ?? 5; // Valor por defecto si no está configurado
@@ -289,8 +323,19 @@ class AccessController extends Controller
         ]);
     }
 
-    private function registrarAcceso(?int $userId, int $puertaId, ?int $codigoQrId, ?int $tarjetaNfcId, bool $permitido, ?string $motivo, ?string $lectorId, string $tipoEventoIntentado = 'entrada', ?string $dispositivoId = null): void
-    {
+    private function registrarAcceso(
+        ?int $userId,
+        int $puertaId,
+        ?int $codigoQrId,
+        ?int $tarjetaNfcId,
+        bool $permitido,
+        ?string $motivo,
+        ?string $lectorId,
+        string $tipoEventoIntentado = 'entrada',
+        ?string $dispositivoId = null,
+        ?Carbon $fechaAcceso = null,
+        ?string $observacionesPermitido = null
+    ): void {
         Acceso::query()->create([
             // user_id será nullable (migración adicional) para registrar intentos con QR/Tarjeta inválido
             'user_id' => $userId,
@@ -298,12 +343,12 @@ class AccessController extends Controller
             'codigo_qr_id' => $codigoQrId,
             'tarjeta_nfc_id' => $tarjetaNfcId,
             'tipo_evento' => $permitido ? $tipoEventoIntentado : 'denegado',
-            'fecha_acceso' => Carbon::now(),
+            'fecha_acceso' => $fechaAcceso ?? Carbon::now(),
             'permitido' => $permitido,
             'lector_id' => $lectorId,
             'dispositivo_id' => $dispositivoId,
             'motivo_denegacion' => $motivo,
-            'observaciones' => $permitido ? null : ('Intentó: ' . $tipoEventoIntentado),
+            'observaciones' => $permitido ? $observacionesPermitido : ('Intentó: ' . $tipoEventoIntentado),
         ]);
     }
 

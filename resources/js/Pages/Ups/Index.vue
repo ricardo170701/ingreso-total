@@ -11,7 +11,7 @@
                 <Link
                     v-if="hasPermission('create_ups')"
                     :href="route('ups.create')"
-                    class="px-4 py-2 rounded-lg bg-slate-900 dark:bg-slate-700 text-white hover:bg-slate-800 dark:hover:bg-slate-600 font-medium transition-colors duration-200"
+                    class="px-4 py-2 rounded-lg bg-green-600 dark:bg-green-700 text-white hover:bg-green-700 dark:hover:bg-green-600 font-medium transition-colors duration-200"
                 >
                     Nueva UPS
                 </Link>
@@ -58,7 +58,7 @@
                     <div class="flex items-end gap-2">
                         <button
                             type="submit"
-                            class="flex-1 px-4 py-2 rounded-lg bg-slate-900 dark:bg-slate-700 text-white hover:bg-slate-800 dark:hover:bg-slate-600 font-medium transition-colors duration-200"
+                            class="flex-1 px-4 py-2 rounded-lg bg-green-600 dark:bg-green-700 text-white hover:bg-green-700 dark:hover:bg-green-600 font-medium transition-colors duration-200"
                         >
                             Aplicar
                         </button>
@@ -142,14 +142,14 @@
                         <div class="mt-4 grid grid-cols-2 gap-2">
                             <Link
                                 :href="route('ups.show', { ups: u.id })"
-                                class="text-center px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 text-sm font-semibold transition-colors duration-200"
+                                class="text-center px-3 py-2 rounded-xl border border-blue-200 dark:border-blue-700 bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-900/50 text-blue-700 dark:text-blue-400 text-sm font-semibold transition-colors duration-200"
                             >
                                 Ver
                             </Link>
                             <Link
                                 v-if="hasPermission('edit_ups')"
                                 :href="route('ups.edit', { ups: u.id })"
-                                class="text-center px-3 py-2 rounded-xl bg-slate-900 dark:bg-slate-700 text-white hover:bg-slate-800 dark:hover:bg-slate-600 text-sm font-semibold transition-colors duration-200"
+                                class="text-center px-3 py-2 rounded-xl bg-amber-600 dark:bg-amber-700 text-white hover:bg-amber-700 dark:hover:bg-amber-600 text-sm font-semibold transition-colors duration-200"
                             >
                                 Editar
                             </Link>

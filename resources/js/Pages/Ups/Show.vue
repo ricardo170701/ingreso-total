@@ -20,7 +20,7 @@
                     <Link
                         v-if="hasPermission('edit_ups')"
                         :href="route('ups.edit', { ups: ups.id })"
-                        class="px-3 py-2 rounded-lg bg-slate-900 dark:bg-slate-700 text-white hover:bg-slate-800 dark:hover:bg-slate-600 font-medium transition-colors duration-200"
+                        class="px-3 py-2 rounded-lg bg-amber-600 dark:bg-amber-700 text-white hover:bg-amber-700 dark:hover:bg-amber-600 font-medium transition-colors duration-200"
                     >
                         Editar
                     </Link>

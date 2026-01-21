@@ -285,7 +285,7 @@
                             type="button"
                             @click="showConfirmModal = true"
                             :disabled="form.processing"
-                            class="px-4 py-2 rounded-lg bg-slate-900 dark:bg-slate-700 text-white hover:bg-slate-800 dark:hover:bg-slate-600 font-medium disabled:opacity-50 transition-colors duration-200"
+                            class="px-4 py-2 rounded-lg bg-green-600 dark:bg-green-700 text-white hover:bg-green-700 dark:hover:bg-green-600 font-medium disabled:opacity-50 transition-colors duration-200"
                         >
                             {{ form.processing ? "Guardando..." : "Guardar cambios" }}
                         </button>
@@ -339,7 +339,7 @@
                             type="button"
                             @click="confirmSubmit"
                             :disabled="form.processing"
-                            class="px-4 py-2 rounded-lg bg-slate-900 dark:bg-slate-700 text-white hover:bg-slate-800 dark:hover:bg-slate-600 disabled:opacity-50 font-medium transition-colors duration-200"
+                            class="px-4 py-2 rounded-lg bg-green-600 dark:bg-green-700 text-white hover:bg-green-700 dark:hover:bg-green-600 disabled:opacity-50 font-medium transition-colors duration-200"
                         >
                             {{
                                 form.processing

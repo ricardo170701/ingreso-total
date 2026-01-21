@@ -168,32 +168,34 @@
                 </div>
             </header>
 
-            <!-- Aviso de expiración (<= 14 días) -->
-            <div
-                v-if="expiracionAviso.visible"
-                class="mx-4 sm:mx-6 mt-4 rounded-xl border border-amber-200 dark:border-amber-900 bg-amber-50 dark:bg-amber-900/20 px-4 py-3 text-amber-900 dark:text-amber-100"
+            <!-- Modal de aviso de expiración (<= 14 días) -->
+            <Modal
+                :show="expiracionAviso.visible && !expiracionAvisoConfirmado"
+                title="Aviso: Tu cuenta está próxima a expirar"
+                :closable="false"
+                :closeOnBackdrop="false"
+                :showCancel="false"
+                confirmText="Entendido"
+                confirmClass="bg-amber-600 dark:bg-amber-700 hover:bg-amber-700 dark:hover:bg-amber-600"
+                @confirm="confirmarAvisoExpiracion"
             >
-                <div class="flex items-start justify-between gap-4">
-                    <div class="min-w-0">
-                        <p class="text-sm font-semibold">
-                            Aviso: tu cuenta está próxima a expirar
-                        </p>
-                        <p class="text-sm mt-1">
-                            <span v-if="expiracionAviso.diasRestantes === 0">Expira hoy.</span>
-                            <span v-else>Faltan {{ expiracionAviso.diasRestantes }} día(s).</span>
-                            <span v-if="expiracionAviso.fecha"> ({{ expiracionAviso.fecha }})</span>
-                        </p>
-                    </div>
-                    <button
-                        type="button"
-                        class="shrink-0 text-amber-900/70 dark:text-amber-100/70 hover:text-amber-900 dark:hover:text-amber-100"
-                        @click="dismissExpiracionAviso = true"
-                        aria-label="Cerrar aviso"
-                    >
-                        ×
-                    </button>
+                <div class="text-sm text-slate-700 dark:text-slate-300">
+                    <p class="mb-3">
+                        <span v-if="expiracionAviso.diasRestantes === 0">
+                            Tu cuenta <strong class="font-semibold text-amber-700 dark:text-amber-400">expira hoy</strong>.
+                        </span>
+                        <span v-else>
+                            Tu cuenta expirará en <strong class="font-semibold text-amber-700 dark:text-amber-400">{{ expiracionAviso.diasRestantes }} día(s)</strong>.
+                        </span>
+                        <span v-if="expiracionAviso.fecha" class="block mt-2 text-slate-600 dark:text-slate-400">
+                            Fecha de expiración: {{ formatearFecha(expiracionAviso.fecha) }}
+                        </span>
+                    </p>
+                    <p class="text-sm text-slate-600 dark:text-slate-400">
+                        Por favor, contacta al administrador si necesitas extender tu cuenta.
+                    </p>
                 </div>
-            </div>
+            </Modal>
 
             <!-- Page Content -->
             <main class="p-4 sm:p-6">
@@ -208,6 +210,7 @@
 import { computed, ref, watch, onMounted, onUnmounted } from "vue";
 import { usePage, router, Link } from "@inertiajs/vue3";
 import { useDarkMode } from "@/composables/useDarkMode";
+import Modal from "@/Components/Modal.vue";
 
 const page = usePage();
 const sidebarOpen = ref(false);
@@ -215,12 +218,14 @@ const { isDark, toggleDarkMode } = useDarkMode();
 
 const user = computed(() => page.props.auth?.user || page.props.user);
 const esVisitante = computed(() => user.value?.role?.name === "visitante");
-const dismissExpiracionAviso = ref(false);
+const expiracionAvisoConfirmado = ref(false);
 
 const expiracionAviso = computed(() => {
-    if (dismissExpiracionAviso.value) {
+    // No mostrar si ya fue confirmado
+    if (expiracionAvisoConfirmado.value) {
         return { visible: false, diasRestantes: null, fecha: null };
     }
+    
     const u = user.value;
     if (!u || u.activo !== true || !u.fecha_expiracion) {
         return { visible: false, diasRestantes: null, fecha: null };
@@ -245,6 +250,26 @@ const expiracionAviso = computed(() => {
 
     return { visible: true, diasRestantes: diffDays, fecha: u.fecha_expiracion };
 });
+
+// Función para formatear la fecha
+const formatearFecha = (fecha) => {
+    if (!fecha) return '';
+    try {
+        const fechaObj = new Date(fecha + 'T00:00:00');
+        return fechaObj.toLocaleDateString('es-ES', { 
+            year: 'numeric', 
+            month: 'long', 
+            day: 'numeric' 
+        });
+    } catch {
+        return fecha;
+    }
+};
+
+// Función para confirmar el aviso de expiración
+const confirmarAvisoExpiracion = () => {
+    expiracionAvisoConfirmado.value = true;
+};
 const pageTitle = computed(() => {
     const component = page.component || "";
     const parts = component.split("/");

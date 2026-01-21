@@ -16,6 +16,7 @@
 
             <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-6 transition-colors duration-200">
                 <form @submit.prevent="submit" class="space-y-4">
+                    <!-- Información básica -->
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <FormField label="Código" :error="form.errors.codigo">
                             <input
@@ -25,6 +26,50 @@
                                 placeholder="UPS-001"
                             />
                         </FormField>
+                        <FormField label="Comp (Compañía/Compartimiento)" :error="form.errors.comp">
+                            <input
+                                v-model="form.comp"
+                                type="text"
+                                class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-transparent transition-colors duration-200"
+                            />
+                        </FormField>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <FormField label="Comp (Compañía/Compartimiento)" :error="form.errors.comp">
+                            <input
+                                v-model="form.comp"
+                                type="text"
+                                class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-transparent transition-colors duration-200"
+                            />
+                        </FormField>
+                        <FormField label="Fecha de adquisición" :error="form.errors.fecha_adquisicion">
+                            <input
+                                v-model="form.fecha_adquisicion"
+                                type="date"
+                                class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-transparent transition-colors duration-200"
+                            />
+                        </FormField>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <FormField label="Elemt (Elemento)" :error="form.errors.elemt">
+                            <input
+                                v-model="form.elemt"
+                                type="text"
+                                class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-transparent transition-colors duration-200"
+                            />
+                        </FormField>
+                        <FormField label="R.I. (Registro Interno)" :error="form.errors.ri">
+                            <input
+                                v-model="form.ri"
+                                type="text"
+                                class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-transparent transition-colors duration-200"
+                            />
+                        </FormField>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <FormField label="Nombre" :error="form.errors.nombre">
                             <input
                                 v-model="form.nombre"
@@ -33,9 +78,6 @@
                                 placeholder="UPS Principal"
                             />
                         </FormField>
-                    </div>
-
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <FormField label="Piso" :error="form.errors.piso_id">
                             <select
                                 v-model="form.piso_id"
@@ -47,7 +89,18 @@
                                 </option>
                             </select>
                         </FormField>
-                        <FormField label="Estado" :error="form.errors.activo">
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <FormField label="Estado" :error="form.errors.estado">
+                            <input
+                                v-model="form.estado"
+                                type="text"
+                                class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-transparent transition-colors duration-200"
+                                placeholder="Ej: En servicio, Mantenimiento, etc."
+                            />
+                        </FormField>
+                        <FormField label="Activo/Inactivo" :error="form.errors.activo">
                             <select
                                 v-model="form.activo"
                                 class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-transparent transition-colors duration-200"
@@ -123,6 +176,19 @@
                                 placeholder="Ej: 3000"
                             />
                         </FormField>
+                        <FormField label="Potencia (KVA)" :error="form.errors.potencia_kva">
+                            <input
+                                v-model="form.potencia_kva"
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-transparent transition-colors duration-200"
+                                placeholder="Ej: 3.0"
+                            />
+                        </FormField>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <FormField label="Potencia (W)" :error="form.errors.potencia_w">
                             <input
                                 v-model="form.potencia_w"
@@ -132,7 +198,51 @@
                                 placeholder="Ej: 2700"
                             />
                         </FormField>
+                        <FormField label="Potencia (KW)" :error="form.errors.potencia_kw">
+                            <input
+                                v-model="form.potencia_kw"
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-transparent transition-colors duration-200"
+                                placeholder="Ej: 2.7"
+                            />
+                        </FormField>
                     </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <FormField label="Cantidad de baterías" :error="form.errors.cantidad_baterias">
+                            <input
+                                v-model="form.cantidad_baterias"
+                                type="number"
+                                min="0"
+                                class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-transparent transition-colors duration-200"
+                                placeholder="Ej: 8"
+                            />
+                        </FormField>
+                        <FormField label="Voltaje de baterías (V)" :error="form.errors.voltaje_baterias">
+                            <input
+                                v-model="form.voltaje_baterias"
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-transparent transition-colors duration-200"
+                                placeholder="Ej: 12.0"
+                            />
+                        </FormField>
+                    </div>
+
+                    <FormField label="Ficha técnica (PDF)" :error="form.errors.ficha_tecnica">
+                        <input
+                            type="file"
+                            accept=".pdf,application/pdf"
+                            @change="onFichaTecnicaChange"
+                            class="block w-full text-sm text-slate-700 dark:text-slate-300 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-slate-900 dark:file:bg-slate-700 file:text-white hover:file:bg-slate-800 dark:hover:file:bg-slate-600 transition-colors duration-200"
+                        />
+                        <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                            Formato PDF, máximo 10MB
+                        </p>
+                    </FormField>
 
                     <FormField label="Observaciones" :error="form.errors.observaciones">
                         <textarea
@@ -170,15 +280,25 @@ const props = defineProps({
 
 const form = useForm({
     codigo: "",
+    comp: "",
+    fecha_adquisicion: null,
+    elemt: "",
+    ri: "",
     nombre: "",
     piso_id: null,
-    ubicacion: "",
+    estado: "",
     marca: "",
     modelo: "",
     serial: "",
+    ubicacion: "",
     foto: null,
+    ficha_tecnica: null,
     potencia_va: null,
+    potencia_kva: null,
     potencia_w: null,
+    potencia_kw: null,
+    cantidad_baterias: null,
+    voltaje_baterias: null,
     activo: true,
     observaciones: "",
 });
@@ -186,6 +306,11 @@ const form = useForm({
 const onFotoChange = (e) => {
     const file = e.target?.files?.[0] || null;
     form.foto = file;
+};
+
+const onFichaTecnicaChange = (e) => {
+    const file = e.target?.files?.[0] || null;
+    form.ficha_tecnica = file;
 };
 
 const fotoPreviewUrl = computed(() => {

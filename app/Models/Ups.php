@@ -13,23 +13,38 @@ class Ups extends Model
 
     protected $fillable = [
         'codigo',
+        'comp',
+        'fecha_adquisicion',
+        'elemt',
+        'ri',
         'nombre',
         'piso_id',
-        'ubicacion',
+        'estado',
         'marca',
         'modelo',
         'serial',
+        'ubicacion',
         'foto',
+        'ficha_tecnica',
         'potencia_va',
+        'potencia_kva',
         'potencia_w',
+        'potencia_kw',
+        'cantidad_baterias',
+        'voltaje_baterias',
         'activo',
         'observaciones',
     ];
 
     protected $casts = [
         'activo' => 'boolean',
+        'fecha_adquisicion' => 'date',
         'potencia_va' => 'integer',
         'potencia_w' => 'integer',
+        'potencia_kva' => 'decimal:2',
+        'potencia_kw' => 'decimal:2',
+        'cantidad_baterias' => 'integer',
+        'voltaje_baterias' => 'decimal:2',
     ];
 
     public function piso()

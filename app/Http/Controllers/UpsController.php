@@ -73,6 +73,10 @@ class UpsController extends Controller
             $data['foto'] = $request->file('foto')->store('ups/fotos', 'public');
         }
 
+        if ($request->hasFile('ficha_tecnica')) {
+            $data['ficha_tecnica'] = $request->file('ficha_tecnica')->store('ups/fichas_tecnicas', 'public');
+        }
+
         Ups::create($data);
 
         return redirect()
@@ -123,6 +127,13 @@ class UpsController extends Controller
             $data['foto'] = $request->file('foto')->store('ups/fotos', 'public');
         }
 
+        if ($request->hasFile('ficha_tecnica')) {
+            if ($ups->ficha_tecnica && Storage::disk('public')->exists($ups->ficha_tecnica)) {
+                Storage::disk('public')->delete($ups->ficha_tecnica);
+            }
+            $data['ficha_tecnica'] = $request->file('ficha_tecnica')->store('ups/fichas_tecnicas', 'public');
+        }
+
         $ups->update($data);
 
         return redirect()
@@ -138,6 +149,9 @@ class UpsController extends Controller
         $ups->load(['mantenimientos.documentos', 'mantenimientos.imagenes']);
         if ($ups->foto && Storage::disk('public')->exists($ups->foto)) {
             Storage::disk('public')->delete($ups->foto);
+        }
+        if ($ups->ficha_tecnica && Storage::disk('public')->exists($ups->ficha_tecnica)) {
+            Storage::disk('public')->delete($ups->ficha_tecnica);
         }
         foreach ($ups->mantenimientos as $m) {
             foreach ($m->documentos as $doc) {

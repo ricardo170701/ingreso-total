@@ -7,7 +7,7 @@
                         {{ ups.codigo }} - {{ ups.nombre }}
                     </h1>
                     <p class="text-sm text-slate-600 dark:text-slate-400">
-                        {{ ups.piso?.nombre || "Sin piso" }} · {{ ups.activo ? "Activo" : "Inactivo" }}
+                        {{ ups.piso?.nombre || "Sin piso" }} · {{ ups.estado || (ups.activo ? "Activo" : "Inactivo") }}
                     </p>
                 </div>
                 <div class="flex gap-2 flex-wrap">
@@ -81,6 +81,26 @@
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
+                        <label class="text-sm font-medium text-slate-500 dark:text-slate-400">Comp (Compañía/Compartimiento)</label>
+                        <p class="text-sm text-slate-900 dark:text-slate-100">{{ ups.comp || "-" }}</p>
+                    </div>
+                    <div>
+                        <label class="text-sm font-medium text-slate-500 dark:text-slate-400">Fecha de adquisición</label>
+                        <p class="text-sm text-slate-900 dark:text-slate-100">{{ ups.fecha_adquisicion ? formatDate(ups.fecha_adquisicion) : "-" }}</p>
+                    </div>
+                    <div>
+                        <label class="text-sm font-medium text-slate-500 dark:text-slate-400">Elemt (Elemento)</label>
+                        <p class="text-sm text-slate-900 dark:text-slate-100">{{ ups.elemt || "-" }}</p>
+                    </div>
+                    <div>
+                        <label class="text-sm font-medium text-slate-500 dark:text-slate-400">R.I. (Registro Interno)</label>
+                        <p class="text-sm text-slate-900 dark:text-slate-100">{{ ups.ri || "-" }}</p>
+                    </div>
+                    <div>
+                        <label class="text-sm font-medium text-slate-500 dark:text-slate-400">Estado</label>
+                        <p class="text-sm text-slate-900 dark:text-slate-100">{{ ups.estado || (ups.activo ? "Activo" : "Inactivo") }}</p>
+                    </div>
+                    <div>
                         <label class="text-sm font-medium text-slate-500 dark:text-slate-400">Ubicación</label>
                         <p class="text-sm text-slate-900 dark:text-slate-100">{{ ups.ubicacion || "-" }}</p>
                     </div>
@@ -89,19 +109,51 @@
                         <p class="text-sm text-slate-900 dark:text-slate-100">{{ ups.serial || "-" }}</p>
                     </div>
                     <div>
-                        <label class="text-sm font-medium text-slate-500 dark:text-slate-400">Marca / Modelo</label>
-                        <p class="text-sm text-slate-900 dark:text-slate-100">
-                            {{ ups.marca || "-" }}{{ ups.modelo ? ` / ${ups.modelo}` : "" }}
-                        </p>
+                        <label class="text-sm font-medium text-slate-500 dark:text-slate-400">Marca</label>
+                        <p class="text-sm text-slate-900 dark:text-slate-100">{{ ups.marca || "-" }}</p>
                     </div>
                     <div>
-                        <label class="text-sm font-medium text-slate-500 dark:text-slate-400">Potencia</label>
-                        <p class="text-sm text-slate-900 dark:text-slate-100">
-                            {{ ups.potencia_va ? `${ups.potencia_va} VA` : "-" }}
-                            <span class="text-slate-500 dark:text-slate-400">·</span>
-                            {{ ups.potencia_w ? `${ups.potencia_w} W` : "-" }}
-                        </p>
+                        <label class="text-sm font-medium text-slate-500 dark:text-slate-400">Modelo</label>
+                        <p class="text-sm text-slate-900 dark:text-slate-100">{{ ups.modelo || "-" }}</p>
                     </div>
+                    <div>
+                        <label class="text-sm font-medium text-slate-500 dark:text-slate-400">Potencia (VA)</label>
+                        <p class="text-sm text-slate-900 dark:text-slate-100">{{ ups.potencia_va ? `${ups.potencia_va} VA` : "-" }}</p>
+                    </div>
+                    <div>
+                        <label class="text-sm font-medium text-slate-500 dark:text-slate-400">Potencia (KVA)</label>
+                        <p class="text-sm text-slate-900 dark:text-slate-100">{{ ups.potencia_kva ? `${ups.potencia_kva} KVA` : "-" }}</p>
+                    </div>
+                    <div>
+                        <label class="text-sm font-medium text-slate-500 dark:text-slate-400">Potencia (W)</label>
+                        <p class="text-sm text-slate-900 dark:text-slate-100">{{ ups.potencia_w ? `${ups.potencia_w} W` : "-" }}</p>
+                    </div>
+                    <div>
+                        <label class="text-sm font-medium text-slate-500 dark:text-slate-400">Potencia (KW)</label>
+                        <p class="text-sm text-slate-900 dark:text-slate-100">{{ ups.potencia_kw ? `${ups.potencia_kw} KW` : "-" }}</p>
+                    </div>
+                    <div>
+                        <label class="text-sm font-medium text-slate-500 dark:text-slate-400">Cantidad de baterías</label>
+                        <p class="text-sm text-slate-900 dark:text-slate-100">{{ ups.cantidad_baterias || "-" }}</p>
+                    </div>
+                    <div>
+                        <label class="text-sm font-medium text-slate-500 dark:text-slate-400">Voltaje de baterías (V)</label>
+                        <p class="text-sm text-slate-900 dark:text-slate-100">{{ ups.voltaje_baterias ? `${ups.voltaje_baterias} V` : "-" }}</p>
+                    </div>
+                </div>
+
+                <div v-if="ups.ficha_tecnica" class="pt-4 border-t border-slate-200 dark:border-slate-700">
+                    <label class="text-sm font-medium text-slate-500 dark:text-slate-400">Ficha técnica</label>
+                    <p class="mt-1">
+                        <a
+                            :href="storageUrl(ups.ficha_tecnica)"
+                            target="_blank"
+                            class="text-sm text-blue-600 dark:text-blue-400 hover:underline inline-flex items-center gap-2 transition-colors duration-200"
+                        >
+                            <span>📄</span>
+                            <span>Ver ficha técnica (PDF)</span>
+                        </a>
+                    </p>
                 </div>
 
                 <div v-if="ups.observaciones" class="pt-4 border-t border-slate-200 dark:border-slate-700">

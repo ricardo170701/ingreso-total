@@ -264,9 +264,9 @@
                                     </div>
                                 </div>
 
-                                <!-- Acciones (preview): Ver / Abrir / Reiniciar -->
+                                <!-- Acciones (preview): Ver / Reiniciar -->
                                 <div class="mt-4 pt-4 border-t border-slate-200 dark:border-slate-700">
-                                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
                                         <Link
                                             v-if="hasPermission('view_puertas')"
                                             :href="route('puertas.show', { puerta: puerta.id })"
@@ -274,16 +274,6 @@
                                         >
                                             Ver
                                         </Link>
-                                        <button
-                                            v-if="hasPermission('toggle_puertas') && puerta.ip_entrada"
-                                            type="button"
-                                            @click="abrirPuerta(puerta)"
-                                            :disabled="abriendo[puerta.id] === true"
-                                            class="w-full inline-flex items-center justify-center px-4 py-2 rounded-xl bg-slate-900 dark:bg-slate-700 text-white hover:bg-slate-800 dark:hover:bg-slate-600 text-sm font-semibold disabled:opacity-50 transition-colors duration-200"
-                                            title="Abrir/Cerrar (Entrada)"
-                                        >
-                                            {{ abriendo[puerta.id] ? "..." : "Abrir" }}
-                                        </button>
                                         <button
                                             v-if="hasPermission('reboot_puertas') && (puerta.ip_entrada || puerta.ip_salida)"
                                             type="button"

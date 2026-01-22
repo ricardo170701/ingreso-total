@@ -538,7 +538,7 @@ const refrescarConexiones = async () => {
 
         // Usar AbortController para permitir cancelar la petición si el usuario navega
         const controller = new AbortController();
-        
+
         // Guardar el controller para poder cancelarlo si es necesario
         const timeoutId = setTimeout(() => {
             controller.abort();

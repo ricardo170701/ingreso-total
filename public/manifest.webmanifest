@@ -1,17 +1,25 @@
 {
   "name": "control acceso gob meta",
   "short_name": "control acceso gob meta",
+  "description": "Sistema de Control de Accesos - Gobernación del Meta",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#008c3a",
   "theme_color": "#008c3a",
   "orientation": "portrait",
+  "scope": "/",
   "icons": [
     {
       "src": "/images/logo-gobernacion-meta.png",
-      "sizes": "192x192 512x512",
+      "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any"
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/images/logo-gobernacion-meta.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
     }
   ]
 }

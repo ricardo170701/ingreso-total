@@ -10,8 +10,12 @@
     <title inertia>{{ config('app.name', 'control acceso gob meta') }}</title>
 
     <!-- PWA (bloqueo de orientación al instalar en pantalla de inicio) -->
-    <link rel="manifest" href="/manifest.webmanifest">
+    <link rel="manifest" href="/manifest.webmanifest?v={{ config('app.version', time()) }}">
     <meta name="theme-color" content="#008c3a">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="control acceso gob meta">
+    <link rel="apple-touch-icon" href="/images/logo-gobernacion-meta.png">
 
     <!-- Inicializar modo oscuro antes de que Vue cargue -->
     <script>

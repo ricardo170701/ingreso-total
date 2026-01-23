@@ -223,6 +223,77 @@
                                 {{ puerta.descripcion }}
                             </p>
                         </div>
+
+                        <div class="pt-4 border-t border-slate-200 dark:border-slate-700">
+                            <p class="text-xs text-slate-500 dark:text-slate-400 mb-3">Opciones de la puerta</p>
+                            <ul class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
+                                <li class="flex items-center gap-2">
+                                    <span
+                                        :class="[
+                                            'w-5 h-5 rounded flex items-center justify-center shrink-0 text-xs font-bold',
+                                            puerta.activo
+                                                ? 'bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400'
+                                                : 'bg-slate-100 dark:bg-slate-700 text-slate-400 dark:text-slate-500',
+                                        ]"
+                                    >
+                                        {{ puerta.activo ? "✓" : "—" }}
+                                    </span>
+                                    <span class="text-slate-700 dark:text-slate-300">Activa</span>
+                                </li>
+                                <li class="flex items-center gap-2">
+                                    <span
+                                        :class="[
+                                            'w-5 h-5 rounded flex items-center justify-center shrink-0 text-xs font-bold',
+                                            puerta.requiere_discapacidad
+                                                ? 'bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400'
+                                                : 'bg-slate-100 dark:bg-slate-700 text-slate-400 dark:text-slate-500',
+                                        ]"
+                                    >
+                                        {{ puerta.requiere_discapacidad ? "✓" : "—" }}
+                                    </span>
+                                    <span class="text-slate-700 dark:text-slate-300">Requiere discapacidad</span>
+                                </li>
+                                <li class="flex items-center gap-2">
+                                    <span
+                                        :class="[
+                                            'w-5 h-5 rounded flex items-center justify-center shrink-0 text-xs font-bold',
+                                            puerta.es_oculta
+                                                ? 'bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400'
+                                                : 'bg-slate-100 dark:bg-slate-700 text-slate-400 dark:text-slate-500',
+                                        ]"
+                                    >
+                                        {{ puerta.es_oculta ? "✓" : "—" }}
+                                    </span>
+                                    <span class="text-slate-700 dark:text-slate-300">Puerta oculta</span>
+                                </li>
+                                <li class="flex items-center gap-2">
+                                    <span
+                                        :class="[
+                                            'w-5 h-5 rounded flex items-center justify-center shrink-0 text-xs font-bold',
+                                            puerta.requiere_permiso_datacenter
+                                                ? 'bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400'
+                                                : 'bg-slate-100 dark:bg-slate-700 text-slate-400 dark:text-slate-500',
+                                        ]"
+                                    >
+                                        {{ puerta.requiere_permiso_datacenter ? "✓" : "—" }}
+                                    </span>
+                                    <span class="text-slate-700 dark:text-slate-300">Requiere permiso datacenter</span>
+                                </li>
+                                <li class="flex items-center gap-2 sm:col-span-2">
+                                    <span
+                                        :class="[
+                                            'w-5 h-5 rounded flex items-center justify-center shrink-0 text-xs font-bold',
+                                            puerta.solo_servidores_publicos
+                                                ? 'bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400'
+                                                : 'bg-slate-100 dark:bg-slate-700 text-slate-400 dark:text-slate-500',
+                                        ]"
+                                    >
+                                        {{ puerta.solo_servidores_publicos ? "✓" : "—" }}
+                                    </span>
+                                    <span class="text-slate-700 dark:text-slate-300">Solo servidores públicos o proveedores</span>
+                                </li>
+                            </ul>
+                        </div>
                     </div>
                 </div>
 

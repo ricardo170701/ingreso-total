@@ -255,43 +255,72 @@
                         />
                     </FormField>
 
-                    <div class="flex items-center gap-6 pt-2">
-                        <label class="inline-flex items-center gap-2">
+                    <div
+                        class="overflow-x-hidden w-full max-w-full pt-2 grid grid-cols-1 sm:grid-cols-2 md:flex md:flex-wrap gap-3 md:gap-x-6 md:gap-y-2"
+                    >
+                        <label
+                            class="flex items-start sm:items-center gap-2 min-w-0 py-1"
+                        >
                             <input
                                 v-model="form.activo"
                                 type="checkbox"
-                                class="h-4 w-4"
+                                class="h-4 w-4 mt-0.5 sm:mt-0 shrink-0"
                             />
-                            <span class="text-sm text-slate-700 dark:text-slate-300">Activa</span>
+                            <span
+                                class="text-sm text-slate-700 dark:text-slate-300 break-words min-w-0 flex-1"
+                                >Activa</span
+                            >
                         </label>
-                        <label class="inline-flex items-center gap-2">
+                        <label
+                            class="flex items-start sm:items-center gap-2 min-w-0 py-1"
+                        >
                             <input
                                 v-model="form.requiere_discapacidad"
                                 type="checkbox"
-                                class="h-4 w-4"
+                                class="h-4 w-4 mt-0.5 sm:mt-0 shrink-0"
                             />
-                            <span class="text-sm text-slate-700 dark:text-slate-300"
+                            <span
+                                class="text-sm text-slate-700 dark:text-slate-300 break-words min-w-0 flex-1"
                                 >Requiere discapacidad</span
                             >
                         </label>
-                        <label class="inline-flex items-center gap-2">
+                        <label
+                            class="flex items-start sm:items-center gap-2 min-w-0 py-1 sm:col-span-2 md:col-span-1"
+                        >
                             <input
                                 v-model="form.es_oculta"
                                 type="checkbox"
-                                class="h-4 w-4"
+                                class="h-4 w-4 mt-0.5 sm:mt-0 shrink-0"
                             />
-                            <span class="text-sm text-slate-700 dark:text-slate-300"
-                                >Puerta oculta (requiere permiso especial para ver)</span
+                            <span
+                                class="text-sm text-slate-700 dark:text-slate-300 break-words min-w-0 flex-1"
+                                >Puerta oculta (requiere permiso especial)</span
                             >
                         </label>
-                        <label class="inline-flex items-center gap-2">
+                        <label
+                            class="flex items-start sm:items-center gap-2 min-w-0 py-1"
+                        >
                             <input
                                 v-model="form.requiere_permiso_datacenter"
                                 type="checkbox"
-                                class="h-4 w-4"
+                                class="h-4 w-4 mt-0.5 sm:mt-0 shrink-0"
                             />
-                            <span class="text-sm text-slate-700 dark:text-slate-300"
+                            <span
+                                class="text-sm text-slate-700 dark:text-slate-300 break-words min-w-0 flex-1"
                                 >Requiere permiso datacenter</span
+                            >
+                        </label>
+                        <label
+                            class="flex items-start sm:items-center gap-2 min-w-0 py-1 sm:col-span-2 md:col-span-1"
+                        >
+                            <input
+                                v-model="form.solo_servidores_publicos"
+                                type="checkbox"
+                                class="h-4 w-4 mt-0.5 sm:mt-0 shrink-0"
+                            />
+                            <span
+                                class="text-sm text-slate-700 dark:text-slate-300 break-words min-w-0 flex-1"
+                                >Solo servidores públicos o proveedores</span
                             >
                         </label>
                     </div>
@@ -346,6 +375,7 @@ const form = useForm({
     requiere_discapacidad: false,
     es_oculta: false,
     requiere_permiso_datacenter: false,
+    solo_servidores_publicos: false,
 });
 
 const submit = () => {

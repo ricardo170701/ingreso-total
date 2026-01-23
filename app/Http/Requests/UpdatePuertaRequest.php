@@ -48,6 +48,7 @@ class UpdatePuertaRequest extends FormRequest
             'requiere_discapacidad' => ['nullable', 'boolean'],
             'es_oculta' => ['nullable', 'boolean'],
             'requiere_permiso_datacenter' => ['nullable', 'boolean'],
+            'solo_servidores_publicos' => ['nullable', 'boolean'],
             'activo' => ['nullable', 'boolean'],
         ];
     }

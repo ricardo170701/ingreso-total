@@ -165,6 +165,12 @@ class AccessController extends Controller
             return response()->json(['permitido' => false, 'message' => 'Acceso denegado (requiere permiso de datacenter).'], 200);
         }
 
+        // Solo servidores públicos / proveedores: visitantes denegados
+        if ($puerta->solo_servidores_publicos && !$isStaff) {
+            $this->registrarAcceso($user->id, $puerta->id, $qr?->id, $tarjetaNfc?->id, false, 'Solo servidores públicos o proveedores', $data['codigo_fisico'], $tipoEvento, $dispositivoId);
+            return response()->json(['permitido' => false, 'message' => 'Acceso denegado (solo servidores públicos o proveedores).'], 200);
+        }
+
         // Estado entrada/salida:
         // - entrada: si la última operación permitida fue entrada, se debe registrar salida antes de otra entrada
         // - salida: solo se permite si la última operación permitida fue entrada

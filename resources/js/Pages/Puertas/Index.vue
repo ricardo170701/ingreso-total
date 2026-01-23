@@ -221,6 +221,13 @@
                                     >
                                         ♿
                                     </span>
+                                    <span
+                                        v-if="puerta.solo_servidores_publicos"
+                                        class="text-xl"
+                                        title="Solo servidores públicos o proveedores"
+                                    >
+                                        🏛️
+                                    </span>
                                 </div>
 
                                 <!-- Información simplificada (siempre visible) -->

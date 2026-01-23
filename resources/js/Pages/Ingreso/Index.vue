@@ -1892,8 +1892,10 @@ const submitVisitante = async () => {
             }
         }
 
-        closeVisitanteModal();
+        // Cerrar la modal y resetear el formulario después de crear exitosamente
+        visitanteProcessing.value = false;
         resetVisitanteForm();
+        closeVisitanteModal();
     } catch (err) {
         const status = err?.response?.status;
         if (status === 422) {

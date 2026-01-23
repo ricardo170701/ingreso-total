@@ -124,12 +124,25 @@
                         {{ pageTitle }}
                     </h2>
                 </div>
-                <div class="flex items-center gap-4">
+                <div class="flex items-center gap-2 sm:gap-4 min-w-0 shrink-0">
+                    <!-- Cerrar sesión: siempre visible en header (evita que desaparezca en móviles) -->
+                    <form @submit.prevent="logout" class="shrink-0">
+                        <button
+                            type="submit"
+                            class="inline-flex items-center justify-center gap-1.5 px-2.5 py-2 sm:px-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-sm font-medium transition-colors duration-200 whitespace-nowrap"
+                            title="Cerrar sesión"
+                            aria-label="Cerrar sesión"
+                        >
+                            <span class="sm:hidden">Salir</span>
+                            <span class="hidden sm:inline">Cerrar sesión</span>
+                        </button>
+                    </form>
+
                     <!-- Botón de Modo Oscuro -->
                     <button
                         @click="toggleDarkMode"
                         type="button"
-                        class="p-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-colors duration-200"
+                        class="p-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-colors duration-200 shrink-0"
                         :title="isDark ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'"
                         aria-label="Toggle dark mode"
                     >
@@ -139,12 +152,12 @@
 
                     <Link
                         :href="route('profile.show')"
-                        class="text-right hover:opacity-80 transition-opacity"
+                        class="text-right hover:opacity-80 transition-opacity min-w-0 hidden sm:block"
                     >
-                        <p class="text-sm font-medium text-slate-900 dark:text-slate-100">
+                        <p class="text-sm font-medium text-slate-900 dark:text-slate-100 truncate">
                             {{ user?.name || user?.email }}
                         </p>
-                        <p class="text-xs text-slate-600 dark:text-slate-400">
+                        <p class="text-xs text-slate-600 dark:text-slate-400 truncate">
                             {{ userSubtitle }}
                         </p>
                     </Link>

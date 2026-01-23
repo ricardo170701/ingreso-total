@@ -213,6 +213,15 @@ class User extends Authenticatable
             return false;
         }
 
+        // Si la puerta es solo servidores públicos, el usuario debe ser servidor público o proveedor
+        if ($puertaModel->solo_servidores_publicos) {
+            $staffRoles = ['servidor_publico', 'proveedor', 'funcionario'];
+            $roleName = $this->role?->name ?? null;
+            if (!in_array($roleName, $staffRoles, true)) {
+                return false;
+            }
+        }
+
         // Si la puerta no tiene piso asignado, no tiene acceso
         if (!$puertaModel->piso_id) {
             return false;

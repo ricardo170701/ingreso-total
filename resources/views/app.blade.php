@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="control acceso gob meta">
-    <link rel="apple-touch-icon" href="/images/logo-gobernacion-meta.png">
+    <link rel="apple-touch-icon" href="/images/apple-touch-icon-180.png">
 
     <!-- Inicializar modo oscuro antes de que Vue cargue -->
     <script>

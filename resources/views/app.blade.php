@@ -9,6 +9,11 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title inertia>{{ config('app.name', 'control acceso gob meta') }}</title>
 
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16.png">
+    <link rel="shortcut icon" href="/images/favicon-32x32.png">
+
     <!-- PWA (bloqueo de orientación al instalar en pantalla de inicio) -->
     <link rel="manifest" href="/manifest.webmanifest?v={{ config('app.version', time()) }}">
     <meta name="theme-color" content="#008c3a">

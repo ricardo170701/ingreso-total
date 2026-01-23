@@ -145,6 +145,8 @@ $targets = [
     ['file' => $outDir . DIRECTORY_SEPARATOR . 'pwa-icon-192.png', 'size' => 192],
     ['file' => $outDir . DIRECTORY_SEPARATOR . 'pwa-icon-512.png', 'size' => 512],
     ['file' => $outDir . DIRECTORY_SEPARATOR . 'apple-touch-icon-180.png', 'size' => 180],
+    ['file' => $outDir . DIRECTORY_SEPARATOR . 'favicon-32x32.png', 'size' => 32],
+    ['file' => $outDir . DIRECTORY_SEPARATOR . 'favicon-16x16.png', 'size' => 16],
 ];
 
 foreach ($targets as $t) {

@@ -232,13 +232,55 @@ const { isDark, toggleDarkMode } = useDarkMode();
 const user = computed(() => page.props.auth?.user || page.props.user);
 const esVisitante = computed(() => user.value?.role?.name === "visitante");
 const expiracionAvisoConfirmado = ref(false);
+const mostrarAvisoExpiracion = ref(false);
 
-const expiracionAviso = computed(() => {
-    // No mostrar si ya fue confirmado
-    if (expiracionAvisoConfirmado.value) {
-        return { visible: false, diasRestantes: null, fecha: null };
+// Clave para sessionStorage basada en el ID del usuario
+const getStorageKey = () => {
+    const u = user.value;
+    return u ? `expiracion_aviso_mostrado_${u.id}` : null;
+};
+
+// Verificar si el aviso ya fue mostrado en esta sesión
+const verificarAvisoMostrado = () => {
+    if (typeof window === 'undefined') return false;
+    const key = getStorageKey();
+    if (!key) return false;
+    return sessionStorage.getItem(key) === 'true';
+};
+
+// Marcar el aviso como mostrado en sessionStorage
+const marcarAvisoMostrado = () => {
+    if (typeof window === 'undefined') return;
+    const key = getStorageKey();
+    if (key) {
+        sessionStorage.setItem(key, 'true');
+    }
+};
+
+// Limpiar el flag cuando cambia el usuario (nuevo login)
+let ultimoUserId = null;
+watch(() => user.value?.id, (currentUserId, previousUserId) => {
+    if (typeof window === 'undefined') return;
+    
+    // Si cambió el usuario (nuevo login), limpiar el flag anterior
+    if (previousUserId !== undefined && previousUserId !== currentUserId && previousUserId) {
+        sessionStorage.removeItem(`expiracion_aviso_mostrado_${previousUserId}`);
+        // Resetear el estado para el nuevo usuario
+        expiracionAvisoConfirmado.value = false;
+        mostrarAvisoExpiracion.value = false;
     }
     
+    ultimoUserId = currentUserId;
+    
+    // Si hay un nuevo usuario y no se ha mostrado el aviso, verificar si debe mostrarse
+    if (currentUserId && previousUserId !== currentUserId && !verificarAvisoMostrado()) {
+        const aviso = calcularAvisoExpiracion();
+        mostrarAvisoExpiracion.value = aviso.visible;
+    }
+});
+
+// Calcular si debe mostrarse el aviso de expiración
+const calcularAvisoExpiracion = () => {
     const u = user.value;
     if (!u || u.activo !== true || !u.fecha_expiracion) {
         return { visible: false, diasRestantes: null, fecha: null };
@@ -262,6 +304,28 @@ const expiracionAviso = computed(() => {
     }
 
     return { visible: true, diasRestantes: diffDays, fecha: u.fecha_expiracion };
+};
+
+const expiracionAviso = computed(() => {
+    // No mostrar si ya fue confirmado en esta sesión
+    if (expiracionAvisoConfirmado.value || !mostrarAvisoExpiracion.value) {
+        return { visible: false, diasRestantes: null, fecha: null };
+    }
+    
+    // Si ya se mostró en esta sesión, no mostrar de nuevo
+    if (verificarAvisoMostrado()) {
+        return { visible: false, diasRestantes: null, fecha: null };
+    }
+    
+    const aviso = calcularAvisoExpiracion();
+    
+    // Si el aviso debe mostrarse, marcarlo en sessionStorage para evitar que se muestre de nuevo
+    // en navegaciones posteriores (incluso si el usuario no lo confirma)
+    if (aviso.visible && typeof window !== 'undefined') {
+        marcarAvisoMostrado();
+    }
+    
+    return aviso;
 });
 
 // Función para formatear la fecha
@@ -282,6 +346,8 @@ const formatearFecha = (fecha) => {
 // Función para confirmar el aviso de expiración
 const confirmarAvisoExpiracion = () => {
     expiracionAvisoConfirmado.value = true;
+    marcarAvisoMostrado();
+    mostrarAvisoExpiracion.value = false;
 };
 const pageTitle = computed(() => {
     const component = page.component || "";
@@ -540,6 +606,15 @@ onMounted(() => {
     window.addEventListener("contextmenu", onContextMenuSecurity, true);
     window.addEventListener("dragstart", onDragStartSecurity, true);
     document.addEventListener("visibilitychange", onVisibilityChangeSecurity, true);
+    
+    // Inicializar el estado del aviso de expiración solo si no se ha mostrado antes en esta sesión
+    // Esto evita que se muestre en cada navegación
+    if (user.value?.id && !verificarAvisoMostrado()) {
+        const aviso = calcularAvisoExpiracion();
+        if (aviso.visible) {
+            mostrarAvisoExpiracion.value = true;
+        }
+    }
 });
 
 onUnmounted(() => {

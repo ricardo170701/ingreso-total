@@ -88,6 +88,10 @@ else
   echo "[docker-production] Seeders automáticos deshabilitados (RUN_SEEDERS=false)"
 fi
 
+# Iniciar cron para Laravel Scheduler
+echo "[docker-production] Iniciando cron para Laravel Scheduler..."
+service cron start
+
 echo "[docker-production] Contenedor listo. Iniciando servidor web..."
 exec "$@"
 

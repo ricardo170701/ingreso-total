@@ -47,10 +47,11 @@ RUN npm run build
 
 FROM php:8.1-apache-bookworm AS app
 
-# Extensiones PHP requeridas por Laravel + MySQL client + ZipArchive
+# Extensiones PHP requeridas por Laravel + MySQL client + ZipArchive + Cron
 RUN apt-get update && apt-get install -y --no-install-recommends \
     default-mysql-client \
     curl \
+    cron \
     libpng-dev libjpeg62-turbo-dev libfreetype6-dev \
     libonig-dev libxml2-dev libzip-dev \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
@@ -80,6 +81,13 @@ RUN php artisan package:discover --ansi
 
 COPY docker/entrypoint.sh /usr/local/bin/entrypoint
 RUN chmod +x /usr/local/bin/entrypoint
+
+# Configurar cron para Laravel Scheduler
+# El cron ejecuta schedule:run cada minuto, Laravel decide qué tareas correr según la programación
+RUN echo "* * * * * cd /var/www/html && php artisan schedule:run >> /var/www/html/storage/logs/scheduler.log 2>&1" | crontab -u root \
+    && touch /var/www/html/storage/logs/scheduler.log \
+    && chown www-data:www-data /var/www/html/storage/logs/scheduler.log \
+    && chmod 664 /var/www/html/storage/logs/scheduler.log
 
 EXPOSE 80
 ENTRYPOINT ["entrypoint"]

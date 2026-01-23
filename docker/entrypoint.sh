@@ -60,6 +60,12 @@ if [ "${RUN_SEEDERS:-false}" = "true" ]; then
   php artisan db:seed --force --class="${SEEDER_CLASS}" || true
 fi
 
+# Iniciar cron para Laravel Scheduler (si está instalado)
+if command -v cron >/dev/null 2>&1; then
+    echo "[docker] Iniciando cron para Laravel Scheduler..."
+    service cron start
+fi
+
 echo "[docker] Listo. Levantando servidor web..."
 exec "$@"
 

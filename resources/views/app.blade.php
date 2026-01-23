@@ -7,7 +7,7 @@
     <meta name="google" content="notranslate">
     <meta http-equiv="Content-Language" content="es">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title inertia>{{ config('app.name', 'Escaner Total') }}</title>
+    <title inertia>{{ config('app.name', 'control acceso gob meta') }}</title>
 
     <!-- PWA (bloqueo de orientación al instalar en pantalla de inicio) -->
     <link rel="manifest" href="/manifest.webmanifest">

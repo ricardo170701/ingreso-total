@@ -6,7 +6,7 @@ import { createInertiaApp } from '@inertiajs/vue3';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 import { ZiggyVue } from '../../vendor/tightenco/ziggy';
 
-const appName = import.meta.env.VITE_APP_NAME || 'Escaner Total';
+const appName = import.meta.env.VITE_APP_NAME || 'control acceso gob meta';
 
 createInertiaApp({
     title: (title) => `${title} - ${appName}`,

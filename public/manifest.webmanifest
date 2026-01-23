@@ -1,6 +1,6 @@
 {
-  "name": "Escáner Total",
-  "short_name": "Escáner Total",
+  "name": "control acceso gob meta",
+  "short_name": "control acceso gob meta",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#008c3a",

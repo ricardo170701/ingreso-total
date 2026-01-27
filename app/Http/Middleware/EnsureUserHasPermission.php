@@ -144,6 +144,12 @@ class EnsureUserHasPermission
         // Obtener el permiso requerido para esta ruta
         $requiredPermission = $this->routePermissions[$routeName];
 
+        // Permitir acceso a visitantes a ingreso.index sin verificar permiso
+        // El middleware RestrictVisitanteWeb ya controla que los visitantes solo puedan acceder a rutas permitidas
+        if (($user->role?->name ?? null) === 'visitante' && $routeName === 'ingreso.index') {
+            return $next($request);
+        }
+
         // Verificar si el usuario tiene el permiso
         if (!$user->hasPermission($requiredPermission)) {
             // Siempre redirigir, incluso para peticiones Inertia/AJAX

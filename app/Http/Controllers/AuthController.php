@@ -86,6 +86,11 @@ class AuthController extends Controller
         
         // Si ya cambió la contraseña, evaluar permisos para redirigir
         if ($user && !is_null($user->password_changed_at)) {
+            // Visitantes: acceso limitado a Ingreso/Soporte - redirigir directamente a ingreso
+            if (($user->role?->name ?? null) === 'visitante') {
+                return redirect()->route('ingreso.index');
+            }
+            
             // Evaluar permisos: si tiene permiso de ingreso, redirigir a ingreso, sino al perfil
             if ($user->hasPermission('view_ingreso')) {
                 return redirect()->route('ingreso.index');

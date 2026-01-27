@@ -52,6 +52,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     default-mysql-client \
     curl \
     cron \
+    gzip \
     libpng-dev libjpeg62-turbo-dev libfreetype6-dev \
     libonig-dev libxml2-dev libzip-dev \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \

@@ -29,6 +29,23 @@ Asegúrate de tener las variables de entorno configuradas:
 -   `DB_USERNAME`
 -   `DB_PASSWORD`
 
+### `restore-db.sh`
+
+Restaura un backup `.sql` o `.sql.gz` dentro del contenedor de base de datos de producción.
+
+**Uso:**
+
+```bash
+chmod +x scripts/restore-db.sh
+CONFIRM_RESTORE=YES ./scripts/restore-db.sh ./backups/backup_<DB>_YYYYmmdd_HHMMSS.sql.gz
+```
+
+**Notas:**
+
+-   Por seguridad, requiere `CONFIRM_RESTORE=YES`.
+-   Por defecto usa el contenedor `escaner_total_db_prod`. Puedes cambiarlo con `DB_CONTAINER_NAME=...`.
+-   Ver guía completa en `docs/RESTORE_BACKUP.md`.
+
 ### `deploy-production.sh`
 
 Script completo de deploy para producción.
@@ -58,7 +75,19 @@ chmod +x scripts/deploy-production.sh
 
 ## Configuración de Cron para Backups Automáticos
 
-Para realizar backups automáticos diarios, agrega a tu crontab:
+En producción (Docker), el contenedor `app` ejecuta el **Laravel Scheduler** vía cron (configurado en `Dockerfile2`).
+Por eso, para backups automáticos diarios se usa el comando:
+
+- `php artisan db:backup` (programado en `app/Console/Kernel.php`)
+
+**Configuración (variables opcionales):**
+
+- `DB_BACKUP_TIME` (por defecto `02:00`)
+- `DB_BACKUP_RETENTION_DAYS` (por defecto `30`)
+- `DB_BACKUP_DIR` (por defecto `base_path('backups')`)
+- `DB_BACKUP_TIMEOUT_SECONDS` (por defecto `600`)
+
+Si deseas hacerlo por crontab del host (alternativo), agrega a tu crontab:
 
 ```bash
 # Backup diario a las 2:00 AM

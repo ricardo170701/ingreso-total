@@ -14,6 +14,13 @@ class Kernel extends ConsoleKernel
     {
         // Inactivar automáticamente usuarios expirados (diario)
         $schedule->command('users:deactivate-expired')->dailyAt('00:10');
+
+        // Backup automático de base de datos (diario)
+        // Requiere cron corriendo dentro del contenedor (ver Dockerfile2 + docker/production-entrypoint.sh)
+        $schedule->command('db:backup')
+            ->dailyAt(env('DB_BACKUP_TIME', '02:00'))
+            ->withoutOverlapping()
+            ->appendOutputTo(storage_path('logs/db-backup.log'));
     }
 
     /**

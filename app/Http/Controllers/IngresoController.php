@@ -623,8 +623,8 @@ class IngresoController extends Controller
         $apellido = trim((string) ($data['apellido'] ?? ''));
         $name = trim($nombre . ' ' . $apellido) ?: 'Visitante';
 
-        // Password aleatorio (no se entrega; el visitante no necesita login para QR)
-        $randomPassword = Str::random(16);
+        // Password del visitante = su número de identidad (cédula)
+        $password = $data['n_identidad'];
 
         // Guardar foto (archivo) si viene
         $fotoPerfilPath = null;
@@ -635,7 +635,7 @@ class IngresoController extends Controller
         $user = User::query()->create([
             'name' => $name,
             'email' => $data['email'] ?? null,
-            'password' => $randomPassword,
+            'password' => $password,
             'role_id' => $roleVisitanteId,
             'cargo_id' => null,
             'gerencia_id' => null,

@@ -7,7 +7,7 @@
     <meta name="google" content="notranslate">
     <meta http-equiv="Content-Language" content="es">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title inertia>{{ config('app.name', 'acceso gob meta') }}</title>
+    <title inertia>{{ config('app.name', 'Acceso Gob Meta') }}</title>
 
     <!-- Favicon -->
     <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32.png">
@@ -19,7 +19,7 @@
     <meta name="theme-color" content="#008c3a">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="acceso gob meta">
+    <meta name="apple-mobile-web-app-title" content="Acceso Gob Meta">
     <link rel="apple-touch-icon" href="/images/apple-touch-icon-180.png">
 
     <!-- Inicializar modo oscuro antes de que Vue cargue -->

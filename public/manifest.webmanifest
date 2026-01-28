@@ -1,6 +1,6 @@
 {
-  "name": "acceso gob meta",
-  "short_name": "acceso gob meta",
+  "name": "Acceso Gob Meta",
+  "short_name": "Acceso Gob Meta",
   "description": "Sistema de Control de Accesos - Gobernación del Meta",
   "start_url": "/",
   "display": "standalone",

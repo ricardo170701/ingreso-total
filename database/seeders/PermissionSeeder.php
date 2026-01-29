@@ -31,6 +31,7 @@ class PermissionSeeder extends Seeder
             ['name' => 'toggle_puertas', 'description' => 'Abrir/Cerrar Puertas Manualmente', 'group' => 'puertas'],
             ['name' => 'reboot_puertas', 'description' => 'Reiniciar Raspberry Pi de Puertas', 'group' => 'puertas'],
             ['name' => 'view_puertas_ocultas', 'description' => 'Ver Puertas Ocultas', 'group' => 'puertas'],
+            ['name' => 'edit_puerta_codigo_fisico', 'description' => 'Editar código físico (entrada/salida) de puertas ya creadas', 'group' => 'puertas'],
 
             // Zonas
             ['name' => 'view_zonas', 'description' => 'Ver Zonas', 'group' => 'zonas'],

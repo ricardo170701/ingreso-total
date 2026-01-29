@@ -3,7 +3,9 @@
         <div class="max-w-3xl mx-auto space-y-4">
             <div class="flex items-center justify-between">
                 <div>
-                    <h1 class="text-xl font-semibold text-slate-900 dark:text-slate-100">
+                    <h1
+                        class="text-xl font-semibold text-slate-900 dark:text-slate-100"
+                    >
                         Editar puerta #{{ puerta.id }}
                     </h1>
                     <p class="text-sm text-slate-600 dark:text-slate-400">
@@ -18,8 +20,13 @@
                 </Link>
             </div>
 
-            <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-6 transition-colors duration-200">
-                <form @submit.prevent="showConfirmModal = true" class="grid grid-cols-1 gap-4">
+            <div
+                class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-6 transition-colors duration-200"
+            >
+                <form
+                    @submit.prevent="showConfirmModal = true"
+                    class="grid grid-cols-1 gap-4"
+                >
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <FormField label="Nombre" :error="form.errors.nombre">
                             <input
@@ -62,7 +69,10 @@
                                 </option>
                             </select>
                         </FormField>
-                        <FormField label="Tipo" :error="form.errors.tipo_puerta_id">
+                        <FormField
+                            label="Tipo"
+                            :error="form.errors.tipo_puerta_id"
+                        >
                             <select
                                 v-model="form.tipo_puerta_id"
                                 class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-transparent transition-colors duration-200"
@@ -77,7 +87,10 @@
                                 </option>
                             </select>
                         </FormField>
-                        <FormField label="Material" :error="form.errors.material_id">
+                        <FormField
+                            label="Material"
+                            :error="form.errors.material_id"
+                        >
                             <select
                                 v-model="form.material_id"
                                 class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-transparent transition-colors duration-200"
@@ -120,7 +133,9 @@
                                 class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-transparent transition-colors duration-200"
                                 placeholder="Ej: 10"
                             />
-                            <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                            <p
+                                class="mt-1 text-xs text-slate-500 dark:text-slate-400"
+                            >
                                 Tiempo adicional para personas discapacitadas
                             </p>
                         </FormField>
@@ -134,7 +149,10 @@
                                 placeholder="Ej: 200"
                             />
                         </FormField>
-                        <FormField label="Largo (cm)" :error="form.errors.largo">
+                        <FormField
+                            label="Largo (cm)"
+                            :error="form.errors.largo"
+                        >
                             <input
                                 v-model.number="form.largo"
                                 type="number"
@@ -144,7 +162,10 @@
                                 placeholder="Ej: 100"
                             />
                         </FormField>
-                        <FormField label="Ancho (cm)" :error="form.errors.ancho">
+                        <FormField
+                            label="Ancho (cm)"
+                            :error="form.errors.ancho"
+                        >
                             <input
                                 v-model.number="form.ancho"
                                 type="number"
@@ -201,18 +222,25 @@
                                 :alt="puerta.nombre"
                                 class="w-32 h-32 object-cover rounded-lg border border-slate-200 dark:border-slate-700"
                             />
-                            <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                            <p
+                                class="mt-1 text-xs text-slate-500 dark:text-slate-400"
+                            >
                                 Imagen actual
                             </p>
                         </div>
                         <input
-                            @change="form.imagen = $event.target.files?.[0] || null"
+                            @change="
+                                form.imagen = $event.target.files?.[0] || null
+                            "
                             type="file"
                             accept="image/*"
                             class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-transparent transition-colors duration-200"
                         />
-                        <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                            Dejar vacío para mantener la imagen actual. Formatos: JPEG, JPG, PNG, GIF (máx. 2MB)
+                        <p
+                            class="mt-1 text-xs text-slate-500 dark:text-slate-400"
+                        >
+                            Dejar vacío para mantener la imagen actual.
+                            Formatos: JPEG, JPG, PNG, GIF (máx. 2MB)
                         </p>
                     </FormField>
 
@@ -224,8 +252,21 @@
                             <input
                                 v-model="form.codigo_fisico"
                                 type="text"
-                                class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-transparent transition-colors duration-200"
+                                :readonly="!canEditCodigoFisico"
+                                :class="[
+                                    'w-full px-3 py-2 rounded-lg border transition-colors duration-200',
+                                    canEditCodigoFisico
+                                        ? 'border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400'
+                                        : 'border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700/50 text-slate-600 dark:text-slate-400 cursor-not-allowed',
+                                ]"
                             />
+                            <p
+                                v-if="!canEditCodigoFisico"
+                                class="mt-1 text-xs text-slate-500 dark:text-slate-400"
+                            >
+                                Solo editable con permiso especial (tras crear
+                                la puerta queda fijo).
+                            </p>
                         </FormField>
                         <FormField
                             label="Código Físico (Salida)"
@@ -234,8 +275,21 @@
                             <input
                                 v-model="form.codigo_fisico_salida"
                                 type="text"
-                                class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-transparent transition-colors duration-200"
+                                :readonly="!canEditCodigoFisico"
+                                :class="[
+                                    'w-full px-3 py-2 rounded-lg border transition-colors duration-200',
+                                    canEditCodigoFisico
+                                        ? 'border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400'
+                                        : 'border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700/50 text-slate-600 dark:text-slate-400 cursor-not-allowed',
+                                ]"
                             />
+                            <p
+                                v-if="!canEditCodigoFisico"
+                                class="mt-1 text-xs text-slate-500 dark:text-slate-400"
+                            >
+                                Solo editable con permiso especial (tras crear
+                                la puerta queda fijo).
+                            </p>
                         </FormField>
                         <FormField
                             label="Ubicación"
@@ -361,8 +415,12 @@
                 class="bg-white dark:bg-slate-800 rounded-xl shadow-2xl max-w-md w-full border border-slate-200 dark:border-slate-700 transition-colors duration-200"
                 @click.stop
             >
-                <div class="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-700">
-                    <h3 class="text-lg font-semibold text-slate-900 dark:text-slate-100">
+                <div
+                    class="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-700"
+                >
+                    <h3
+                        class="text-lg font-semibold text-slate-900 dark:text-slate-100"
+                    >
                         Confirmar Edición
                     </h3>
                     <button
@@ -378,7 +436,10 @@
                 <div class="p-6">
                     <p class="text-sm text-slate-700 dark:text-slate-300 mb-4">
                         ¿Estás seguro de que deseas editar la puerta
-                        <strong class="text-slate-900 dark:text-slate-100">{{ puerta.nombre }}</strong>?
+                        <strong class="text-slate-900 dark:text-slate-100">{{
+                            puerta.nombre
+                        }}</strong
+                        >?
                     </p>
                     <p class="text-xs text-slate-500 dark:text-slate-400 mb-4">
                         Los cambios se guardarán y se aplicarán inmediatamente.
@@ -424,6 +485,7 @@ const props = defineProps({
     pisos: Array,
     tiposPuerta: Array,
     materiales: Array,
+    canEditCodigoFisico: { type: Boolean, default: false },
 });
 
 const showConfirmModal = ref(false);
@@ -456,11 +518,16 @@ const form = useForm({
 
 const confirmSubmit = () => {
     showConfirmModal.value = false;
-    submitUploadForm(form, route("puertas.update", { puerta: props.puerta.id }), "put", {
-        onSuccess: () => {
-            // El redirect ya está configurado en el controlador
+    submitUploadForm(
+        form,
+        route("puertas.update", { puerta: props.puerta.id }),
+        "put",
+        {
+            onSuccess: () => {
+                // El redirect ya está configurado en el controlador
+            },
         },
-    });
+    );
 };
 
 const destroy = () => {

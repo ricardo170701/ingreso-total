@@ -26,7 +26,7 @@ class UpdatePuertaRequest extends FormRequest
         $puertaParam = $this->route('puerta');
         $puertaId = $puertaParam instanceof Puerta ? $puertaParam->id : $puertaParam;
 
-        return [
+        $rules = [
             'zona_id' => ['nullable', 'integer', 'exists:zonas,id'],
             'piso_id' => ['nullable', 'integer', 'exists:pisos,id'],
             'tipo_puerta_id' => ['nullable', 'integer', 'exists:tipo_puertas,id'],
@@ -43,13 +43,19 @@ class UpdatePuertaRequest extends FormRequest
             'nombre' => ['sometimes', 'required', 'string', 'max:255'],
             'ubicacion' => ['nullable', 'string', 'max:255'],
             'descripcion' => ['nullable', 'string'],
-            'codigo_fisico' => ['nullable', 'string', 'max:50', Rule::unique('puertas', 'codigo_fisico')->ignore($puertaId)],
-            'codigo_fisico_salida' => ['nullable', 'string', 'max:50', Rule::unique('puertas', 'codigo_fisico_salida')->ignore($puertaId)],
             'requiere_discapacidad' => ['nullable', 'boolean'],
             'es_oculta' => ['nullable', 'boolean'],
             'requiere_permiso_datacenter' => ['nullable', 'boolean'],
             'solo_servidores_publicos' => ['nullable', 'boolean'],
             'activo' => ['nullable', 'boolean'],
         ];
+
+        // Código físico (entrada/salida) solo editable con permiso especial; tras crear la puerta quedan bloqueados.
+        if ($this->user() && $this->user()->hasPermission('edit_puerta_codigo_fisico')) {
+            $rules['codigo_fisico'] = ['nullable', 'string', 'max:50', Rule::unique('puertas', 'codigo_fisico')->ignore($puertaId)];
+            $rules['codigo_fisico_salida'] = ['nullable', 'string', 'max:50', Rule::unique('puertas', 'codigo_fisico_salida')->ignore($puertaId)];
+        }
+
+        return $rules;
     }
 }

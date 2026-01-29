@@ -20,8 +20,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        // Forzar HTTPS si APP_URL usa HTTPS (útil cuando hay proxy delante)
-        if (config('app.url') && str_starts_with(config('app.url'), 'https://')) {
+        // En producción forzar HTTPS para evitar Mixed Content (p. ej. paginado con http://)
+        if ($this->app->environment('production')) {
+            URL::forceScheme('https');
+        } elseif (config('app.url') && str_starts_with(config('app.url'), 'https://')) {
             URL::forceScheme('https');
         }
     }

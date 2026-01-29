@@ -127,7 +127,7 @@ class PuertasController extends Controller
     /**
      * Mostrar formulario de edición
      */
-    public function edit(Puerta $puerta): Response
+    public function edit(Request $request, Puerta $puerta): Response
     {
         $this->authorize('update', $puerta);
 
@@ -143,6 +143,7 @@ class PuertasController extends Controller
             'pisos' => $pisos,
             'tiposPuerta' => $tiposPuerta,
             'materiales' => $materiales,
+            'canEditCodigoFisico' => $request->user()->hasPermission('edit_puerta_codigo_fisico'),
         ]);
     }
 
@@ -180,6 +181,11 @@ class PuertasController extends Controller
         $this->authorize('update', $puerta);
 
         $data = $request->validated();
+
+        // Código físico (entrada/salida) no se actualiza sin permiso especial
+        if (!$request->user()->hasPermission('edit_puerta_codigo_fisico')) {
+            unset($data['codigo_fisico'], $data['codigo_fisico_salida']);
+        }
 
         // Manejar la subida de nueva imagen
         if ($request->hasFile('imagen')) {

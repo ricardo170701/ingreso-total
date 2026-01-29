@@ -131,7 +131,11 @@ class PuertaController extends Controller
             return response()->json(['message' => 'No autorizado.'], 403);
         }
 
-        $puerta->fill($request->validated());
+        $data = $request->validated();
+        if (!$request->user()->hasPermission('edit_puerta_codigo_fisico')) {
+            unset($data['codigo_fisico'], $data['codigo_fisico_salida']);
+        }
+        $puerta->fill($data);
         $puerta->save();
 
         return response()->json(['data' => $puerta->load('zona')]);

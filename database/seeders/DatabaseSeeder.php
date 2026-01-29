@@ -32,6 +32,9 @@ class DatabaseSeeder extends Seeder
 
             // 6. Usuario super user
             SuperUserSeeder::class,
+
+            // 7. Accesos de prueba (para reporte de ingreso y paginado)
+            AccesosPruebaSeeder::class,
         ]);
     }
 }

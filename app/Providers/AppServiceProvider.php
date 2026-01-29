@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\URL;
+use Illuminate\Pagination\Paginator;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -26,5 +27,9 @@ class AppServiceProvider extends ServiceProvider
         } elseif (config('app.url') && str_starts_with(config('app.url'), 'https://')) {
             URL::forceScheme('https');
         }
+
+        // Evitar URLs absolutas (http/https) en links de paginación: devolver path relativo.
+        // Esto previene errores de Mixed Content cuando la app corre detrás de un proxy.
+        Paginator::currentPathResolver(fn() => request()->getPathInfo());
     }
 }

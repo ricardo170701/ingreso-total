@@ -49,6 +49,9 @@ class EnsureUserHasPermission
         'cargos.permissions.update' => 'edit_cargos',
         'cargos.pisos.store' => 'edit_cargos',
         'cargos.pisos.destroy' => 'edit_cargos',
+        'cargos.puertas.store' => 'edit_cargos',
+        'cargos.puertas.sync' => 'edit_cargos',
+        'cargos.puertas.destroy' => 'edit_cargos',
 
         // Roles
         'roles.index' => 'view_roles',
@@ -116,7 +119,7 @@ class EnsureUserHasPermission
 
     /**
      * Handle an incoming request.
-     * 
+     *
      * Valida que el usuario autenticado tenga los permisos necesarios
      * para acceder a la ruta solicitada.
      */
@@ -185,4 +188,3 @@ class EnsureUserHasPermission
         return $next($request);
     }
 }
-

@@ -5,8 +5,10 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreCargoRequest;
 use App\Http\Requests\UpdateCargoRequest;
 use App\Http\Requests\UpsertCargoPisoAccesoRequest;
+use App\Http\Requests\UpsertCargoPuertaAccesoRequest;
 use App\Models\Cargo;
 use App\Models\Piso;
+use App\Models\Puerta;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -83,7 +85,7 @@ class CargosController extends Controller
         $data = $request->validated();
         $permissions = $data['permissions'] ?? [];
         $pisos = $data['pisos'] ?? [];
-        
+
         // Extraer campos de configuración de pisos
         $pisoConfig = [
             'hora_inicio' => $data['hora_inicio'] ?? null,
@@ -134,9 +136,24 @@ class CargosController extends Controller
             ->orderBy('orden')
             ->get();
 
+        // Puertas asignadas individualmente (cargo_puerta_acceso)
+        $puertasAsignadas = $cargo->puertas()
+            ->withPivot(['hora_inicio', 'hora_fin', 'dias_semana', 'fecha_inicio', 'fecha_fin', 'activo'])
+            ->with('piso')
+            ->orderBy('nombre')
+            ->get();
+
         // Todos los pisos activos para el selector
         $todosLosPisos = Piso::query()
             ->where('activo', true)
+            ->orderBy('orden')
+            ->orderBy('nombre')
+            ->get();
+
+        // Pisos con sus puertas activas (para selección por puerta individual)
+        $pisosConPuertas = Piso::query()
+            ->where('activo', true)
+            ->with(['puertas' => fn($q) => $q->where('activo', true)->orderBy('nombre')])
             ->orderBy('orden')
             ->orderBy('nombre')
             ->get();
@@ -153,7 +170,9 @@ class CargosController extends Controller
         return Inertia::render('Cargos/Edit', [
             'cargo' => $cargo,
             'pisosAsignados' => $pisosAsignados,
+            'puertasAsignadas' => $puertasAsignadas,
             'todosLosPisos' => $todosLosPisos,
+            'pisosConPuertas' => $pisosConPuertas,
             'permissions' => $permissions,
             'permissionsGrouped' => $permissionsGrouped,
         ]);
@@ -251,6 +270,91 @@ class CargosController extends Controller
         return redirect()
             ->route('cargos.edit', $cargo)
             ->with('message', 'Permiso de piso revocado.');
+    }
+
+    /**
+     * Asignar o actualizar permiso de puertas individuales al cargo
+     */
+    public function upsertPuertas(UpsertCargoPuertaAccesoRequest $request, Cargo $cargo)
+    {
+        $this->authorize('update', $cargo);
+
+        $data = $request->validated();
+        $puertaIds = [];
+        if (!empty($data['puertas']) && is_array($data['puertas'])) {
+            $puertaIds = array_values(array_unique(array_map('intval', $data['puertas'])));
+        } elseif (!empty($data['puerta_id'])) {
+            $puertaIds = [(int) $data['puerta_id']];
+        }
+
+        $pivot = [
+            'hora_inicio' => $data['hora_inicio'] ?? null,
+            'hora_fin' => $data['hora_fin'] ?? null,
+            'dias_semana' => $data['dias_semana'] ?? '1,2,3,4,5,6,7',
+            'fecha_inicio' => $data['fecha_inicio'] ?? null,
+            'fecha_fin' => $data['fecha_fin'] ?? null,
+            'activo' => $data['activo'] ?? true,
+        ];
+
+        $syncData = [];
+        foreach ($puertaIds as $pid) {
+            $syncData[$pid] = $pivot;
+        }
+
+        if (count($syncData) > 0) {
+            $cargo->puertas()->syncWithoutDetaching($syncData);
+        }
+
+        return redirect()
+            ->route('cargos.edit', $cargo)
+            ->with('message', count($puertaIds) > 1 ? 'Permisos de puertas actualizados.' : 'Permiso de puerta actualizado.');
+    }
+
+    /**
+     * Revocar permiso de puerta individual
+     */
+    public function revokePuerta(Cargo $cargo, Puerta $puerta)
+    {
+        $this->authorize('update', $cargo);
+
+        $cargo->puertas()->detach($puerta->id);
+
+        return redirect()
+            ->route('cargos.edit', $cargo)
+            ->with('message', 'Permiso de puerta revocado.');
+    }
+
+    /**
+     * Sincronizar lista completa de puertas del cargo (permisos por puerta).
+     * Acepta puertas: [1, 2, 3, ...] y reemplaza la asignación actual.
+     */
+    public function syncPuertas(Request $request, Cargo $cargo)
+    {
+        $this->authorize('update', $cargo);
+
+        $request->validate([
+            'puertas' => ['present', 'array'],
+            'puertas.*' => ['integer', 'exists:puertas,id'],
+        ]);
+
+        $puertaIds = array_values(array_unique(array_map('intval', $request->input('puertas', []))));
+        $pivot = [
+            'hora_inicio' => null,
+            'hora_fin' => null,
+            'dias_semana' => '1,2,3,4,5,6,7',
+            'fecha_inicio' => null,
+            'fecha_fin' => null,
+            'activo' => true,
+        ];
+        $syncData = [];
+        foreach ($puertaIds as $pid) {
+            $syncData[$pid] = $pivot;
+        }
+        $cargo->puertas()->sync($syncData);
+
+        return redirect()
+            ->route('cargos.edit', $cargo)
+            ->with('message', 'Permisos a puertas actualizados.');
     }
 
     /**

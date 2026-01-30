@@ -93,125 +93,156 @@
                 </form>
             </div>
 
-            <!-- Agregar Permiso de Piso -->
+            <!-- Permisos a puertas (acordeón por piso, selección por puerta) -->
             <div
                 class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-6 transition-colors duration-200"
             >
                 <h2
                     class="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4"
                 >
-                    Agregar Permiso de Piso
+                    Permisos a puertas
                 </h2>
                 <p class="text-sm text-slate-600 dark:text-slate-400 mb-4">
-                    Asigna permisos de acceso físico por piso. Los usuarios con
-                    este cargo podrán acceder a todas las puertas del piso
-                    asignado según las reglas de horario y vigencia.
+                    Marca las puertas a las que tendrá acceso este cargo. Puedes
+                    abrir cada piso y marcar puertas una a una, o marcar el piso
+                    para seleccionar todas sus puertas. Al finalizar, pulsa
+                    Guardar.
                 </p>
-                <form @submit.prevent="submitPiso">
-                    <FormField
-                        label="Pisos"
-                        :error="formPiso.errors.pisos || formPiso.errors.piso_id"
+
+                <div
+                    v-if="!pisosConPuertas || pisosConPuertas.length === 0"
+                    class="text-center py-8 text-slate-500 dark:text-slate-400"
+                >
+                    No hay pisos con puertas activas.
+                </div>
+
+                <div
+                    v-else
+                    class="space-y-1 border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden transition-colors duration-200"
+                >
+                    <div
+                        v-for="piso in pisosConPuertas"
+                        :key="piso.id"
+                        class="border-b border-slate-200 dark:border-slate-700 last:border-b-0 transition-colors duration-200"
                     >
+                        <!-- Cabecera acordeón: piso + checkbox "seleccionar todo el piso" -->
                         <div
-                            class="space-y-2 max-h-56 overflow-y-auto border border-slate-200 dark:border-slate-700 rounded-lg p-3 bg-white dark:bg-slate-700 transition-colors duration-200"
+                            class="flex items-center gap-3 px-4 py-3 bg-slate-50 dark:bg-slate-700/40 hover:bg-slate-100 dark:hover:bg-slate-700/60 cursor-pointer transition-colors duration-200"
+                            @click="toggleAccordion(piso.id)"
                         >
+                            <button
+                                type="button"
+                                class="shrink-0 w-8 h-8 flex items-center justify-center rounded text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors duration-200"
+                                :aria-label="
+                                    openPisoId === piso.id ? 'Cerrar' : 'Abrir'
+                                "
+                            >
+                                <span
+                                    class="transition-transform duration-200"
+                                    :class="
+                                        openPisoId === piso.id
+                                            ? 'rotate-90'
+                                            : ''
+                                    "
+                                >
+                                    ▶
+                                </span>
+                            </button>
                             <label
-                                v-for="piso in todosLosPisos"
-                                :key="piso.id"
-                                class="flex items-center gap-2 p-2 hover:bg-slate-50 dark:hover:bg-slate-600 rounded transition-colors duration-200 cursor-pointer"
+                                class="flex items-center gap-2 flex-1 cursor-pointer min-w-0"
+                                @click.stop
                             >
                                 <input
                                     type="checkbox"
-                                    :value="piso.id"
-                                    v-model="formPiso.pisos"
-                                    class="h-4 w-4 text-green-600 dark:text-green-500 border-slate-300 dark:border-slate-600 rounded focus:ring-green-500 dark:focus:ring-green-400"
+                                    :checked="isPisoAllSelected(piso)"
+                                    :indeterminate.prop="
+                                        isPisoIndeterminate(piso)
+                                    "
+                                    class="h-4 w-4 text-green-600 dark:text-green-500 border-slate-300 dark:border-slate-600 rounded focus:ring-green-500 dark:focus:ring-green-400 shrink-0"
+                                    @change="togglePisoAll(piso)"
                                 />
-                                <span class="font-medium text-slate-900 dark:text-white">
+                                <span
+                                    class="font-medium text-slate-900 dark:text-slate-100 truncate"
+                                >
                                     {{ piso.nombre }}
+                                </span>
+                                <span
+                                    v-if="(piso.puertas || []).length"
+                                    class="text-xs text-slate-500 dark:text-slate-400 shrink-0"
+                                >
+                                    ({{ countSelectedInPiso(piso) }}/{{
+                                        piso.puertas.length
+                                    }})
                                 </span>
                             </label>
                         </div>
-                        <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                            Puedes seleccionar varios pisos. Se aplicarán las mismas reglas a todos.
-                        </p>
-                    </FormField>
 
-                    <div class="flex items-center justify-end gap-2 pt-2">
-                        <button
-                            type="submit"
-                            :disabled="formPiso.processing"
-                            class="px-4 py-2 rounded-lg bg-green-600 dark:bg-green-700 text-white hover:bg-green-700 dark:hover:bg-green-600 disabled:opacity-50 transition-colors duration-200"
+                        <!-- Contenido: lista de puertas -->
+                        <div
+                            v-show="openPisoId === piso.id"
+                            class="px-4 pb-3 pt-1 pl-12 bg-white dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700 transition-colors duration-200"
                         >
-                            {{
-                                formPiso.processing
-                                    ? "Agregando..."
-                                    : "Agregar Permiso"
-                            }}
-                        </button>
-                    </div>
-                </form>
-            </div>
-
-            <!-- Lista de pisos asignados -->
-            <div
-                class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-6 transition-colors duration-200"
-            >
-                <h2
-                    class="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4"
-                >
-                    Pisos con Permiso ({{ pisosAsignados.length }})
-                </h2>
-
-                <div
-                    v-if="pisosAsignados.length === 0"
-                    class="text-center py-8 text-slate-500 dark:text-slate-400"
-                >
-                    No hay pisos asignados a este cargo.
-                </div>
-
-                <div v-else class="space-y-4">
-                    <div
-                        v-for="piso in pisosAsignados"
-                        :key="piso.id"
-                        class="border border-slate-200 dark:border-slate-700 rounded-lg p-4 transition-colors duration-200"
-                    >
-                        <div class="flex items-start justify-between">
-                            <div class="flex-1">
-                                <div class="flex items-center gap-2 mb-2">
-                                    <h3
-                                        class="font-semibold text-slate-900 dark:text-slate-100"
-                                    >
-                                        {{ piso.nombre }}
-                                    </h3>
-                                    <span
-                                        v-if="piso.pivot.activo"
-                                        class="px-2 py-0.5 rounded text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 transition-colors duration-200"
-                                    >
-                                        Activo
-                                    </span>
-                                    <span
-                                        v-else
-                                        class="px-2 py-0.5 rounded text-xs font-medium bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 transition-colors duration-200"
-                                    >
-                                        Inactivo
-                                    </span>
-                                </div>
-                                <div
-                                    class="text-sm text-slate-600 dark:text-slate-400"
-                                >
-                                    <p class="text-slate-500 dark:text-slate-400">
-                                        Acceso todos los días de la semana
-                                    </p>
-                                </div>
-                            </div>
-                            <button
-                                @click="revokePiso(piso.id)"
-                                class="px-3 py-1.5 rounded-md border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 text-sm transition-colors duration-200"
+                            <div
+                                v-if="
+                                    !piso.puertas || piso.puertas.length === 0
+                                "
+                                class="text-sm text-slate-500 dark:text-slate-400 py-2"
                             >
-                                Eliminar
-                            </button>
+                                Sin puertas activas
+                            </div>
+                            <div v-else class="space-y-1.5 py-2">
+                                <label
+                                    v-for="puerta in piso.puertas || []"
+                                    :key="puerta.id"
+                                    class="flex items-center gap-2 py-1.5 px-2 rounded hover:bg-slate-50 dark:hover:bg-slate-700/50 cursor-pointer transition-colors duration-200"
+                                >
+                                    <input
+                                        type="checkbox"
+                                        :checked="
+                                            selectedPuertaIds.includes(
+                                                puerta.id,
+                                            )
+                                        "
+                                        class="h-4 w-4 text-green-600 dark:text-green-500 border-slate-300 dark:border-slate-600 rounded focus:ring-green-500 dark:focus:ring-green-400 shrink-0"
+                                        @change="togglePuerta(puerta.id)"
+                                    />
+                                    <span
+                                        class="text-sm text-slate-700 dark:text-slate-300"
+                                    >
+                                        {{ puerta.nombre }}
+                                        <span
+                                            v-if="puerta.codigo_fisico"
+                                            class="text-slate-500 dark:text-slate-400 text-xs ml-1"
+                                        >
+                                            ({{ puerta.codigo_fisico }})
+                                        </span>
+                                    </span>
+                                </label>
+                            </div>
                         </div>
                     </div>
+                </div>
+
+                <div
+                    class="flex items-center justify-end gap-2 pt-4 mt-4 border-t border-slate-200 dark:border-slate-700"
+                >
+                    <span
+                        class="text-sm text-slate-500 dark:text-slate-400 mr-auto"
+                    >
+                        {{ selectedPuertaIds.length }} puerta(s) seleccionada(s)
+                    </span>
+                    <button
+                        type="button"
+                        :disabled="formPuertasSync.processing"
+                        class="px-4 py-2 rounded-lg bg-green-600 dark:bg-green-700 text-white hover:bg-green-700 dark:hover:bg-green-600 disabled:opacity-50 transition-colors duration-200"
+                        @click="submitSyncPuertas"
+                    >
+                        {{
+                            formPuertasSync.processing
+                                ? "Guardando..."
+                                : "Guardar permisos a puertas"
+                        }}
+                    </button>
                 </div>
             </div>
 
@@ -239,8 +270,12 @@
                             class="text-sm font-semibold text-blue-900 dark:text-blue-300 flex items-center gap-2"
                         >
                             <span>📋</span>
-                            <span>Permisos de la Sidebar (Botones del Menú)</span>
-                            <span class="text-xs font-normal text-blue-800/80 dark:text-blue-200/80">
+                            <span
+                                >Permisos de la Sidebar (Botones del Menú)</span
+                            >
+                            <span
+                                class="text-xs font-normal text-blue-800/80 dark:text-blue-200/80"
+                            >
                                 ({{ sidebarPermissions.length }})
                             </span>
                         </h3>
@@ -249,15 +284,23 @@
                             @click="toggleSelectAllSidebar"
                             class="text-xs px-2 py-1 rounded border border-blue-300 dark:border-blue-700 bg-white dark:bg-slate-700 text-blue-700 dark:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/50 transition-colors duration-200"
                         >
-                            {{ allSidebarSelected ? "Deseleccionar todo" : "Seleccionar todo" }}
+                            {{
+                                allSidebarSelected
+                                    ? "Deseleccionar todo"
+                                    : "Seleccionar todo"
+                            }}
                         </button>
                     </div>
                     <p class="text-xs text-blue-700 dark:text-blue-300 mb-3">
                         Estos permisos controlan qué botones aparecen en la
                         barra lateral del menú:
                     </p>
-                    <p class="text-xs text-blue-700/80 dark:text-blue-300/90 mb-3">
-                        Los permisos de esta lista se muestran <b>solo aquí</b> (no se repiten en los grupos de abajo) para evitar confusión.
+                    <p
+                        class="text-xs text-blue-700/80 dark:text-blue-300/90 mb-3"
+                    >
+                        Los permisos de esta lista se muestran
+                        <b>solo aquí</b> (no se repiten en los grupos de abajo)
+                        para evitar confusión.
                     </p>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
                         <label
@@ -283,7 +326,7 @@
                                 >
                                     {{
                                         getSidebarButtonLabel(
-                                            sidebarPermission.name
+                                            sidebarPermission.name,
                                         )
                                     }}
                                 </span>
@@ -301,7 +344,9 @@
                         :key="groupName"
                         class="border border-slate-200 dark:border-slate-700 rounded-lg p-4 transition-colors duration-200"
                     >
-                        <div class="flex items-center justify-between mb-3 pb-2 border-b border-slate-200 dark:border-slate-700">
+                        <div
+                            class="flex items-center justify-between mb-3 pb-2 border-b border-slate-200 dark:border-slate-700"
+                        >
                             <h3
                                 class="text-sm font-semibold text-slate-700 dark:text-slate-300"
                             >
@@ -309,10 +354,22 @@
                             </h3>
                             <button
                                 type="button"
-                                @click="toggleSelectAllGroup(groupName, groupPermissions)"
+                                @click="
+                                    toggleSelectAllGroup(
+                                        groupName,
+                                        groupPermissions,
+                                    )
+                                "
                                 class="text-xs px-2 py-1 rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-600 transition-colors duration-200"
                             >
-                                {{ allGroupSelected(groupName, groupPermissions) ? "Deseleccionar todo" : "Seleccionar todo" }}
+                                {{
+                                    allGroupSelected(
+                                        groupName,
+                                        groupPermissions,
+                                    )
+                                        ? "Deseleccionar todo"
+                                        : "Seleccionar todo"
+                                }}
                             </button>
                         </div>
                         <div
@@ -379,11 +436,17 @@
                         <span class="text-2xl">✅</span>
                     </div>
                     <div class="flex-1">
-                        <p class="text-sm font-medium text-green-800 dark:text-green-200">
+                        <p
+                            class="text-sm font-medium text-green-800 dark:text-green-200"
+                        >
                             Permisos guardados exitosamente
                         </p>
-                        <p class="text-xs text-green-700 dark:text-green-300 mt-1">
-                            Los cambios se han aplicado al cargo "{{ cargo.name }}"
+                        <p
+                            class="text-xs text-green-700 dark:text-green-300 mt-1"
+                        >
+                            Los cambios se han aplicado al cargo "{{
+                                cargo.name
+                            }}"
                         </p>
                     </div>
                     <button
@@ -408,8 +471,12 @@
                 class="w-full max-w-md bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-xl"
                 @click.stop
             >
-                <div class="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-700">
-                    <h3 class="text-lg font-semibold text-slate-900 dark:text-slate-100">
+                <div
+                    class="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-700"
+                >
+                    <h3
+                        class="text-lg font-semibold text-slate-900 dark:text-slate-100"
+                    >
                         Confirmar Cambios
                     </h3>
                     <button
@@ -424,11 +491,17 @@
 
                 <div class="p-6">
                     <p class="text-sm text-slate-700 dark:text-slate-300 mb-4">
-                        ¿Estás seguro de que deseas guardar los cambios en los permisos del sistema para el cargo
-                        <strong class="text-slate-900 dark:text-slate-100">{{ cargo.name }}</strong>?
+                        ¿Estás seguro de que deseas guardar los cambios en los
+                        permisos del sistema para el cargo
+                        <strong class="text-slate-900 dark:text-slate-100">{{
+                            cargo.name
+                        }}</strong
+                        >?
                     </p>
                     <p class="text-xs text-slate-500 dark:text-slate-400 mb-4">
-                        Se actualizarán los permisos asignados a este cargo. Los usuarios con este cargo verán reflejados los cambios inmediatamente.
+                        Se actualizarán los permisos asignados a este cargo. Los
+                        usuarios con este cargo verán reflejados los cambios
+                        inmediatamente.
                     </p>
 
                     <div class="flex items-center justify-end gap-3">
@@ -467,9 +540,22 @@ import { ref, onMounted, computed, Transition } from "vue";
 const props = defineProps({
     cargo: Object,
     pisosAsignados: Array,
+    puertasAsignadas: { type: Array, default: () => [] },
     todosLosPisos: Array,
+    pisosConPuertas: { type: Array, default: () => [] },
     permissions: Array,
     permissionsGrouped: Object,
+});
+
+// Acordeón: piso abierto (solo uno a la vez)
+const openPisoId = ref(null);
+
+// IDs de puertas seleccionadas (permisos por puerta; inicial desde backend)
+const selectedPuertaIds = ref((props.puertasAsignadas || []).map((p) => p.id));
+
+// Sincronizar lista completa de puertas (PUT)
+const formPuertasSync = useForm({
+    puertas: [],
 });
 
 const formCargo = useForm({
@@ -478,39 +564,77 @@ const formCargo = useForm({
     activo: !!props.cargo.activo,
 });
 
-const formPiso = useForm({
-    pisos: [],
-    hora_inicio: null,
-    hora_fin: null,
-    dias_semana: "1,2,3,4,5,6,7",
-    fecha_inicio: null,
-    fecha_fin: null,
-    activo: true,
-});
-
 const submitCargo = () => {
     formCargo.put(route("cargos.update", { cargo: props.cargo.id }));
 };
 
-const submitPiso = () => {
-    formPiso.post(route("cargos.pisos.store", { cargo: props.cargo.id }), {
+function toggleAccordion(pisoId) {
+    openPisoId.value = openPisoId.value === pisoId ? null : pisoId;
+}
+
+function puertasDelPiso(piso) {
+    return piso.puertas || [];
+}
+
+function isPisoAllSelected(piso) {
+    const puertas = puertasDelPiso(piso);
+    if (puertas.length === 0) return false;
+    return puertas.every((puerta) =>
+        selectedPuertaIds.value.includes(puerta.id),
+    );
+}
+
+function isPisoIndeterminate(piso) {
+    const puertas = puertasDelPiso(piso);
+    if (puertas.length === 0) return false;
+    const selected = puertas.filter((puerta) =>
+        selectedPuertaIds.value.includes(puerta.id),
+    ).length;
+    return selected > 0 && selected < puertas.length;
+}
+
+function countSelectedInPiso(piso) {
+    return puertasDelPiso(piso).filter((puerta) =>
+        selectedPuertaIds.value.includes(puerta.id),
+    ).length;
+}
+
+function togglePisoAll(piso) {
+    const puertas = puertasDelPiso(piso);
+    const ids = puertas.map((p) => p.id);
+    const allSelected = ids.every((id) => selectedPuertaIds.value.includes(id));
+    if (allSelected) {
+        selectedPuertaIds.value = selectedPuertaIds.value.filter(
+            (id) => !ids.includes(id),
+        );
+    } else {
+        const combined = [...new Set([...selectedPuertaIds.value, ...ids])];
+        selectedPuertaIds.value = combined;
+    }
+}
+
+function togglePuerta(puertaId) {
+    const idx = selectedPuertaIds.value.indexOf(puertaId);
+    if (idx === -1) {
+        selectedPuertaIds.value = [...selectedPuertaIds.value, puertaId];
+    } else {
+        selectedPuertaIds.value = selectedPuertaIds.value.filter(
+            (id) => id !== puertaId,
+        );
+    }
+}
+
+function submitSyncPuertas() {
+    formPuertasSync.puertas = [...selectedPuertaIds.value];
+    // URL explícita para evitar error de Ziggy si la ruta no está en la lista (p. ej. tras deploy o caché)
+    const url = `/cargos/${props.cargo.id}/puertas`;
+    formPuertasSync.put(url, {
+        preserveScroll: true,
         onSuccess: () => {
-            formPiso.reset();
-            // Resetear a estructura esperada (arrays)
-            formPiso.pisos = [];
+            formPuertasSync.reset();
         },
     });
-};
-
-const revokePiso = (pisoId) => {
-    if (!confirm("¿Eliminar este permiso de piso?")) return;
-    router.delete(
-        route("cargos.pisos.destroy", {
-            cargo: props.cargo.id,
-            piso: pisoId,
-        })
-    );
-};
+}
 
 const formatDiasSemana = (dias) => {
     const nombres = {
@@ -575,7 +699,9 @@ const sidebarPermissionNames = [
 
 // Filtrar permisos de sidebar
 const sidebarPermissions = computed(() => {
-    const mapByName = new Map((props.permissions || []).map((p) => [p.name, p]));
+    const mapByName = new Map(
+        (props.permissions || []).map((p) => [p.name, p]),
+    );
     // Mantener orden según el menú
     return sidebarPermissionNames
         .map((name) => mapByName.get(name))
@@ -585,7 +711,7 @@ const sidebarPermissions = computed(() => {
 // Filtrar otros permisos (excluyendo los de sidebar y grupos deprecados)
 const otherPermissionsGrouped = computed(() => {
     const other = (props.permissions || []).filter(
-        (p) => !sidebarPermissionNames.includes(p.name)
+        (p) => !sidebarPermissionNames.includes(p.name),
     );
 
     const grouped = {};
@@ -669,12 +795,12 @@ const toggleSelectAllSidebar = () => {
     if (allSidebarSelected.value) {
         // Deseleccionar todos
         cargoPermissions.value = cargoPermissions.value.filter(
-            (id) => !sidebarIds.includes(id)
+            (id) => !sidebarIds.includes(id),
         );
     } else {
         // Seleccionar todos (agregar los que faltan)
         const missing = sidebarIds.filter(
-            (id) => !cargoPermissions.value.includes(id)
+            (id) => !cargoPermissions.value.includes(id),
         );
         cargoPermissions.value = [...cargoPermissions.value, ...missing];
     }
@@ -696,12 +822,12 @@ const toggleSelectAllGroup = (groupName, groupPermissions) => {
     if (allSelected) {
         // Deseleccionar todos del grupo
         cargoPermissions.value = cargoPermissions.value.filter(
-            (id) => !groupIds.includes(id)
+            (id) => !groupIds.includes(id),
         );
     } else {
         // Seleccionar todos del grupo (agregar los que faltan)
         const missing = groupIds.filter(
-            (id) => !cargoPermissions.value.includes(id)
+            (id) => !cargoPermissions.value.includes(id),
         );
         cargoPermissions.value = [...cargoPermissions.value, ...missing];
     }
@@ -733,7 +859,7 @@ const savePermissions = () => {
             onFinish: () => {
                 savingPermissions.value = false;
             },
-        }
+        },
     );
 };
 </script>

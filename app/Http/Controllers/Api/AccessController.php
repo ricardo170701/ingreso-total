@@ -204,25 +204,21 @@ class AccessController extends Controller
         $permitido = false;
         $motivo = null;
 
-        // Para funcionarios: SIEMPRE usar permisos del cargo->piso (ignorar reglas de QR/Tarjeta NFC)
+        // Para funcionarios: solo permiso por puerta (cargo_puerta_acceso)
         // Para visitantes: usar reglas de la credencial (QR/Tarjeta NFC)
         if ($isStaff) {
-            // Staff (servidor público/proveedor): usar permisos del cargo->piso
             if (!$user->cargo_id) {
                 $permitido = false;
                 $motivo = 'Sin cargo asignado';
-            } elseif (!$puerta->piso_id) {
-                $permitido = false;
-                $motivo = 'Puerta sin piso asignado';
             } else {
-                $cargoRule = DB::table('cargo_piso_acceso')
+                $cargoRule = DB::table('cargo_puerta_acceso')
                     ->where('cargo_id', $user->cargo_id)
-                    ->where('piso_id', $puerta->piso_id)
+                    ->where('puerta_id', $puerta->id)
                     ->first();
 
                 if (!$cargoRule) {
                     $permitido = false;
-                    $motivo = 'Sin permiso para el piso';
+                    $motivo = 'Sin permiso para esta puerta';
                 } else {
                     $permitido = $this->ruleAllows($cargoRule, $now);
                     $motivo = $permitido ? null : 'Fuera de horario (cargo)';

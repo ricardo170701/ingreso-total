@@ -88,6 +88,9 @@ Route::middleware(['auth', 'force.password.change', 'visitante.restrict', 'permi
     Route::resource('cargos', CargosController::class);
     Route::post('/cargos/{cargo}/pisos', [CargosController::class, 'upsertPiso'])->name('cargos.pisos.store');
     Route::delete('/cargos/{cargo}/pisos/{piso}', [CargosController::class, 'revokePiso'])->name('cargos.pisos.destroy');
+    Route::post('/cargos/{cargo}/puertas', [CargosController::class, 'upsertPuertas'])->name('cargos.puertas.store');
+    Route::put('/cargos/{cargo}/puertas', [CargosController::class, 'syncPuertas'])->name('cargos.puertas.sync');
+    Route::delete('/cargos/{cargo}/puertas/{puerta}', [CargosController::class, 'revokePuerta'])->name('cargos.puertas.destroy');
     Route::put('/cargos/{cargo}/permissions', [CargosController::class, 'updatePermissions'])->name('cargos.permissions.update');
 
     // Roles y Permisos del Sistema

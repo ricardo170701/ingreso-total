@@ -92,16 +92,6 @@ class UpdateUserRequest extends FormRequest
                     }
                 },
             ],
-            'cargo_empresa' => [
-                'nullable',
-                'string',
-                'max:255',
-                function ($attribute, $value, $fail) use ($roleName) {
-                    if ($roleName === 'proveedor' && empty($value)) {
-                        $fail('El cargo en la empresa es requerido para proveedores.');
-                    }
-                },
-            ],
         ];
     }
 

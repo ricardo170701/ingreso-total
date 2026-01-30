@@ -30,8 +30,7 @@ class Cargo extends Model
     }
 
     /**
-     * Relación: Un cargo tiene muchas puertas (muchos a muchos)
-     * @deprecated Use pisos() en su lugar. Los permisos ahora son por piso.
+     * Relación: Un cargo tiene muchas puertas (permiso por puerta individual)
      */
     public function puertas(): BelongsToMany
     {

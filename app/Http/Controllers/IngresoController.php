@@ -57,7 +57,7 @@ class IngresoController extends Controller
             $usuarios = collect([$actor])->filter();
         }
 
-        // Obtener puertas activas para el selector
+        // Puertas activas (para UI y otros usos)
         $puertas = Puerta::query()
             ->where('activo', true)
             ->with('zona')
@@ -67,6 +67,14 @@ class IngresoController extends Controller
         $pisos = Piso::query()
             ->where('activo', true)
             ->orderBy('orden')
+            ->get();
+
+        // Pisos con puertas activas (para el acordeón de selección por puerta)
+        $pisosConPuertas = Piso::query()
+            ->where('activo', true)
+            ->with(['puertas' => fn($q) => $q->where('activo', true)->orderBy('nombre')])
+            ->orderBy('orden')
+            ->orderBy('nombre')
             ->get();
 
         $secretarias = Secretaria::query()
@@ -228,26 +236,14 @@ class IngresoController extends Controller
             ->orderBy('codigo')
             ->get(['id', 'codigo', 'nombre']);
 
-        // Agregar información de tarjeta NFC asignada a cada usuario (si tiene)
-        $usuarios = $usuarios->map(function ($usuario) {
-            $tarjetaAsignada = TarjetaNfc::query()
-                ->where('activo', true)
-                ->where('user_id', $usuario->id)
-                ->first(['id', 'codigo', 'nombre']);
-
-            $usuario->tarjeta_nfc_asignada = $tarjetaAsignada ? [
-                'id' => $tarjetaAsignada->id,
-                'codigo' => $tarjetaAsignada->codigo,
-                'nombre' => $tarjetaAsignada->nombre,
-            ] : null;
-
-            return $usuario;
-        });
+        // Extras por usuario (tarjeta NFC asignada + QR activo con puertas seleccionadas para edición)
+        $usuarios = $this->enrichUsuariosIngreso($usuarios);
 
         return Inertia::render('Ingreso/Index', [
             'usuarios' => $usuarios,
             'puertas' => $puertas,
             'pisos' => $pisos,
+            'pisosConPuertas' => $pisosConPuertas,
             'secretarias' => $secretarias,
             'gerencias' => $gerencias,
             'responsables' => $responsables->map(fn($u) => [
@@ -300,18 +296,32 @@ class IngresoController extends Controller
         $hasPuertas = is_array($puertas) && count($puertas) > 0;
         $hasPisos = is_array($pisos) && count($pisos) > 0;
 
-        // Validar pisos para visitantes (más práctico)
-        if ($targetRole === 'visitante' && !$hasPisos) {
-            return back()->withErrors(['pisos' => 'Para visitantes debes seleccionar al menos un piso.']);
-        }
+        // Visitantes: deben tener puertas explícitas (acordeón por piso/puerta).
+        // Compatibilidad: si aún llega "pisos" y no llega "puertas", se expande a todas las puertas activas de esos pisos.
+        if ($targetRole === 'visitante') {
+            if (!$hasPuertas && $hasPisos) {
+                $puertas = Puerta::query()
+                    ->where('activo', true)
+                    ->whereIn('piso_id', $pisos)
+                    ->pluck('id')
+                    ->toArray();
+                $hasPuertas = count($puertas) > 0;
+            }
 
-        if ($targetRole === 'visitante' && $hasPisos) {
-            $puertasEnPisos = Puerta::query()
+            if (!$hasPuertas) {
+                return back()->withErrors(['puertas' => 'Para visitantes debes seleccionar al menos una puerta.']);
+            }
+
+            // Normalizar a puertas activas existentes
+            $puertas = Puerta::query()
                 ->where('activo', true)
-                ->whereIn('piso_id', $pisos)
-                ->count();
-            if ($puertasEnPisos <= 0) {
-                return back()->withErrors(['pisos' => 'Los pisos seleccionados no tienen puertas activas.']);
+                ->whereIn('id', $puertas)
+                ->pluck('id')
+                ->map(fn($id) => (int) $id)
+                ->toArray();
+
+            if (count($puertas) === 0) {
+                return back()->withErrors(['puertas' => 'Las puertas seleccionadas no están activas o no existen.']);
             }
         }
 
@@ -390,12 +400,24 @@ class IngresoController extends Controller
             $puertas = $data['puertas'] ?? [];
             $pisos = $data['pisos'] ?? [];
 
-            // Si es visitante: expandir pisos -> puertas activas
-            if (($targetUser->role?->name ?? null) === 'visitante' && is_array($pisos) && count($pisos) > 0) {
+            // Visitante: compatibilidad con "pisos" (si no llega "puertas")
+            if (($targetUser->role?->name ?? null) === 'visitante' && (!is_array($puertas) || count($puertas) === 0) && is_array($pisos) && count($pisos) > 0) {
                 $puertas = Puerta::query()
                     ->where('activo', true)
                     ->whereIn('piso_id', $pisos)
                     ->pluck('id')
+                    ->toArray();
+            }
+
+            // Siempre: normalizar a puertas activas únicas
+            if (is_array($puertas) && count($puertas) > 0) {
+                $puertas = Puerta::query()
+                    ->where('activo', true)
+                    ->whereIn('id', $puertas)
+                    ->pluck('id')
+                    ->map(fn($id) => (int) $id)
+                    ->unique()
+                    ->values()
                     ->toArray();
             }
 
@@ -482,6 +504,14 @@ class IngresoController extends Controller
             ->orderBy('orden')
             ->get();
 
+        // Pisos con puertas activas (para el acordeón de selección por puerta)
+        $pisosConPuertas = Piso::query()
+            ->where('activo', true)
+            ->with(['puertas' => fn($q) => $q->where('activo', true)->orderBy('nombre')])
+            ->orderBy('orden')
+            ->orderBy('nombre')
+            ->get();
+
         $secretarias = Secretaria::query()
             ->where('activo', true)
             ->with('piso')
@@ -504,10 +534,21 @@ class IngresoController extends Controller
             ->orderBy('name')
             ->get(['id', 'name', 'email', 'role_id', 'cargo_id']);
 
+        // Tarjetas NFC disponibles (para que no desaparezca el selector tras generar QR)
+        $tarjetasNfcDisponibles = TarjetaNfc::query()
+            ->where('activo', true)
+            ->whereNull('user_id')
+            ->orderBy('codigo')
+            ->get(['id', 'codigo', 'nombre']);
+
+        // Extras por usuario (tarjeta NFC asignada + QR activo con puertas seleccionadas para edición)
+        $usuarios = $this->enrichUsuariosIngreso($usuarios);
+
         return Inertia::render('Ingreso/Index', [
             'usuarios' => $usuarios,
             'puertas' => $puertas,
             'pisos' => $pisos,
+            'pisosConPuertas' => $pisosConPuertas,
             'secretarias' => $secretarias,
             'gerencias' => $gerencias,
             'responsables' => $responsables->map(fn($u) => [
@@ -517,6 +558,7 @@ class IngresoController extends Controller
                 'cargo' => $u->cargo ? ['id' => $u->cargo->id, 'name' => $u->cargo->name] : null,
             ]),
             'puedeCrearParaOtros' => $puedeCrearParaOtros,
+            'tarjetasNfcDisponibles' => $tarjetasNfcDisponibles,
             'qrGenerado' => [
                 'id' => $qr->id,
                 'user_id' => $qr->user_id,
@@ -686,8 +728,9 @@ class IngresoController extends Controller
             'tarjeta_nfc_id' => ['required', 'integer', 'exists:tarjetas_nfc,id'],
             'user_id' => ['required', 'integer', 'exists:users,id'],
             'gerencia_id' => ['nullable', 'integer', 'exists:gerencias,id'],
-            'pisos' => ['required', 'array', 'min:1'],
-            'pisos.*' => ['integer', 'exists:pisos,id'],
+            // Selección explícita por puertas (acordeón por piso)
+            'puertas' => ['required', 'array', 'min:1'],
+            'puertas.*' => ['integer', 'exists:puertas,id'],
             'hora_inicio' => ['nullable', 'date_format:H:i'],
             'hora_fin' => ['nullable', 'date_format:H:i', 'after:hora_inicio'],
             'dias_semana' => ['nullable', 'string', 'max:20'],
@@ -724,7 +767,22 @@ class IngresoController extends Controller
         $now = Carbon::now();
         $expiresAt = $now->copy()->addDays(15); // Similar a QR de visitantes
 
-        DB::transaction(function () use ($tarjeta, $targetUser, $actor, $data, $expiresAt, $now) {
+        // Normalizar puertas a activas (fail-closed)
+        $puertas = Puerta::query()
+            ->where('activo', true)
+            ->whereIn('id', $data['puertas'])
+            ->pluck('id')
+            ->map(fn($id) => (int) $id)
+            ->unique()
+            ->values()
+            ->toArray();
+        if (count($puertas) === 0) {
+            return response()->json([
+                'message' => 'Las puertas seleccionadas no están activas o no existen.',
+            ], 422);
+        }
+
+        DB::transaction(function () use ($tarjeta, $targetUser, $actor, $data, $expiresAt, $now, $puertas) {
             // Cerrar asignación anterior (si existe)
             TarjetaNfcAsignacion::query()
                 ->where('tarjeta_nfc_id', $tarjeta->id)
@@ -753,13 +811,6 @@ class IngresoController extends Controller
                 'fecha_asignacion' => $now,
                 'fecha_desasignacion' => null,
             ]);
-
-            // Expandir pisos a puertas activas
-            $puertas = Puerta::query()
-                ->where('activo', true)
-                ->whereIn('piso_id', $data['pisos'])
-                ->pluck('id')
-                ->toArray();
 
             // Eliminar relaciones anteriores
             DB::table('tarjeta_nfc_puerta_acceso')
@@ -918,6 +969,128 @@ class IngresoController extends Controller
         ], 200);
     }
 
+    /**
+     * Enriquecer usuarios para la pantalla de Ingreso:
+     * - tarjeta_nfc_asignada (si tiene una activa)
+     * - qr_activo (solo para visitantes): puertas seleccionadas + reglas horarias + responsable/gerencia
+     *
+     * @param \Illuminate\Support\Collection<int, User> $usuarios
+     * @return \Illuminate\Support\Collection<int, User>
+     */
+    private function enrichUsuariosIngreso($usuarios)
+    {
+        if (!$usuarios || (is_object($usuarios) && method_exists($usuarios, 'count') && $usuarios->count() === 0)) {
+            return $usuarios;
+        }
+
+        $usuarios = $usuarios->values();
+        $userIds = $usuarios->pluck('id')->filter()->map(fn($id) => (int) $id)->values()->toArray();
+        if (count($userIds) === 0) {
+            return $usuarios;
+        }
+
+        // Map de roles por usuario (para aplicar lógica solo a visitantes)
+        $rolesByUserId = [];
+        foreach ($usuarios as $u) {
+            $rolesByUserId[(int) $u->id] = (string) ($u->role?->name ?? '');
+        }
+
+        // Tarjeta NFC asignada (1 query)
+        $tarjetasByUserId = TarjetaNfc::query()
+            ->where('activo', true)
+            ->whereIn('user_id', $userIds)
+            ->get(['id', 'codigo', 'nombre', 'user_id'])
+            ->keyBy('user_id');
+
+        // QR activo por visitante (1 query + pivots)
+        $now = Carbon::now();
+        $qrCandidates = CodigoQr::query()
+            ->where('activo', true)
+            ->whereIn('user_id', $userIds)
+            ->orderByDesc('fecha_generacion')
+            ->get(['id', 'user_id', 'gerencia_id', 'responsable_id', 'fecha_generacion', 'fecha_expiracion']);
+
+        $qrByUserId = [];
+        foreach ($qrCandidates as $qr) {
+            $uid = (int) $qr->user_id;
+            if (isset($qrByUserId[$uid])) {
+                continue;
+            }
+            if (($rolesByUserId[$uid] ?? null) !== 'visitante') {
+                continue;
+            }
+            if ($qr->fecha_expiracion && Carbon::parse($qr->fecha_expiracion)->lte($now)) {
+                continue;
+            }
+            $qrByUserId[$uid] = $qr;
+        }
+
+        $qrIds = array_values(array_map(fn($qr) => (int) $qr->id, $qrByUserId));
+        $puertaIdsByQrId = [];
+        $ruleByQrId = [];
+        if (count($qrIds) > 0) {
+            $rows = DB::table('codigo_qr_puerta_acceso')
+                ->whereIn('codigo_qr_id', $qrIds)
+                ->get([
+                    'codigo_qr_id',
+                    'puerta_id',
+                    'hora_inicio',
+                    'hora_fin',
+                    'dias_semana',
+                    'fecha_inicio',
+                    'fecha_fin',
+                    'activo',
+                ]);
+
+            foreach ($rows as $r) {
+                $qid = (int) $r->codigo_qr_id;
+                $puertaIdsByQrId[$qid] = $puertaIdsByQrId[$qid] ?? [];
+                $puertaIdsByQrId[$qid][] = (int) $r->puerta_id;
+
+                // Tomar reglas desde la primera fila (en este UI se aplican igual para todas las puertas)
+                if (!isset($ruleByQrId[$qid])) {
+                    $ruleByQrId[$qid] = [
+                        'hora_inicio' => $r->hora_inicio,
+                        'hora_fin' => $r->hora_fin,
+                        'dias_semana' => $r->dias_semana,
+                        'fecha_inicio' => $r->fecha_inicio,
+                        'fecha_fin' => $r->fecha_fin,
+                        'activo' => (bool) $r->activo,
+                    ];
+                }
+            }
+        }
+
+        // Aplicar al payload de cada usuario
+        return $usuarios->map(function ($u) use ($tarjetasByUserId, $qrByUserId, $puertaIdsByQrId, $ruleByQrId) {
+            $uid = (int) $u->id;
+
+            $tarjeta = $tarjetasByUserId->get($uid);
+            $u->tarjeta_nfc_asignada = $tarjeta ? [
+                'id' => (int) $tarjeta->id,
+                'codigo' => $tarjeta->codigo,
+                'nombre' => $tarjeta->nombre,
+            ] : null;
+
+            $qr = $qrByUserId[$uid] ?? null;
+            if ($qr) {
+                $qid = (int) $qr->id;
+                $u->qr_activo = array_merge([
+                    'id' => $qid,
+                    'gerencia_id' => $qr->gerencia_id ? (int) $qr->gerencia_id : null,
+                    'responsable_id' => $qr->responsable_id ? (int) $qr->responsable_id : null,
+                    'fecha_generacion' => $qr->fecha_generacion?->toIso8601String(),
+                    'fecha_expiracion' => $qr->fecha_expiracion?->toIso8601String(),
+                    'puerta_ids' => array_values(array_unique($puertaIdsByQrId[$qid] ?? [])),
+                ], $ruleByQrId[$qid] ?? []);
+            } else {
+                $u->qr_activo = null;
+            }
+
+            return $u;
+        });
+    }
+
     private function makeShortToken(int $len = 10): string
     {
         $alphabet = '23456789ABCDEFGHJKMNPQRSTUVWXYZ';
@@ -929,4 +1102,5 @@ class IngresoController extends Controller
         }
         return $out;
     }
+
 }

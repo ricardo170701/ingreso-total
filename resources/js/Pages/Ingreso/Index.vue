@@ -2,7 +2,7 @@
     <AppLayout>
         <div class="max-w-4xl mx-auto space-y-6 px-4 sm:px-6 lg:px-0">
             <!-- Header con fondo verde y logo centrado -->
-            <div class="relative bg-gradient-to-br from-[#008c3a] via-[#006a2d] to-[#008c3a] rounded-xl overflow-hidden shadow-lg">
+            <div class="relative bg-linear-to-br from-[#008c3a] via-[#006a2d] to-[#008c3a] rounded-xl overflow-hidden shadow-lg">
                 <!-- Contenido centrado -->
                 <div class="relative z-10 p-4 sm:p-6 lg:p-8 text-center">
                     <!-- Logo centrado -->
@@ -194,55 +194,65 @@
                 <form @submit.prevent="submit" class="grid grid-cols-1 gap-4">
                     <FormField label="Usuario" :error="form.errors.user_id">
                         <!-- Selector buscable (principalmente útil cuando tiene permiso create_ingreso_otros) -->
-                        <div class="relative">
-                            <input
-                                v-model="userPickerQuery"
-                                type="text"
-                                :disabled="!puedeCrearParaOtros && usuariosLocal.length === 1"
-                                @focus="openUserPicker"
-                                @keydown.down.prevent="userPickerMove(1)"
-                                @keydown.up.prevent="userPickerMove(-1)"
-                                @keydown.enter.prevent="userPickerSelectActive"
-                                @keydown.esc.prevent="closeUserPicker"
-                                class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-transparent disabled:bg-slate-100 dark:disabled:bg-slate-600 disabled:cursor-not-allowed transition-colors duration-200"
-                                :placeholder="puedeCrearParaOtros ? 'Buscar por nombre, email o cédula…' : 'Usuario'"
-                                autocomplete="off"
-                            />
-                            <!-- Mantener el required del form -->
-                            <input type="hidden" v-model="form.user_id" required />
+                        <div class="flex items-start gap-2">
+                            <div class="relative flex-1">
+                                <input
+                                    v-model="userPickerQuery"
+                                    type="text"
+                                    :disabled="!puedeCrearParaOtros && usuariosLocal.length === 1"
+                                    @focus="openUserPicker"
+                                    @keydown.down.prevent="userPickerMove(1)"
+                                    @keydown.up.prevent="userPickerMove(-1)"
+                                    @keydown.enter.prevent="userPickerSelectActive"
+                                    @keydown.esc.prevent="closeUserPicker"
+                                    class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-transparent disabled:bg-slate-100 dark:disabled:bg-slate-600 disabled:cursor-not-allowed transition-colors duration-200"
+                                    :placeholder="puedeCrearParaOtros ? 'Buscar por nombre, email o cédula…' : 'Usuario'"
+                                    autocomplete="off"
+                                />
+                                <!-- Mantener el required del form -->
+                                <input type="hidden" v-model="form.user_id" required />
 
-                            <div
-                                v-if="userPickerOpen && puedeCrearParaOtros"
-                                class="absolute z-30 mt-1 w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-lg overflow-hidden max-h-[280px] overflow-y-auto"
-                            >
-                                <div v-if="filteredUsuariosForPicker.length === 0" class="px-3 py-3 text-sm text-slate-500 dark:text-slate-400">
-                                    Sin resultados
-                                </div>
-                                <button
-                                    v-for="(u, idx) in filteredUsuariosForPicker"
-                                    :key="u.id"
-                                    type="button"
-                                    @click="selectUsuarioFromPicker(u)"
-                                    @mouseenter="userPickerActiveIndex = idx"
-                                    class="w-full text-left px-3 py-2 flex items-center justify-between gap-3 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
-                                    :class="idx === userPickerActiveIndex ? 'bg-slate-50 dark:bg-slate-700' : ''"
+                                <div
+                                    v-if="userPickerOpen && puedeCrearParaOtros"
+                                    class="absolute z-30 mt-1 w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-lg overflow-hidden max-h-[280px] overflow-y-auto"
                                 >
-                                    <div class="min-w-0">
-                                        <div class="text-sm font-medium text-slate-900 dark:text-slate-100 truncate">
-                                            {{ u.name || u.email }}
-                                        </div>
-                                        <div class="text-xs text-slate-500 dark:text-slate-400 truncate">
-                                            <span v-if="u.n_identidad">CC: {{ u.n_identidad }}</span>
-                                            <span v-else>Sin cédula</span>
-                                            <span v-if="u.role"> · {{ u.role.name }}</span>
-                                            <span v-if="u.cargo"> · {{ u.cargo.name }}</span>
-                                        </div>
+                                    <div v-if="filteredUsuariosForPicker.length === 0" class="px-3 py-3 text-sm text-slate-500 dark:text-slate-400">
+                                        Sin resultados
                                     </div>
-                                    <div class="text-xs text-slate-400 dark:text-slate-500 shrink-0">
-                                        #{{ u.id }}
-                                    </div>
-                                </button>
+                                    <button
+                                        v-for="(u, idx) in filteredUsuariosForPicker"
+                                        :key="u.id"
+                                        type="button"
+                                        @click="selectUsuarioFromPicker(u)"
+                                        @mouseenter="userPickerActiveIndex = idx"
+                                        class="w-full text-left px-3 py-2 flex items-center justify-between gap-3 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+                                        :class="idx === userPickerActiveIndex ? 'bg-slate-50 dark:bg-slate-700' : ''"
+                                    >
+                                        <div class="min-w-0">
+                                            <div class="text-sm font-medium text-slate-900 dark:text-slate-100 truncate">
+                                                {{ u.name || u.email }}
+                                            </div>
+                                            <div class="text-xs text-slate-500 dark:text-slate-400 truncate">
+                                                <span v-if="u.n_identidad">CC: {{ u.n_identidad }}</span>
+                                                <span v-else>Sin cédula</span>
+                                                <span v-if="u.role"> · {{ u.role.name }}</span>
+                                                <span v-if="u.cargo"> · {{ u.cargo.name }}</span>
+                                            </div>
+                                        </div>
+                                        <div class="text-xs text-slate-400 dark:text-slate-500 shrink-0">
+                                            #{{ u.id }}
+                                        </div>
+                                    </button>
+                                </div>
                             </div>
+
+                            <button
+                                type="button"
+                                @click="limpiarDatos"
+                                class="shrink-0 px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-sm font-medium transition-colors duration-200"
+                            >
+                                Limpiar datos
+                            </button>
                         </div>
 
                         <div
@@ -395,30 +405,99 @@
                         </FormField>
 
                         <FormField
-                            label="Pisos (obligatorio para visitantes)"
-                            :error="form.errors.pisos"
+                            v-if="usuarioSeleccionado?.role?.name === 'visitante'"
+                            label="Puertas (obligatorio para visitantes)"
+                            :error="form.errors.puertas"
                         >
                             <div
-                                class="space-y-2 max-h-48 overflow-y-auto border border-slate-200 dark:border-slate-700 rounded-lg p-3 bg-white dark:bg-slate-700 transition-colors duration-200"
+                                v-if="pisosConPuertasLocal.length === 0"
+                                class="text-sm text-slate-500 dark:text-slate-400 p-3 border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-700 transition-colors duration-200"
                             >
-                                <label
-                                    v-for="p in (pisos || [])"
-                                    :key="p.id"
-                                    class="flex items-center gap-2 p-2 hover:bg-slate-50 dark:hover:bg-slate-600 rounded transition-colors duration-200 cursor-pointer"
-                                >
-                                    <input
-                                        type="checkbox"
-                                        :value="p.id"
-                                        v-model="form.pisos"
-                                        class="h-4 w-4 text-green-600 dark:text-green-500 border-slate-300 dark:border-slate-600 rounded focus:ring-green-500 dark:focus:ring-green-400"
-                                    />
-                                    <div class="flex-1">
-                                        <span class="font-medium text-slate-900 dark:text-white">{{ p.nombre }}</span>
-                                    </div>
-                                </label>
+                                No hay pisos con puertas activas.
                             </div>
+
+                            <div
+                                v-else
+                                class="space-y-1 border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden transition-colors duration-200"
+                            >
+                                <div
+                                    v-for="piso in pisosConPuertasLocal"
+                                    :key="piso.id"
+                                    class="border-b border-slate-200 dark:border-slate-700 last:border-b-0 transition-colors duration-200"
+                                >
+                                    <div
+                                        class="flex items-center gap-3 px-4 py-3 bg-slate-50 dark:bg-slate-700/40 hover:bg-slate-100 dark:hover:bg-slate-700/60 cursor-pointer transition-colors duration-200"
+                                        @click="toggleAccordion(piso.id)"
+                                    >
+                                        <button
+                                            type="button"
+                                            class="shrink-0 w-8 h-8 flex items-center justify-center rounded text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors duration-200"
+                                            :aria-label="openPisoId === piso.id ? 'Cerrar' : 'Abrir'"
+                                        >
+                                            <span
+                                                class="transition-transform duration-200"
+                                                :class="openPisoId === piso.id ? 'rotate-90' : ''"
+                                            >
+                                                ▶
+                                            </span>
+                                        </button>
+
+                                        <label class="flex items-center gap-2 flex-1 cursor-pointer min-w-0" @click.stop>
+                                            <input
+                                                type="checkbox"
+                                                :checked="isPisoAllSelected(piso)"
+                                                :indeterminate.prop="isPisoIndeterminate(piso)"
+                                                class="h-4 w-4 text-green-600 dark:text-green-500 border-slate-300 dark:border-slate-600 rounded focus:ring-green-500 dark:focus:ring-green-400 shrink-0"
+                                                @change="togglePisoAll(piso)"
+                                            />
+                                            <span class="font-medium text-slate-900 dark:text-slate-100 truncate">
+                                                {{ piso.nombre }}
+                                            </span>
+                                            <span
+                                                v-if="(piso.puertas || []).length"
+                                                class="text-xs text-slate-500 dark:text-slate-400 shrink-0"
+                                            >
+                                                ({{ countSelectedInPiso(piso) }}/{{ piso.puertas.length }})
+                                            </span>
+                                        </label>
+                                    </div>
+
+                                    <div
+                                        v-show="openPisoId === piso.id"
+                                        class="px-4 pb-3 pt-1 pl-12 bg-white dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700 transition-colors duration-200"
+                                    >
+                                        <div v-if="!piso.puertas || piso.puertas.length === 0" class="text-sm text-slate-500 dark:text-slate-400 py-2">
+                                            Sin puertas activas
+                                        </div>
+                                        <div v-else class="space-y-1.5 py-2">
+                                            <label
+                                                v-for="puerta in piso.puertas || []"
+                                                :key="puerta.id"
+                                                class="flex items-center gap-2 py-1.5 px-2 rounded hover:bg-slate-50 dark:hover:bg-slate-700/50 cursor-pointer transition-colors duration-200"
+                                            >
+                                                <input
+                                                    type="checkbox"
+                                                    :checked="form.puertas.includes(puerta.id)"
+                                                    class="h-4 w-4 text-green-600 dark:text-green-500 border-slate-300 dark:border-slate-600 rounded focus:ring-green-500 dark:focus:ring-green-400 shrink-0"
+                                                    @change="togglePuerta(puerta.id)"
+                                                />
+                                                <span class="text-sm text-slate-700 dark:text-slate-300">
+                                                    {{ puerta.nombre }}
+                                                    <span
+                                                        v-if="puerta.codigo_fisico"
+                                                        class="text-slate-500 dark:text-slate-400 text-xs ml-1"
+                                                    >
+                                                        ({{ puerta.codigo_fisico }})
+                                                    </span>
+                                                </span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
                             <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                                Selecciona al menos un piso. El sistema asignará automáticamente las puertas activas de esos pisos.
+                                {{ (form.puertas || []).length }} puerta(s) seleccionada(s)
                             </p>
                         </FormField>
 
@@ -547,7 +626,7 @@
 
             <!-- Resultado: QR generado -->
             <div
-                v-if="qrGenerado"
+                v-if="qrGeneradoLocal"
                 class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-4 sm:p-6 transition-colors duration-200"
             >
                 <h2 class="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4">
@@ -558,33 +637,33 @@
                         <div
                             class="bg-white dark:bg-white rounded-xl p-3 sm:p-4 border-2 border-slate-200 dark:border-slate-600 shadow-lg dark:shadow-slate-900/50 w-full sm:w-auto transition-all duration-200"
                         >
-                            <div v-if="typeof qrGenerado.svg === 'string'" class="flex justify-center">
+                            <div v-if="typeof qrGeneradoLocal.svg === 'string'" class="flex justify-center">
                                 <div
                                     class="max-w-full overflow-x-auto [&>svg]:max-w-full [&>svg]:h-auto [&>svg]:drop-shadow-sm"
-                                    v-html="qrGenerado.svg"
+                                    v-html="qrGeneradoLocal.svg"
                                 ></div>
                             </div>
                             <div v-else class="text-red-600 dark:text-red-400 text-sm">
                                 Error: El SVG no se generó correctamente. Tipo:
-                                {{ typeof qrGenerado.svg }}
+                                {{ typeof qrGeneradoLocal.svg }}
                             </div>
                         </div>
                         <div class="mt-4 space-y-2 text-sm">
                             <p class="text-slate-700 dark:text-slate-300">
                                 <span class="font-medium text-slate-900 dark:text-slate-100">Usuario:</span>
-                                <span class="ml-2">{{ qrGenerado.user_name }}</span>
+                                <span class="ml-2">{{ qrGeneradoLocal.user_name }}</span>
                             </p>
                             <p class="text-slate-700 dark:text-slate-300">
                                 <span class="font-medium text-slate-900 dark:text-slate-100">Código:</span>
                                 <code
                                     class="px-2 py-1 bg-slate-100 dark:bg-slate-700 text-slate-900 dark:text-slate-100 rounded text-xs ml-2 inline-block align-middle break-all max-w-full font-mono border border-slate-200 dark:border-slate-600"
                                 >
-                                    {{ qrGenerado.token }}
+                                    {{ qrGeneradoLocal.token }}
                                 </code>
                             </p>
                             <p class="text-slate-700 dark:text-slate-300">
                                 <span class="font-medium text-slate-900 dark:text-slate-100">Expira:</span>
-                                <span class="ml-2">{{ qrGenerado.expires_at_formatted }}</span>
+                                <span class="ml-2">{{ qrGeneradoLocal.expires_at_formatted }}</span>
                             </p>
                         </div>
                     </div>
@@ -1126,6 +1205,7 @@ const props = defineProps({
     usuarios: Array,
     puertas: Array,
     pisos: Array,
+    pisosConPuertas: Array,
     secretarias: Array,
     gerencias: Array,
     responsables: Array,
@@ -1134,6 +1214,15 @@ const props = defineProps({
     qrPersonal: Object,
     tarjetasNfcDisponibles: Array,
 });
+
+// Mantener una copia local del QR generado para poder ocultarlo (p.ej. "Limpiar datos")
+const qrGeneradoLocal = ref(props.qrGenerado || null);
+watch(
+    () => props.qrGenerado,
+    (val) => {
+        qrGeneradoLocal.value = val || null;
+    },
+);
 
 const currentUser = computed(() => page.props.auth?.user || page.props.user);
 const esVisitante = computed(() => currentUser.value?.role?.name === "visitante");
@@ -1169,13 +1258,65 @@ const formTarjetaNfc = useForm({
     tarjeta_nfc_id: null,
     user_id: null,
     gerencia_id: null,
-    pisos: [],
+    puertas: [],
     hora_inicio: null,
     hora_fin: null,
     dias_semana: "1,2,3,4,5,6,7",
     fecha_inicio: null,
     fecha_fin: null,
 });
+
+// ===== Selección de puertas por piso (acordeón estilo Cargos) =====
+const openPisoId = ref(null);
+const pisosConPuertasLocal = computed(() => {
+    const arr = Array.isArray(props.pisosConPuertas) ? props.pisosConPuertas : [];
+    return arr.filter((p) => Array.isArray(p.puertas) && p.puertas.length > 0);
+});
+
+function toggleAccordion(pisoId) {
+    openPisoId.value = openPisoId.value === pisoId ? null : pisoId;
+}
+
+function puertasDelPiso(piso) {
+    return piso?.puertas || [];
+}
+
+function isPisoAllSelected(piso) {
+    const puertas = puertasDelPiso(piso);
+    if (puertas.length === 0) return false;
+    return puertas.every((puerta) => form.puertas.includes(puerta.id));
+}
+
+function isPisoIndeterminate(piso) {
+    const puertas = puertasDelPiso(piso);
+    if (puertas.length === 0) return false;
+    const selected = puertas.filter((puerta) => form.puertas.includes(puerta.id)).length;
+    return selected > 0 && selected < puertas.length;
+}
+
+function countSelectedInPiso(piso) {
+    return puertasDelPiso(piso).filter((puerta) => form.puertas.includes(puerta.id)).length;
+}
+
+function togglePisoAll(piso) {
+    const puertas = puertasDelPiso(piso);
+    const ids = puertas.map((p) => p.id);
+    const allSelected = ids.every((id) => form.puertas.includes(id));
+    if (allSelected) {
+        form.puertas = form.puertas.filter((id) => !ids.includes(id));
+    } else {
+        form.puertas = [...new Set([...form.puertas, ...ids])];
+    }
+}
+
+function togglePuerta(puertaId) {
+    const idx = form.puertas.indexOf(puertaId);
+    if (idx === -1) {
+        form.puertas = [...form.puertas, puertaId];
+    } else {
+        form.puertas = form.puertas.filter((id) => id !== puertaId);
+    }
+}
 
 const tarjetaNfcProcessing = ref(false);
 
@@ -1273,10 +1414,45 @@ onMounted(() => {
     watch(
         () => form.user_id,
         (userId) => {
+            // Si el usuario seleccionado es visitante y tiene un QR activo, precargar su configuración
+            const u = (usuariosLocal.value || []).find((x) => x.id === userId);
+            if (u?.role?.name === "visitante") {
+                const qr = u?.qr_activo;
+                if (qr && Array.isArray(qr.puerta_ids)) {
+                    form.puertas = [...qr.puerta_ids];
+
+                    // Gerencia/secretaría
+                    form.gerencia_id = qr.gerencia_id ?? null;
+                    if (form.gerencia_id) {
+                        const g = (props.gerencias || []).find(
+                            (x) => x.id === form.gerencia_id,
+                        );
+                        form.secretaria_id = g?.secretaria_id ?? null;
+                    } else {
+                        form.secretaria_id = null;
+                    }
+
+                    // Responsable
+                    form.responsable_id = qr.responsable_id ?? null;
+
+                    // Reglas horarias (si existen)
+                    form.hora_inicio = qr.hora_inicio ?? null;
+                    form.hora_fin = qr.hora_fin ?? null;
+                    form.dias_semana =
+                        qr.dias_semana ?? "1,2,3,4,5,6,7";
+                    form.fecha_inicio = qr.fecha_inicio ?? form.fecha_inicio;
+                    form.fecha_fin = qr.fecha_fin ?? form.fecha_fin;
+                } else {
+                    // Si no tiene QR activo, evitar que queden puertas del usuario anterior
+                    form.puertas = [];
+                    form.responsable_id = null;
+                }
+            }
+
             if (userId && usuarioSeleccionado.value?.role?.name === 'visitante') {
                 formTarjetaNfc.user_id = userId;
                 formTarjetaNfc.gerencia_id = form.gerencia_id;
-                formTarjetaNfc.pisos = [...form.pisos];
+                formTarjetaNfc.puertas = [...form.puertas];
                 formTarjetaNfc.hora_inicio = form.hora_inicio;
                 formTarjetaNfc.hora_fin = form.hora_fin;
                 formTarjetaNfc.dias_semana = form.dias_semana;
@@ -1296,11 +1472,11 @@ onMounted(() => {
 
     // Sincronizar campos relacionados cuando cambian en form
     watch(
-        [() => form.gerencia_id, () => form.pisos, () => form.hora_inicio, () => form.hora_fin, () => form.dias_semana, () => form.fecha_inicio, () => form.fecha_fin],
+        [() => form.gerencia_id, () => form.puertas, () => form.hora_inicio, () => form.hora_fin, () => form.dias_semana, () => form.fecha_inicio, () => form.fecha_fin],
         () => {
             if (usuarioSeleccionado.value?.role?.name === 'visitante' && form.user_id) {
                 formTarjetaNfc.gerencia_id = form.gerencia_id;
-                formTarjetaNfc.pisos = [...form.pisos];
+                formTarjetaNfc.puertas = [...form.puertas];
                 formTarjetaNfc.hora_inicio = form.hora_inicio;
                 formTarjetaNfc.hora_fin = form.hora_fin;
                 formTarjetaNfc.dias_semana = form.dias_semana;
@@ -1555,6 +1731,7 @@ watch(
             form.secretaria_id = null;
             form.gerencia_id = null;
             form.pisos = [];
+            form.puertas = [];
         } else {
             // Cuando se selecciona un visitante, establecer valores por defecto de seguridad
             const fechaHoy = todayIsoLocal(); // Formato YYYY-MM-DD (local)
@@ -1571,18 +1748,7 @@ watch(
                 form.fecha_fin = form.fecha_inicio || fechaHoy;
             }
 
-            // Seleccionar automáticamente el piso 1 (ID 3) si está disponible
-            if (props.pisos && props.pisos.length > 0) {
-                // Buscar piso con ID 3 (piso 1)
-                const piso1 = props.pisos.find(p => p.id === 3);
-
-                if (piso1 && !form.pisos.includes(piso1.id)) {
-                    // Si no hay pisos seleccionados, agregar el piso 1
-                    if (form.pisos.length === 0) {
-                        form.pisos = [piso1.id];
-                    }
-                }
-            }
+            // No preseleccionar puertas automáticamente: el operador decide en el acordeón
         }
 
         // Si se selecciona staff (servidor público/proveedor), limpiar campos de fecha y horario
@@ -1622,11 +1788,11 @@ const irAMiQr = async () => {
 };
 
 const enviarCorreo = () => {
-    if (!props.qrGenerado) return;
+    if (!qrGeneradoLocal.value) return;
 
     const email = prompt(
         "Ingresa el correo electrónico donde enviar el QR:",
-        props.qrGenerado.user_email || ""
+        qrGeneradoLocal.value.user_email || ""
     );
 
     if (!email) return;
@@ -1639,10 +1805,10 @@ const enviarCorreo = () => {
     enviandoCorreo.value = true;
 
     router.post(
-        route("ingreso.send-email", { qr: props.qrGenerado.id }),
+        route("ingreso.send-email", { qr: qrGeneradoLocal.value.id }),
         {
             email,
-            token: props.qrGenerado.token,
+            token: qrGeneradoLocal.value.token,
         },
         {
             preserveScroll: true,
@@ -1651,6 +1817,30 @@ const enviarCorreo = () => {
             },
         }
     );
+};
+
+const limpiarDatos = () => {
+    // Cerrar pickers abiertos
+    closeUserPicker();
+    closeResponsablePicker();
+
+    // Ocultar QR generado (dejar la pantalla como recién abierta)
+    qrGeneradoLocal.value = null;
+    showMiQr.value = false;
+
+    // Resetear formularios y errores
+    form.clearErrors();
+    form.reset();
+    formTarjetaNfc.clearErrors();
+    formTarjetaNfc.reset();
+
+    // Resetear UI auxiliar
+    openPisoId.value = null;
+    responsablePickerQuery.value = "";
+
+    // Estado inicial: sin usuario seleccionado
+    form.user_id = null;
+    userPickerQuery.value = "";
 };
 
 const generarNuevo = () => {
@@ -1926,7 +2116,7 @@ const asignarTarjetaNfc = async () => {
     // Sincronizar datos del form principal al formTarjetaNfc
     formTarjetaNfc.user_id = form.user_id;
     formTarjetaNfc.gerencia_id = form.gerencia_id;
-    formTarjetaNfc.pisos = [...form.pisos];
+    formTarjetaNfc.puertas = [...form.puertas];
     formTarjetaNfc.hora_inicio = form.hora_inicio;
     formTarjetaNfc.hora_fin = form.hora_fin;
     // Siempre: todos los días
@@ -1942,7 +2132,7 @@ const asignarTarjetaNfc = async () => {
             tarjeta_nfc_id: formTarjetaNfc.tarjeta_nfc_id,
             user_id: formTarjetaNfc.user_id,
             gerencia_id: formTarjetaNfc.gerencia_id,
-            pisos: formTarjetaNfc.pisos,
+            puertas: formTarjetaNfc.puertas,
             hora_inicio: formTarjetaNfc.hora_inicio,
             hora_fin: formTarjetaNfc.hora_fin,
             dias_semana: formTarjetaNfc.dias_semana,

@@ -38,7 +38,6 @@ class User extends Authenticatable
         'fecha_expiracion',
         'tipo_contrato',
         'nombre_empresa',
-        'cargo_empresa',
         'creado_por',
         'created_by',
         'updated_by',
@@ -222,13 +221,8 @@ class User extends Authenticatable
             }
         }
 
-        // Si la puerta no tiene piso asignado, no tiene acceso
-        if (!$puertaModel->piso_id) {
-            return false;
-        }
-
-        // Verificar si el cargo tiene permiso al piso de la puerta
-        return $this->cargo->pisos()->whereKey($puertaModel->piso_id)->exists();
+        // Solo se verifica permiso por puerta (cargo_puerta_acceso)
+        return $this->cargo->puertas()->whereKey($puertaModel->id)->exists();
     }
 
     /**

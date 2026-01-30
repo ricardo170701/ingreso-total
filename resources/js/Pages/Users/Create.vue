@@ -164,15 +164,6 @@
                                 required
                             />
                         </FormField>
-                        <FormField label="Cargo en la Empresa" :error="form.errors.cargo_empresa">
-                            <input
-                                v-model="form.cargo_empresa"
-                                type="text"
-                                class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-transparent transition-colors duration-200"
-                                placeholder="Cargo en la empresa"
-                                required
-                            />
-                        </FormField>
                     </div>
 
                     <div v-if="!esVisitante" class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -356,7 +347,6 @@ const form = useForm({
     activo: true,
     es_discapacitado: false,
     nombre_empresa: "",
-    cargo_empresa: "",
 });
 
 // Filtrar gerencias por secretaría seleccionada

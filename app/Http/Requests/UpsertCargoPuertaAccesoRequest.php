@@ -22,10 +22,12 @@ class UpsertCargoPuertaAccesoRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'puerta_id' => ['required', 'integer', 'exists:puertas,id'],
+            'puerta_id' => ['required_without:puertas', 'integer', 'exists:puertas,id'],
+            'puertas' => ['required_without:puerta_id', 'array', 'min:1'],
+            'puertas.*' => ['integer', 'exists:puertas,id'],
             'hora_inicio' => ['nullable', 'date_format:H:i'],
             'hora_fin' => ['nullable', 'date_format:H:i'],
-            'dias_semana' => ['nullable', 'string', 'max:20'], // "1,2,3,4,5"
+            'dias_semana' => ['nullable', 'string', 'max:20'],
             'fecha_inicio' => ['nullable', 'date'],
             'fecha_fin' => ['nullable', 'date'],
             'activo' => ['nullable', 'boolean'],

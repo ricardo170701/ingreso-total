@@ -21,6 +21,7 @@ class PermissionSeeder extends Seeder
             ['name' => 'view_users', 'description' => 'Ver Usuarios', 'group' => 'users'],
             ['name' => 'create_users', 'description' => 'Crear Usuarios', 'group' => 'users'],
             ['name' => 'edit_users', 'description' => 'Editar Usuarios', 'group' => 'users'],
+            ['name' => 'edit_user_role', 'description' => 'Editar rol de usuario', 'group' => 'users'],
             ['name' => 'delete_users', 'description' => 'Eliminar Usuarios', 'group' => 'users'],
 
             // Puertas
@@ -44,6 +45,7 @@ class PermissionSeeder extends Seeder
             ['name' => 'create_cargos', 'description' => 'Crear Permisos/Cargos', 'group' => 'cargos'],
             ['name' => 'edit_cargos', 'description' => 'Editar Permisos/Cargos', 'group' => 'cargos'],
             ['name' => 'delete_cargos', 'description' => 'Eliminar Permisos/Cargos', 'group' => 'cargos'],
+            ['name' => 'view_cargos_permiso_superior', 'description' => 'Ver y asignar cargos con permiso superior', 'group' => 'cargos'],
 
             // Roles (pantalla "Permisos del Sistema")
             ['name' => 'view_roles', 'description' => 'Ver Roles / Permisos del Sistema', 'group' => 'roles'],

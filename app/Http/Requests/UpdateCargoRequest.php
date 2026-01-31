@@ -30,6 +30,7 @@ class UpdateCargoRequest extends FormRequest
             'name' => ['sometimes', 'required', 'string', 'max:100', Rule::unique('cargos', 'name')->ignore($cargoId)],
             'description' => ['nullable', 'string'],
             'activo' => ['nullable', 'boolean'],
+            'requiere_permiso_superior' => ['nullable', 'boolean'],
         ];
     }
 }

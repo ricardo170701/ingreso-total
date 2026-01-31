@@ -25,11 +25,14 @@ class StoreCargoRequest extends FormRequest
             'name' => ['required', 'string', 'max:100', 'unique:cargos,name'],
             'description' => ['nullable', 'string'],
             'activo' => ['nullable', 'boolean'],
+            'requiere_permiso_superior' => ['nullable', 'boolean'],
             'permissions' => ['nullable', 'array'],
             'permissions.*' => ['integer', 'exists:permissions,id'],
-            // Campos para pisos
+            // Campos para pisos (legacy) y puertas (selección por puerta)
             'pisos' => ['nullable', 'array'],
             'pisos.*' => ['integer', 'exists:pisos,id'],
+            'puertas' => ['nullable', 'array'],
+            'puertas.*' => ['integer', 'exists:puertas,id'],
             'hora_inicio' => ['nullable', 'date_format:H:i'],
             'hora_fin' => ['nullable', 'date_format:H:i'],
             'dias_semana' => ['nullable', 'string', 'max:20'],

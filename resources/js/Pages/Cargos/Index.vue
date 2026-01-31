@@ -87,6 +87,11 @@
                                 <th
                                     class="px-4 py-3 text-left font-semibold text-slate-700 dark:text-slate-300"
                                 >
+                                    Permiso superior
+                                </th>
+                                <th
+                                    class="px-4 py-3 text-left font-semibold text-slate-700 dark:text-slate-300"
+                                >
                                     Acciones
                                 </th>
                             </tr>
@@ -128,6 +133,18 @@
                                     </span>
                                 </td>
                                 <td class="px-4 py-3">
+                                    <span
+                                        :class="[
+                                            'px-2 py-1 rounded text-xs font-medium transition-colors duration-200',
+                                            c.requiere_permiso_superior
+                                                ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400'
+                                                : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400',
+                                        ]"
+                                    >
+                                        {{ c.requiere_permiso_superior ? "Sí" : "No" }}
+                                    </span>
+                                </td>
+                                <td class="px-4 py-3">
                                     <div class="flex gap-2">
                                         <Link
                                             :href="
@@ -151,7 +168,7 @@
                             <tr v-if="cargos.data.length === 0">
                                 <td
                                     class="px-4 py-10 text-center text-slate-500 dark:text-slate-400"
-                                    colspan="6"
+                                    colspan="7"
                                 >
                                     No se encontraron cargos.
                                 </td>

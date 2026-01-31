@@ -101,7 +101,7 @@ class UsersController extends Controller
                 ->whereIn('name', ['visitante', 'servidor_publico', 'proveedor', 'funcionario'])
                 ->orderBy('name')
                 ->get(['id', 'name']),
-            'cargos' => Cargo::query()->orderBy('name')->get(['id', 'name']),
+            'cargos' => $this->cargosParaUsuario(request()),
             'secretarias' => Secretaria::query()
                 ->where('activo', true)
                 ->with('piso')
@@ -214,7 +214,10 @@ class UsersController extends Controller
             ->orderBy('nombre')
             ->get(['id', 'nombre', 'secretaria_id']);
 
+        $canEditRole = request()->user() && request()->user()->hasPermission('edit_user_role');
+
         return Inertia::render('Users/Edit', [
+            'canEditRole' => $canEditRole,
             'user' => [
                 'id' => $user->id,
                 'email' => $user->email,
@@ -238,7 +241,7 @@ class UsersController extends Controller
                 ->whereIn('name', ['visitante', 'servidor_publico', 'proveedor', 'funcionario'])
                 ->orderBy('name')
                 ->get(['id', 'name']),
-            'cargos' => Cargo::query()->orderBy('name')->get(['id', 'name']),
+            'cargos' => $this->cargosParaUsuario(request(), $user),
             'secretarias' => Secretaria::query()
                 ->where('activo', true)
                 ->with('piso')
@@ -317,5 +320,32 @@ class UsersController extends Controller
         $user->delete();
 
         return redirect()->route('usuarios.index')->with('success', 'Usuario eliminado.');
+    }
+
+    /**
+     * Lista de cargos visibles para el usuario actual (crear/editar usuarios).
+     * Sin permiso "permiso superior" solo se incluyen cargos que no requieren permiso superior.
+     * Al editar un usuario ($userEdit opcional), se incluye su cargo actual para que el selector muestre el valor.
+     */
+    private function cargosParaUsuario(Request $request, ?User $userEdit = null)
+    {
+        $query = Cargo::query()->orderBy('name');
+        $tienePermisoSuperior = $request->user() && $request->user()->hasPermission('view_cargos_permiso_superior');
+
+        if (!$tienePermisoSuperior) {
+            $query->where('requiere_permiso_superior', false);
+        }
+
+        $cargos = $query->get(['id', 'name']);
+
+        // Al editar: si el usuario tiene un cargo con permiso superior y el editor no tiene permiso, incluir ese cargo para mostrar el valor actual
+        if ($userEdit && $userEdit->cargo_id && !$tienePermisoSuperior) {
+            $cargoActual = Cargo::query()->whereKey($userEdit->cargo_id)->first();
+            if ($cargoActual && $cargoActual->requiere_permiso_superior && $cargos->where('id', $cargoActual->id)->isEmpty()) {
+                $cargos = $cargos->push($cargoActual)->sortBy('name')->values();
+            }
+        }
+
+        return $cargos;
     }
 }

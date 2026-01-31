@@ -65,6 +65,17 @@
                                     >Activo</span
                                 >
                             </label>
+                            <label class="inline-flex items-center gap-2">
+                                <input
+                                    v-model="formCargo.requiere_permiso_superior"
+                                    type="checkbox"
+                                    class="h-4 w-4 rounded border-slate-300 dark:border-slate-600 text-green-600 dark:text-green-400 focus:ring-green-500 dark:focus:ring-green-400"
+                                />
+                                <span
+                                    class="text-sm text-slate-700 dark:text-slate-300"
+                                    >Permiso superior</span
+                                >
+                            </label>
                         </div>
                     </div>
                     <FormField
@@ -562,6 +573,7 @@ const formCargo = useForm({
     name: props.cargo.name || "",
     description: props.cargo.description || "",
     activo: !!props.cargo.activo,
+    requiere_permiso_superior: !!props.cargo.requiere_permiso_superior,
 });
 
 const submitCargo = () => {

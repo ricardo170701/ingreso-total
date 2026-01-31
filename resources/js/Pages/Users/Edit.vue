@@ -191,7 +191,8 @@
                         <FormField label="Tipo de vinculación" :error="form.errors.role_id">
                             <select
                                 v-model="form.role_id"
-                                class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-transparent transition-colors duration-200"
+                                :disabled="!canEditRole"
+                                class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-transparent transition-colors duration-200 disabled:opacity-60 disabled:cursor-not-allowed"
                             >
                                 <option :value="null">-</option>
                                 <option
@@ -202,11 +203,15 @@
                                     {{ formatTipoVinculacion(r.name) }}
                                 </option>
                             </select>
+                            <p v-if="!canEditRole" class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                                No tienes permiso para editar el rol de este usuario.
+                            </p>
                         </FormField>
                         <FormField v-if="!esVisitante" label="Rol (permisos)" :error="form.errors.cargo_id">
                             <select
                                 v-model="form.cargo_id"
-                                class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-transparent transition-colors duration-200"
+                                :disabled="!canEditRole"
+                                class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-transparent transition-colors duration-200 disabled:opacity-60 disabled:cursor-not-allowed"
                             >
                                 <option :value="null">-</option>
                                 <option
@@ -225,7 +230,8 @@
                             <input
                                 v-model="form.cargo_texto"
                                 type="text"
-                                class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-transparent transition-colors duration-200"
+                                :disabled="!canEditRole"
+                                class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-transparent transition-colors duration-200 disabled:opacity-60 disabled:cursor-not-allowed"
                                 placeholder="Cargo/denominación (solo registro)"
                             />
                             <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
@@ -378,6 +384,7 @@ const props = defineProps({
     cargos: Array,
     secretarias: Array,
     gerencias: Array,
+    canEditRole: { type: Boolean, default: true },
 });
 
 const showConfirmModal = ref(false);

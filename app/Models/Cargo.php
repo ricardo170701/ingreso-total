@@ -15,10 +15,12 @@ class Cargo extends Model
         'name',
         'description',
         'activo',
+        'requiere_permiso_superior',
     ];
 
     protected $casts = [
         'activo' => 'boolean',
+        'requiere_permiso_superior' => 'boolean',
     ];
 
     /**

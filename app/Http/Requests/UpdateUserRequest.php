@@ -2,9 +2,11 @@
 
 namespace App\Http\Requests;
 
+use App\Models\Cargo;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Validator;
 use Illuminate\Validation\Rule;
 
 class UpdateUserRequest extends FormRequest
@@ -95,6 +97,29 @@ class UpdateUserRequest extends FormRequest
         ];
     }
 
+    public function withValidator(Validator $validator): void
+    {
+        $validator->after(function (Validator $validator) {
+            $actor = $this->user();
+            $cargoId = $this->input('cargo_id');
+            if (!$actor || !$cargoId) {
+                return;
+            }
+
+            $userParam = $this->route('user');
+            $userEdit = $userParam instanceof User ? $userParam : null;
+
+            // Si no tiene permiso superior, solo se permite mantener el cargo superior actual (no reasignarlo)
+            $cargo = Cargo::query()->whereKey($cargoId)->first();
+            if ($cargo && $cargo->requiere_permiso_superior && !$actor->hasPermission('view_cargos_permiso_superior')) {
+                $esMismoCargo = $userEdit && (int) $userEdit->cargo_id === (int) $cargoId;
+                if (!$esMismoCargo) {
+                    $validator->errors()->add('cargo_id', 'No tienes permiso para asignar cargos con permiso superior.');
+                }
+            }
+        });
+    }
+
     protected function prepareForValidation(): void
     {
         // Convertir "" -> null para que "nullable" funcione como se espera
@@ -103,6 +128,17 @@ class UpdateUserRequest extends FormRequest
             if (is_string($email) && trim($email) === '') {
                 $this->merge(['email' => null]);
             }
+        }
+
+        // Sin permiso "editar rol de usuario", no se permite cambiar rol ni cargo
+        $userParam = $this->route('user');
+        $userEdit = $userParam instanceof User ? $userParam : null;
+        if ($userEdit && $this->user() && !$this->user()->hasPermission('edit_user_role')) {
+            $this->merge([
+                'role_id' => $userEdit->role_id,
+                'cargo_id' => $userEdit->cargo_id,
+                'cargo_texto' => $userEdit->cargo_texto ?? '',
+            ]);
         }
     }
 

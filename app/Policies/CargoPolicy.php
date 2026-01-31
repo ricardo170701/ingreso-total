@@ -49,7 +49,8 @@ class CargoPolicy
     }
 
     /**
-     * Determine whether the user can manage permissions.
+     * Determine whether the user can manage permissions (guardar permisos del sistema del cargo).
+     * Basta con edit_cargos; la restricción de "permiso superior" aplica a ver/asignar cargos, no a editar permisos del cargo actual.
      */
     public function managePermissions(User $user, Cargo $cargo): bool
     {

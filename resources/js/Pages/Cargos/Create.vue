@@ -51,6 +51,14 @@
                             />
                             <span class="text-sm text-slate-700 dark:text-slate-300">Activo</span>
                         </label>
+                        <label class="inline-flex items-center gap-2">
+                            <input
+                                v-model="form.requiere_permiso_superior"
+                                type="checkbox"
+                                class="h-4 w-4 rounded border-slate-300 dark:border-slate-600 text-green-600 dark:text-green-400 focus:ring-green-500 dark:focus:ring-green-400"
+                            />
+                            <span class="text-sm text-slate-700 dark:text-slate-300">Permiso superior</span>
+                        </label>
                     </div>
 
                     <div class="flex items-center justify-end gap-2 pt-2">
@@ -65,48 +73,116 @@
                 </form>
             </div>
 
-            <!-- Permisos de Piso (Puertas) -->
+            <!-- Permisos a puertas (acordeón por piso, selección por puerta) -->
             <div
                 class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-6 transition-colors duration-200"
             >
                 <h2
                     class="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4"
                 >
-                    Permisos de Piso (Puertas)
+                    Permisos a puertas
                 </h2>
                 <p class="text-sm text-slate-600 dark:text-slate-400 mb-4">
-                    Asigna permisos de acceso físico por piso. Los usuarios con
-                    este rol podrán acceder a todas las puertas del piso
-                    asignado según las reglas de horario y vigencia.
+                    Marca las puertas a las que tendrá acceso este rol. Puedes
+                    abrir cada piso y marcar puertas una a una, o marcar el piso
+                    para seleccionar todas sus puertas.
                 </p>
 
-                <FormField
-                    label="Pisos"
-                    :error="form.errors.pisos"
+                <div
+                    v-if="!pisosConPuertas || pisosConPuertas.length === 0"
+                    class="text-center py-8 text-slate-500 dark:text-slate-400"
+                >
+                    No hay pisos con puertas activas.
+                </div>
+
+                <div
+                    v-else
+                    class="space-y-1 border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden transition-colors duration-200"
                 >
                     <div
-                        class="space-y-2 max-h-56 overflow-y-auto border border-slate-200 dark:border-slate-700 rounded-lg p-3 bg-white dark:bg-slate-700 transition-colors duration-200"
+                        v-for="piso in pisosConPuertas"
+                        :key="piso.id"
+                        class="border-b border-slate-200 dark:border-slate-700 last:border-b-0 transition-colors duration-200"
                     >
-                        <label
-                            v-for="piso in todosLosPisos"
-                            :key="piso.id"
-                            class="flex items-center gap-2 p-2 hover:bg-slate-50 dark:hover:bg-slate-600 rounded transition-colors duration-200 cursor-pointer"
+                        <div
+                            class="flex items-center gap-3 px-4 py-3 bg-slate-50 dark:bg-slate-700/40 hover:bg-slate-100 dark:hover:bg-slate-700/60 cursor-pointer transition-colors duration-200"
+                            @click="toggleAccordion(piso.id)"
                         >
-                            <input
-                                type="checkbox"
-                                :value="piso.id"
-                                v-model="form.pisos"
-                                class="h-4 w-4 text-green-600 dark:text-green-500 border-slate-300 dark:border-slate-600 rounded focus:ring-green-500 dark:focus:ring-green-400"
-                            />
-                            <span class="font-medium text-slate-900 dark:text-white">
-                                {{ piso.nombre }}
-                            </span>
-                        </label>
+                            <button
+                                type="button"
+                                class="shrink-0 w-8 h-8 flex items-center justify-center rounded text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors duration-200"
+                                :aria-label="openPisoId === piso.id ? 'Cerrar' : 'Abrir'"
+                            >
+                                <span
+                                    class="transition-transform duration-200"
+                                    :class="openPisoId === piso.id ? 'rotate-90' : ''"
+                                >
+                                    ▶
+                                </span>
+                            </button>
+                            <label
+                                class="flex items-center gap-2 flex-1 cursor-pointer min-w-0"
+                                @click.stop
+                            >
+                                <input
+                                    type="checkbox"
+                                    :checked="isPisoAllSelected(piso)"
+                                    :indeterminate.prop="isPisoIndeterminate(piso)"
+                                    class="h-4 w-4 text-green-600 dark:text-green-500 border-slate-300 dark:border-slate-600 rounded focus:ring-green-500 dark:focus:ring-green-400 shrink-0"
+                                    @change="togglePisoAll(piso)"
+                                />
+                                <span class="font-medium text-slate-900 dark:text-slate-100 truncate">
+                                    {{ piso.nombre }}
+                                </span>
+                                <span
+                                    v-if="(piso.puertas || []).length"
+                                    class="text-xs text-slate-500 dark:text-slate-400 shrink-0"
+                                >
+                                    ({{ countSelectedInPiso(piso) }}/{{ piso.puertas.length }})
+                                </span>
+                            </label>
+                        </div>
+
+                        <div
+                            v-show="openPisoId === piso.id"
+                            class="px-4 pb-3 pt-1 pl-12 bg-white dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700 transition-colors duration-200"
+                        >
+                            <div
+                                v-if="!piso.puertas || piso.puertas.length === 0"
+                                class="text-sm text-slate-500 dark:text-slate-400 py-2"
+                            >
+                                Sin puertas activas
+                            </div>
+                            <div v-else class="space-y-1.5 py-2">
+                                <label
+                                    v-for="puerta in piso.puertas || []"
+                                    :key="puerta.id"
+                                    class="flex items-center gap-2 py-1.5 px-2 rounded hover:bg-slate-50 dark:hover:bg-slate-700/50 cursor-pointer transition-colors duration-200"
+                                >
+                                    <input
+                                        type="checkbox"
+                                        :checked="form.puertas.includes(puerta.id)"
+                                        class="h-4 w-4 text-green-600 dark:text-green-500 border-slate-300 dark:border-slate-600 rounded focus:ring-green-500 dark:focus:ring-green-400 shrink-0"
+                                        @change="togglePuerta(puerta.id)"
+                                    />
+                                    <span class="text-sm text-slate-700 dark:text-slate-300">
+                                        {{ puerta.nombre }}
+                                        <span
+                                            v-if="puerta.codigo_fisico"
+                                            class="text-slate-500 dark:text-slate-400 text-xs ml-1"
+                                        >
+                                            ({{ puerta.codigo_fisico }})
+                                        </span>
+                                    </span>
+                                </label>
+                            </div>
+                        </div>
                     </div>
-                    <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                        Puedes seleccionar varios pisos. Se aplicarán las mismas reglas a todos.
-                    </p>
-                </FormField>
+                </div>
+
+                <p class="mt-4 text-sm text-slate-500 dark:text-slate-400">
+                    {{ form.puertas.length }} puerta(s) seleccionada(s)
+                </p>
             </div>
 
             <!-- Permisos del Sistema -->
@@ -256,26 +332,69 @@
 import AppLayout from "@/Layouts/AppLayout.vue";
 import FormField from "@/Components/FormField.vue";
 import { Link, useForm } from "@inertiajs/vue3";
-import { computed } from "vue";
+import { computed, ref } from "vue";
 
 const props = defineProps({
     permissions: Array,
     permissionsGrouped: Object,
-    todosLosPisos: Array,
+    pisosConPuertas: { type: Array, default: () => [] },
 });
+
+const openPisoId = ref(null);
 
 const form = useForm({
     name: "",
     description: "",
     activo: true,
+    requiere_permiso_superior: false,
     permissions: [],
-    pisos: [],
-    hora_inicio: null,
-    hora_fin: null,
-    dias_semana: "1,2,3,4,5,6,7",
-    fecha_inicio: null,
-    fecha_fin: null,
+    puertas: [],
 });
+
+function toggleAccordion(pisoId) {
+    openPisoId.value = openPisoId.value === pisoId ? null : pisoId;
+}
+
+function puertasDelPiso(piso) {
+    return piso.puertas || [];
+}
+
+function isPisoAllSelected(piso) {
+    const puertas = puertasDelPiso(piso);
+    if (puertas.length === 0) return false;
+    return puertas.every((puerta) => form.puertas.includes(puerta.id));
+}
+
+function isPisoIndeterminate(piso) {
+    const puertas = puertasDelPiso(piso);
+    if (puertas.length === 0) return false;
+    const selected = puertas.filter((puerta) => form.puertas.includes(puerta.id)).length;
+    return selected > 0 && selected < puertas.length;
+}
+
+function countSelectedInPiso(piso) {
+    return puertasDelPiso(piso).filter((puerta) => form.puertas.includes(puerta.id)).length;
+}
+
+function togglePisoAll(piso) {
+    const puertas = puertasDelPiso(piso);
+    const ids = puertas.map((p) => p.id);
+    const allSelected = ids.every((id) => form.puertas.includes(id));
+    if (allSelected) {
+        form.puertas = form.puertas.filter((id) => !ids.includes(id));
+    } else {
+        form.puertas = [...new Set([...form.puertas, ...ids])];
+    }
+}
+
+function togglePuerta(puertaId) {
+    const idx = form.puertas.indexOf(puertaId);
+    if (idx === -1) {
+        form.puertas = [...form.puertas, puertaId];
+    } else {
+        form.puertas = form.puertas.filter((id) => id !== puertaId);
+    }
+}
 
 const submit = () => {
     form.post(route("cargos.store"));

@@ -61,9 +61,10 @@ class CargosController extends Controller
             ->get();
         $permissionsGrouped = $permissions->groupBy('group')->toArray();
 
-        // Cargar pisos activos para el formulario
-        $todosLosPisos = Piso::query()
+        // Pisos con sus puertas activas (para selección por puerta, igual que en Edit)
+        $pisosConPuertas = Piso::query()
             ->where('activo', true)
+            ->with(['puertas' => fn($q) => $q->where('activo', true)->orderBy('nombre')])
             ->orderBy('orden')
             ->orderBy('nombre')
             ->get();
@@ -71,7 +72,7 @@ class CargosController extends Controller
         return Inertia::render('Cargos/Create', [
             'permissions' => $permissions,
             'permissionsGrouped' => $permissionsGrouped,
-            'todosLosPisos' => $todosLosPisos,
+            'pisosConPuertas' => $pisosConPuertas,
         ]);
     }
 
@@ -85,6 +86,7 @@ class CargosController extends Controller
         $data = $request->validated();
         $permissions = $data['permissions'] ?? [];
         $pisos = $data['pisos'] ?? [];
+        $puertas = $data['puertas'] ?? [];
 
         // Extraer campos de configuración de pisos
         $pisoConfig = [
@@ -97,7 +99,7 @@ class CargosController extends Controller
         ];
 
         // Eliminar campos que no son del modelo Cargo
-        unset($data['permissions'], $data['pisos'], $data['hora_inicio'], $data['hora_fin'], $data['dias_semana'], $data['fecha_inicio'], $data['fecha_fin']);
+        unset($data['permissions'], $data['pisos'], $data['puertas'], $data['hora_inicio'], $data['hora_fin'], $data['dias_semana'], $data['fecha_inicio'], $data['fecha_fin']);
 
         $cargo = Cargo::query()->create($data);
 
@@ -106,7 +108,7 @@ class CargosController extends Controller
             $cargo->permissions()->sync($permissions);
         }
 
-        // Sincronizar pisos si se proporcionaron
+        // Sincronizar pisos si se proporcionaron (legacy)
         if (!empty($pisos) && is_array($pisos)) {
             $pisoIds = array_values(array_unique(array_map('intval', $pisos)));
             $syncData = [];
@@ -116,6 +118,24 @@ class CargosController extends Controller
             if (count($syncData) > 0) {
                 $cargo->pisos()->sync($syncData);
             }
+        }
+
+        // Sincronizar puertas (selección por puerta, igual que en Edit)
+        if (!empty($puertas) && is_array($puertas)) {
+            $puertaIds = array_values(array_unique(array_map('intval', $puertas)));
+            $pivot = [
+                'hora_inicio' => null,
+                'hora_fin' => null,
+                'dias_semana' => '1,2,3,4,5,6,7',
+                'fecha_inicio' => null,
+                'fecha_fin' => null,
+                'activo' => true,
+            ];
+            $syncData = [];
+            foreach ($puertaIds as $pid) {
+                $syncData[$pid] = $pivot;
+            }
+            $cargo->puertas()->sync($syncData);
         }
 
         return redirect()

@@ -2,8 +2,10 @@
 
 namespace App\Http\Requests;
 
+use App\Models\Cargo;
 use App\Models\Role;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Validator;
 use Illuminate\Validation\Rule;
 
 class StoreUserRequest extends FormRequest
@@ -100,6 +102,22 @@ class StoreUserRequest extends FormRequest
             'role_name.exists' => 'El role_name no existe.',
             'cargo_id.exists' => 'El cargo_id no existe.',
         ];
+    }
+
+    public function withValidator(Validator $validator): void
+    {
+        $validator->after(function (Validator $validator) {
+            $actor = $this->user();
+            $cargoId = $this->input('cargo_id');
+            if (!$actor || !$cargoId) {
+                return;
+            }
+
+            $cargo = Cargo::query()->whereKey($cargoId)->first();
+            if ($cargo && $cargo->requiere_permiso_superior && !$actor->hasPermission('view_cargos_permiso_superior')) {
+                $validator->errors()->add('cargo_id', 'No tienes permiso para asignar cargos con permiso superior.');
+            }
+        });
     }
 
     protected function prepareForValidation(): void

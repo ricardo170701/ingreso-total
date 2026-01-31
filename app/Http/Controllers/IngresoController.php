@@ -930,10 +930,17 @@ class IngresoController extends Controller
             return response()->json(['message' => 'No autorizado.'], 403);
         }
 
-        $tarjetasAsignadas = TarjetaNfc::query()
+        $query = TarjetaNfc::query()
             ->where('activo', true)
             ->whereNotNull('user_id')
-            ->with(['user.role', 'gerencia.secretaria'])
+            ->with(['user.role', 'gerencia.secretaria']);
+
+        // Sin permiso "ver tarjetas de servidores públicos" solo se muestran tarjetas de visitantes
+        if (!$actor->hasPermission('ver_tarjetas_servidores_publicos')) {
+            $query->whereHas('user', fn($q) => $q->whereHas('role', fn($r) => $r->where('name', 'visitante')));
+        }
+
+        $tarjetasAsignadas = $query
             ->orderBy('codigo')
             ->get()
             ->map(function ($tarjeta) {

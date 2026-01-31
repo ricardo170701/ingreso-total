@@ -70,6 +70,7 @@ class PermissionSeeder extends Seeder
             ['name' => 'edit_tarjetas_nfc', 'description' => 'Editar Tarjetas NFC', 'group' => 'tarjetas_nfc'],
             ['name' => 'delete_tarjetas_nfc', 'description' => 'Eliminar Tarjetas NFC', 'group' => 'tarjetas_nfc'],
             ['name' => 'asignar_tarjetas_nfc', 'description' => 'Asignar Tarjetas NFC desde Ingreso', 'group' => 'ingreso'],
+            ['name' => 'ver_tarjetas_servidores_publicos', 'description' => 'Ver tarjetas NFC de servidores públicos', 'group' => 'ingreso'],
 
             // Mantenimientos
             ['name' => 'view_mantenimientos', 'description' => 'Ver Mantenimientos', 'group' => 'mantenimientos'],

@@ -364,10 +364,10 @@
             class="fixed inset-0 bg-black/60 dark:bg-black/70 flex items-center justify-center z-[60] p-4 transition-colors duration-200"
         >
             <div
-                class="bg-white dark:bg-slate-800 rounded-xl shadow-2xl max-w-6xl w-full border border-slate-200 dark:border-slate-700 transition-colors duration-200"
+                class="bg-white dark:bg-slate-800 rounded-xl shadow-2xl max-w-6xl w-full border border-slate-200 dark:border-slate-700 transition-colors duration-200 max-h-[90vh] flex flex-col"
                 @click.stop
             >
-                <div class="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-700">
+                <div class="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-700 shrink-0">
                     <h3 class="text-lg font-semibold text-slate-900 dark:text-slate-100">
                         Cambios realizados
                     </h3>
@@ -380,7 +380,7 @@
                         ×
                     </button>
                 </div>
-                <div class="p-6">
+                <div class="p-6 overflow-y-auto flex-1 min-h-0">
                     <template v-if="cambioSeleccionado">
                         <p class="text-xs text-slate-500 dark:text-slate-400 mb-4">
                             {{ cambioSeleccionado.fecha }} · {{ cambioSeleccionado.editor }}

@@ -86,6 +86,7 @@ Route::middleware(['auth', 'force.password.change', 'visitante.restrict', 'permi
 
     // Cargos y Permisos (CRUD web)
     Route::resource('cargos', CargosController::class);
+    Route::get('/cargos/{cargo}/historial', [CargosController::class, 'historial'])->name('cargos.historial');
     Route::post('/cargos/{cargo}/pisos', [CargosController::class, 'upsertPiso'])->name('cargos.pisos.store');
     Route::delete('/cargos/{cargo}/pisos/{piso}', [CargosController::class, 'revokePiso'])->name('cargos.pisos.destroy');
     Route::post('/cargos/{cargo}/puertas', [CargosController::class, 'upsertPuertas'])->name('cargos.puertas.store');

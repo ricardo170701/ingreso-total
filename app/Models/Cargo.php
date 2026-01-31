@@ -75,6 +75,14 @@ class Cargo extends Model
     }
 
     /**
+     * Relación: historial de cambios del cargo (auditoría)
+     */
+    public function historial(): HasMany
+    {
+        return $this->hasMany(CargoHistorial::class)->orderByDesc('created_at');
+    }
+
+    /**
      * Verificar si el cargo tiene un permiso específico
      */
     public function hasPermission(string $permissionName): bool

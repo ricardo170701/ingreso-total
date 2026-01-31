@@ -31,6 +31,8 @@ class UpdateCargoRequest extends FormRequest
             'description' => ['nullable', 'string'],
             'activo' => ['nullable', 'boolean'],
             'requiere_permiso_superior' => ['nullable', 'boolean'],
+            'puertas' => ['nullable', 'array'],
+            'puertas.*' => ['integer', 'exists:puertas,id'],
         ];
     }
 }

@@ -7,6 +7,7 @@ use App\Http\Requests\UpdateCargoRequest;
 use App\Http\Requests\UpsertCargoPisoAccesoRequest;
 use App\Http\Requests\UpsertCargoPuertaAccesoRequest;
 use App\Models\Cargo;
+use App\Models\CargoHistorial;
 use App\Models\Piso;
 use App\Models\Puerta;
 use Illuminate\Http\Request;
@@ -138,6 +139,8 @@ class CargosController extends Controller
             $cargo->puertas()->sync($syncData);
         }
 
+        $this->registrarHistorial($cargo, 'created', null, $this->cargoDataForHistorial($cargo->fresh()), $request->user()?->id);
+
         return redirect()
             ->route('cargos.index')
             ->with('message', 'Cargo creado exitosamente.');
@@ -205,12 +208,105 @@ class CargosController extends Controller
     {
         $this->authorize('update', $cargo);
 
-        $cargo->fill($request->validated());
+        $data = $request->validated();
+        unset($data['puertas']);
+        $puertas = $request->input('puertas');
+
+        $oldData = $this->cargoDataForHistorial($cargo);
+        $cargo->fill($data);
         $cargo->save();
+        $newData = $this->cargoDataForHistorial($cargo->fresh());
+        $this->registrarHistorial($cargo, 'updated', $oldData, $newData, $request->user()?->id);
+
+        // Siempre sincronizar puertas (vienen en el payload desde Edit.vue) y registrar en historial si cambian
+        $puertasSync = $this->syncPuertasDelCargo($cargo, is_array($puertas) ? $puertas : []);
+        if (($puertasSync['changed'] ?? false) === true) {
+            $this->registrarHistorial(
+                $cargo,
+                'puertas_updated',
+                ['puerta_ids' => $puertasSync['old_ids'] ?? []],
+                ['puerta_ids' => $puertasSync['new_ids'] ?? []],
+                $request->user()?->id
+            );
+        }
 
         return redirect()
             ->route('cargos.edit', $cargo)
-            ->with('message', 'Cargo actualizado exitosamente.');
+            ->with('message', 'Cargo y permisos a puertas actualizados.');
+    }
+
+    /**
+     * Historial de cambios del cargo (para modal). No se puede eliminar.
+     */
+    public function historial(Request $request, Cargo $cargo)
+    {
+        $this->authorize('view', $cargo);
+
+        $items = $cargo->historial()
+            ->with('user:id,name,email')
+            ->orderByDesc('created_at')
+            ->get()
+            ->map(function (CargoHistorial $h) {
+                $item = [
+                    'id' => $h->id,
+                    'editor' => $h->user ? ($h->user->name ?: $h->user->email) : 'Sistema',
+                    'fecha' => $h->created_at->format('d/m/Y H:i'),
+                    'action' => $h->action,
+                    'old_data' => $h->old_data,
+                    'new_data' => $h->new_data,
+                ];
+                // Agregar nombres si el registro incluye IDs (independiente de action),
+                // para soportar historial unificado (permisos del sistema + puertas).
+                if (is_array($h->old_data) || is_array($h->new_data)) {
+                    $oldPermissionIds = is_array($h->old_data) ? ($h->old_data['permission_ids'] ?? []) : [];
+                    $newPermissionIds = is_array($h->new_data) ? ($h->new_data['permission_ids'] ?? []) : [];
+                    if (!empty($oldPermissionIds) || !empty($newPermissionIds)) {
+                        $item['old_permission_names'] = $this->permissionIdsToNames(is_array($oldPermissionIds) ? $oldPermissionIds : []);
+                        $item['new_permission_names'] = $this->permissionIdsToNames(is_array($newPermissionIds) ? $newPermissionIds : []);
+                    }
+
+                    $oldPuertaIds = is_array($h->old_data) ? ($h->old_data['puerta_ids'] ?? []) : [];
+                    $newPuertaIds = is_array($h->new_data) ? ($h->new_data['puerta_ids'] ?? []) : [];
+                    if (!empty($oldPuertaIds) || !empty($newPuertaIds)) {
+                        $item['old_puerta_names'] = $this->puertaIdsToNames(is_array($oldPuertaIds) ? $oldPuertaIds : []);
+                        $item['new_puerta_names'] = $this->puertaIdsToNames(is_array($newPuertaIds) ? $newPuertaIds : []);
+                    }
+                }
+                return $item;
+            });
+
+        return response()->json(['historial' => $items]);
+    }
+
+    private function permissionIdsToNames(array $ids): array
+    {
+        if (empty($ids)) {
+            return [];
+        }
+        return \App\Models\Permission::query()
+            ->whereIn('id', $ids)
+            ->orderBy('group')
+            ->orderBy('name')
+            ->pluck('description')
+            ->values()
+            ->toArray();
+    }
+
+    private function puertaIdsToNames(array $ids): array
+    {
+        if (empty($ids)) {
+            return [];
+        }
+        $ids = array_values(array_map('intval', array_filter($ids)));
+        if (empty($ids)) {
+            return [];
+        }
+        return Puerta::query()
+            ->whereIn('id', $ids)
+            ->orderBy('nombre')
+            ->pluck('nombre')
+            ->values()
+            ->toArray();
     }
 
     /**
@@ -357,6 +453,7 @@ class CargosController extends Controller
             'puertas.*' => ['integer', 'exists:puertas,id'],
         ]);
 
+        $oldPuertaIds = $cargo->puertas()->get()->pluck('id')->values()->toArray();
         $puertaIds = array_values(array_unique(array_map('intval', $request->input('puertas', []))));
         $pivot = [
             'hora_inicio' => null,
@@ -371,6 +468,8 @@ class CargosController extends Controller
             $syncData[$pid] = $pivot;
         }
         $cargo->puertas()->sync($syncData);
+
+        $this->registrarHistorial($cargo, 'puertas_updated', ['puerta_ids' => $oldPuertaIds], ['puerta_ids' => $puertaIds], $request->user()?->id);
 
         return redirect()
             ->route('cargos.edit', $cargo)
@@ -387,12 +486,103 @@ class CargosController extends Controller
         $request->validate([
             'permissions' => ['required', 'array'],
             'permissions.*' => ['integer', 'exists:permissions,id'],
+            'puertas' => ['nullable', 'array'],
+            'puertas.*' => ['integer', 'exists:puertas,id'],
         ]);
 
-        $cargo->permissions()->sync($request->input('permissions', []));
+        $oldPermissionIds = $cargo->permissions()->pluck('permissions.id')->values()->toArray();
+        $newPermissionIds = array_values(array_unique(array_map('intval', $request->input('permissions', []))));
+
+        // Capturar y sincronizar puertas (si vienen en el request) sin crear una entrada separada de historial:
+        // las puertas deben quedar registradas "junto a los otros permisos" en la misma acción.
+        $puertasSync = null;
+        if ($request->has('puertas')) {
+            $puertas = $request->input('puertas', []);
+            $puertasSync = $this->syncPuertasDelCargo($cargo, is_array($puertas) ? $puertas : []);
+        }
+
+        // Sincronizar permisos del sistema
+        $cargo->permissions()->sync($newPermissionIds);
+
+        // Registrar historial unificado (permisos del sistema + puertas si aplica), solo si hubo cambios
+        $oldPermCompare = $oldPermissionIds;
+        $newPermCompare = $newPermissionIds;
+        sort($oldPermCompare);
+        sort($newPermCompare);
+        $permisosChanged = $oldPermCompare !== $newPermCompare;
+        $puertasChanged = (bool) ($puertasSync['changed'] ?? false);
+
+        if ($permisosChanged || $puertasChanged) {
+            $oldData = ['permission_ids' => array_values($oldPermCompare)];
+            $newData = ['permission_ids' => array_values($newPermCompare)];
+            if ($puertasSync !== null) {
+                $oldData['puerta_ids'] = $puertasSync['old_ids'] ?? [];
+                $newData['puerta_ids'] = $puertasSync['new_ids'] ?? [];
+            }
+            $this->registrarHistorial($cargo, 'permissions_updated', $oldData, $newData, $request->user()?->id);
+        }
 
         return redirect()
             ->route('cargos.edit', $cargo)
-            ->with('message', 'Permisos del sistema actualizados exitosamente.');
+            ->with('message', 'Permisos del sistema y puertas actualizados.');
+    }
+
+    /**
+     * Sincronizar puertas del cargo (lógica compartida por update y updatePermissions).
+     */
+    private function syncPuertasDelCargo(Cargo $cargo, array $puertas): array
+    {
+        $puertaIds = array_values(array_unique(array_map('intval', array_filter($puertas))));
+        $oldPuertaIds = $cargo->puertas()->get()->pluck('id')->values()->toArray();
+
+        $oldCompare = $oldPuertaIds;
+        $newCompare = $puertaIds;
+        sort($oldCompare);
+        sort($newCompare);
+        $changed = $oldCompare !== $newCompare;
+
+        $pivot = [
+            'hora_inicio' => null,
+            'hora_fin' => null,
+            'dias_semana' => '1,2,3,4,5,6,7',
+            'fecha_inicio' => null,
+            'fecha_fin' => null,
+            'activo' => true,
+        ];
+        $syncData = [];
+        foreach ($newCompare as $pid) {
+            $syncData[$pid] = $pivot;
+        }
+        $cargo->puertas()->sync($syncData);
+
+        return [
+            'changed' => $changed,
+            'old_ids' => array_values($oldCompare),
+            'new_ids' => array_values($newCompare),
+        ];
+    }
+
+    /**
+     * Campos del cargo que se guardan en el historial (auditoría).
+     */
+    private function cargoDataForHistorial(Cargo $cargo): array
+    {
+        return [
+            'name' => $cargo->name,
+            'description' => $cargo->description,
+            'activo' => $cargo->activo,
+            'requiere_permiso_superior' => $cargo->requiere_permiso_superior,
+        ];
+    }
+
+    private function registrarHistorial(Cargo $cargo, string $action, ?array $oldData, ?array $newData, ?int $userId): void
+    {
+        CargoHistorial::create([
+            'cargo_id' => $cargo->id,
+            'user_id' => $userId,
+            'action' => $action,
+            'old_data' => $oldData,
+            'new_data' => $newData,
+        ]);
     }
 }

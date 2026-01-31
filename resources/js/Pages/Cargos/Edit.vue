@@ -116,8 +116,9 @@
                 <p class="text-sm text-slate-600 dark:text-slate-400 mb-4">
                     Marca las puertas a las que tendrá acceso este cargo. Puedes
                     abrir cada piso y marcar puertas una a una, o marcar el piso
-                    para seleccionar todas sus puertas. Al finalizar, pulsa
-                    Guardar.
+                    para seleccionar todas sus puertas. Los cambios se guardan
+                    al usar <strong>Guardar Cambios</strong> (arriba) o
+                    <strong>Guardar Permisos del Sistema</strong> (al final).
                 </p>
 
                 <div
@@ -234,27 +235,9 @@
                     </div>
                 </div>
 
-                <div
-                    class="flex items-center justify-end gap-2 pt-4 mt-4 border-t border-slate-200 dark:border-slate-700"
-                >
-                    <span
-                        class="text-sm text-slate-500 dark:text-slate-400 mr-auto"
-                    >
-                        {{ selectedPuertaIds.length }} puerta(s) seleccionada(s)
-                    </span>
-                    <button
-                        type="button"
-                        :disabled="formPuertasSync.processing"
-                        class="px-4 py-2 rounded-lg bg-green-600 dark:bg-green-700 text-white hover:bg-green-700 dark:hover:bg-green-600 disabled:opacity-50 transition-colors duration-200"
-                        @click="submitSyncPuertas"
-                    >
-                        {{
-                            formPuertasSync.processing
-                                ? "Guardando..."
-                                : "Guardar permisos a puertas"
-                        }}
-                    </button>
-                </div>
+                <p class="mt-4 text-sm text-slate-500 dark:text-slate-400">
+                    {{ selectedPuertaIds.length }} puerta(s) seleccionada(s)
+                </p>
             </div>
 
             <!-- Permisos del Sistema -->
@@ -502,16 +485,16 @@
 
                 <div class="p-6">
                     <p class="text-sm text-slate-700 dark:text-slate-300 mb-4">
-                        ¿Estás seguro de que deseas guardar los cambios en los
-                        permisos del sistema para el cargo
+                        ¿Estás seguro de que deseas guardar los permisos del
+                        sistema y las puertas para el cargo
                         <strong class="text-slate-900 dark:text-slate-100">{{
                             cargo.name
                         }}</strong
                         >?
                     </p>
                     <p class="text-xs text-slate-500 dark:text-slate-400 mb-4">
-                        Se actualizarán los permisos asignados a este cargo. Los
-                        usuarios con este cargo verán reflejados los cambios
+                        Se actualizarán los permisos del sistema y la selección
+                        de puertas. Los usuarios con este cargo verán los cambios
                         inmediatamente.
                     </p>
 
@@ -564,20 +547,19 @@ const openPisoId = ref(null);
 // IDs de puertas seleccionadas (permisos por puerta; inicial desde backend)
 const selectedPuertaIds = ref((props.puertasAsignadas || []).map((p) => p.id));
 
-// Sincronizar lista completa de puertas (PUT)
-const formPuertasSync = useForm({
-    puertas: [],
-});
-
 const formCargo = useForm({
     name: props.cargo.name || "",
     description: props.cargo.description || "",
     activo: !!props.cargo.activo,
     requiere_permiso_superior: !!props.cargo.requiere_permiso_superior,
+    puertas: [],
 });
 
 const submitCargo = () => {
-    formCargo.put(route("cargos.update", { cargo: props.cargo.id }));
+    formCargo.transform((data) => ({
+        ...data,
+        puertas: [...selectedPuertaIds.value],
+    })).put(route("cargos.update", { cargo: props.cargo.id }));
 };
 
 function toggleAccordion(pisoId) {
@@ -634,18 +616,6 @@ function togglePuerta(puertaId) {
             (id) => id !== puertaId,
         );
     }
-}
-
-function submitSyncPuertas() {
-    formPuertasSync.puertas = [...selectedPuertaIds.value];
-    // URL explícita para evitar error de Ziggy si la ruta no está en la lista (p. ej. tras deploy o caché)
-    const url = `/cargos/${props.cargo.id}/puertas`;
-    formPuertasSync.put(url, {
-        preserveScroll: true,
-        onSuccess: () => {
-            formPuertasSync.reset();
-        },
-    });
 }
 
 const formatDiasSemana = (dias) => {
@@ -857,6 +827,7 @@ const savePermissions = () => {
         route("cargos.permissions.update", { cargo: props.cargo.id }),
         {
             permissions: cargoPermissions.value || [],
+            puertas: selectedPuertaIds.value || [],
         },
         {
             preserveScroll: true,

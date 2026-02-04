@@ -57,9 +57,10 @@ class IngresoController extends Controller
             $usuarios = collect([$actor])->filter();
         }
 
-        // Puertas activas (para UI y otros usos)
+        // Puertas activas asignables a visitantes (ocultar solo funcionarios / datacenter en la UI)
         $puertas = Puerta::query()
             ->where('activo', true)
+            ->assignableToVisitantes()
             ->with('zona')
             ->orderBy('nombre')
             ->get();
@@ -69,13 +70,15 @@ class IngresoController extends Controller
             ->orderBy('orden')
             ->get();
 
-        // Pisos con puertas activas (para el acordeón de selección por puerta)
+        // Pisos con puertas activas asignables a visitantes (acordeón de selección)
         $pisosConPuertas = Piso::query()
             ->where('activo', true)
-            ->with(['puertas' => fn($q) => $q->where('activo', true)->orderBy('nombre')])
+            ->with(['puertas' => fn($q) => $q->where('activo', true)->assignableToVisitantes()->orderBy('nombre')])
             ->orderBy('orden')
             ->orderBy('nombre')
-            ->get();
+            ->get()
+            ->filter(fn($piso) => $piso->puertas->isNotEmpty())
+            ->values();
 
         $secretarias = Secretaria::query()
             ->where('activo', true)
@@ -508,8 +511,10 @@ class IngresoController extends Controller
             $usuarios = collect([$actor])->filter();
         }
 
+        // Puertas activas asignables a visitantes (ocultar solo funcionarios / datacenter en la UI)
         $puertas = Puerta::query()
             ->where('activo', true)
+            ->assignableToVisitantes()
             ->with('zona')
             ->orderBy('nombre')
             ->get();
@@ -519,13 +524,15 @@ class IngresoController extends Controller
             ->orderBy('orden')
             ->get();
 
-        // Pisos con puertas activas (para el acordeón de selección por puerta)
+        // Pisos con puertas activas asignables a visitantes (acordeón de selección)
         $pisosConPuertas = Piso::query()
             ->where('activo', true)
-            ->with(['puertas' => fn($q) => $q->where('activo', true)->orderBy('nombre')])
+            ->with(['puertas' => fn($q) => $q->where('activo', true)->assignableToVisitantes()->orderBy('nombre')])
             ->orderBy('orden')
             ->orderBy('nombre')
-            ->get();
+            ->get()
+            ->filter(fn($piso) => $piso->puertas->isNotEmpty())
+            ->values();
 
         $secretarias = Secretaria::query()
             ->where('activo', true)

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -136,6 +137,19 @@ class Puerta extends Model
                 'activo',
             ])
             ->withTimestamps();
+    }
+
+    /**
+     * Puertas que pueden asignarse a visitantes (no solo funcionarios ni datacenter).
+     * Oculta en UI de Ingreso para que no se ofrezcan al asignar QR/NFC a visitantes.
+     */
+    public function scopeAssignableToVisitantes(Builder $query): Builder
+    {
+        return $query->where(function ($q) {
+            $q->whereNull('solo_servidores_publicos')->orWhere('solo_servidores_publicos', false);
+        })->where(function ($q) {
+            $q->whereNull('requiere_permiso_datacenter')->orWhere('requiere_permiso_datacenter', false);
+        });
     }
 
     /**

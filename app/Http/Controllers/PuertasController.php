@@ -187,15 +187,25 @@ class PuertasController extends Controller
             unset($data['codigo_fisico'], $data['codigo_fisico_salida']);
         }
 
-        // Manejar la subida de nueva imagen
+        // Manejar la subida de nueva imagen o solicitud de quitar imagen
         if ($request->hasFile('imagen')) {
             // Eliminar imagen anterior si existe
             if ($puerta->imagen && Storage::disk('public')->exists($puerta->imagen)) {
                 Storage::disk('public')->delete($puerta->imagen);
             }
             $data['imagen'] = $request->file('imagen')->store('puertas', 'public');
+        } elseif ($request->boolean('quitar_imagen')) {
+            // Usuario pidió quitar la imagen: borrar archivo y limpiar en BD
+            if ($puerta->imagen && Storage::disk('public')->exists($puerta->imagen)) {
+                Storage::disk('public')->delete($puerta->imagen);
+            }
+            $data['imagen'] = null;
+        } else {
+            // No se subió nueva imagen ni se pidió quitar: mantener la actual
+            unset($data['imagen']);
         }
 
+        unset($data['quitar_imagen']);
         $puerta->fill($data);
         $puerta->save();
 

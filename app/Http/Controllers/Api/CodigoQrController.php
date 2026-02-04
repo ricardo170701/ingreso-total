@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\GenerateCodigoQrRequest;
 use App\Models\CodigoQr;
+use App\Models\Puerta;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
@@ -186,10 +187,36 @@ class CodigoQrController extends Controller
             $pisos = $data['pisos'] ?? [];
 
             if (($targetUser->role?->name ?? null) === 'visitante' && is_array($pisos) && count($pisos) > 0) {
-                $puertas = \App\Models\Puerta::query()
+                $puertas = Puerta::query()
                     ->where('activo', true)
                     ->whereIn('piso_id', $pisos)
+                    // Visitantes: no incluir puertas marcadas como "solo servidores públicos o proveedores"
+                    ->where(function ($q) {
+                        $q->whereNull('solo_servidores_publicos')
+                            ->orWhere('solo_servidores_publicos', false);
+                    })
                     ->pluck('id')
+                    ->toArray();
+            }
+
+            // Normalizar puertas a activas y (si visitante) excluir staff-only (fail-closed)
+            if (is_array($puertas) && count($puertas) > 0) {
+                $puertasQ = Puerta::query()
+                    ->where('activo', true)
+                    ->whereIn('id', $puertas);
+
+                if (($targetUser->role?->name ?? null) === 'visitante') {
+                    $puertasQ->where(function ($q) {
+                        $q->whereNull('solo_servidores_publicos')
+                            ->orWhere('solo_servidores_publicos', false);
+                    });
+                }
+
+                $puertas = $puertasQ
+                    ->pluck('id')
+                    ->map(fn($id) => (int) $id)
+                    ->unique()
+                    ->values()
                     ->toArray();
             }
 

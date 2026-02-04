@@ -216,18 +216,36 @@
                     </div>
 
                     <FormField label="Imagen" :error="form.errors.imagen">
-                        <div v-if="puerta.imagen" class="mb-2">
+                        <div
+                            v-if="puerta.imagen && !form.quitar_imagen"
+                            class="mb-2 relative inline-block"
+                        >
                             <img
                                 :src="`/storage/${puerta.imagen}`"
                                 :alt="puerta.nombre"
                                 class="w-32 h-32 object-cover rounded-lg border border-slate-200 dark:border-slate-700"
                             />
+                            <button
+                                type="button"
+                                title="Quitar imagen"
+                                @click="form.quitar_imagen = true"
+                                class="absolute -top-2 -right-2 w-7 h-7 rounded-full bg-red-500 hover:bg-red-600 text-white flex items-center justify-center text-lg leading-none shadow transition-colors duration-200"
+                                aria-label="Quitar imagen"
+                            >
+                                ×
+                            </button>
                             <p
                                 class="mt-1 text-xs text-slate-500 dark:text-slate-400"
                             >
                                 Imagen actual
                             </p>
                         </div>
+                        <p
+                            v-else-if="puerta.imagen && form.quitar_imagen"
+                            class="mb-2 text-sm text-amber-600 dark:text-amber-400"
+                        >
+                            La imagen se eliminará al guardar.
+                        </p>
                         <input
                             @change="
                                 form.imagen = $event.target.files?.[0] || null
@@ -499,6 +517,7 @@ const form = useForm({
     ip_entrada: props.puerta.ip_entrada || "",
     ip_salida: props.puerta.ip_salida || "",
     imagen: null,
+    quitar_imagen: false,
     tiempo_apertura: props.puerta.tiempo_apertura || 5,
     tiempo_discapacitados: props.puerta.tiempo_discapacitados ?? null,
     alto: props.puerta.alto ?? null,

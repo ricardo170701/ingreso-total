@@ -405,15 +405,30 @@ class IngresoController extends Controller
                 $puertas = Puerta::query()
                     ->where('activo', true)
                     ->whereIn('piso_id', $pisos)
+                    // Visitantes: no incluir puertas marcadas como "solo servidores públicos o proveedores"
+                    ->where(function ($q) {
+                        $q->whereNull('solo_servidores_publicos')
+                            ->orWhere('solo_servidores_publicos', false);
+                    })
                     ->pluck('id')
                     ->toArray();
             }
 
             // Siempre: normalizar a puertas activas únicas
             if (is_array($puertas) && count($puertas) > 0) {
-                $puertas = Puerta::query()
+                $puertasQ = Puerta::query()
                     ->where('activo', true)
-                    ->whereIn('id', $puertas)
+                    ->whereIn('id', $puertas);
+
+                // Visitantes: excluir puertas staff-only aunque vengan explícitas
+                if (($targetUser->role?->name ?? null) === 'visitante') {
+                    $puertasQ->where(function ($q) {
+                        $q->whereNull('solo_servidores_publicos')
+                            ->orWhere('solo_servidores_publicos', false);
+                    });
+                }
+
+                $puertas = $puertasQ
                     ->pluck('id')
                     ->map(fn($id) => (int) $id)
                     ->unique()
@@ -770,6 +785,11 @@ class IngresoController extends Controller
         // Normalizar puertas a activas (fail-closed)
         $puertas = Puerta::query()
             ->where('activo', true)
+            // Visitantes: no permitir puertas staff-only
+            ->where(function ($q) {
+                $q->whereNull('solo_servidores_publicos')
+                    ->orWhere('solo_servidores_publicos', false);
+            })
             ->whereIn('id', $data['puertas'])
             ->pluck('id')
             ->map(fn($id) => (int) $id)

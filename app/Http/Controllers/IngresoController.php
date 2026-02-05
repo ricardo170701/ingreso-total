@@ -145,15 +145,11 @@ class IngresoController extends Controller
                 }
 
                 DB::transaction(function () use (&$qrPersonal, $actor, $tokenHash, $plainToken, $now, $expiresAt) {
-                    // Desactivar cualquier QR activo previo del usuario
+                    // Eliminar cualquier QR activo previo del usuario (evitar datos basura)
                     CodigoQr::query()
                         ->where('user_id', $actor->id)
                         ->where('activo', true)
-                        ->update([
-                            'activo' => false,
-                            'uso_actual' => 'expirado',
-                            'updated_at' => now(),
-                        ]);
+                        ->delete();
 
                     // Crear nuevo QR
                     $qrPersonal = new CodigoQr();
@@ -373,15 +369,11 @@ class IngresoController extends Controller
         $qr = null;
 
         DB::transaction(function () use (&$qr, $targetUser, $actor, $tokenHash, $now, $expiresAt, $data, $plainToken, $targetRole) {
-            // Regla: al generar uno nuevo, desactivar cualquier QR activo previo del usuario destino
+            // Regla: al generar uno nuevo, eliminar los QR activos previos del usuario (evitar datos basura)
             CodigoQr::query()
                 ->where('user_id', $targetUser->id)
                 ->activos()
-                ->update([
-                    'activo' => false,
-                    'uso_actual' => 'expirado',
-                    'updated_at' => now(),
-                ]);
+                ->delete();
 
             $qr = new CodigoQr();
             $qr->user_id = $targetUser->id;

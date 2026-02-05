@@ -156,15 +156,12 @@ class CodigoQrController extends Controller
         $qr = null;
 
         DB::transaction(function () use (&$qr, $targetUser, $actor, $tokenHash, $now, $expiresAt, $data, $plainToken) {
-            // Regla: al generar uno nuevo, desactivar cualquier QR activo previo del usuario destino
+            // Regla: al generar uno nuevo, eliminar los QR activos previos del usuario (evitar datos basura).
+            // accesos.codigo_qr_id tiene nullOnDelete, así que los registros de acceso se conservan con codigo_qr_id=null.
             CodigoQr::query()
                 ->where('user_id', $targetUser->id)
                 ->activos()
-                ->update([
-                    'activo' => false,
-                    'uso_actual' => 'expirado',
-                    'updated_at' => now(),
-                ]);
+                ->delete();
 
             $qr = new CodigoQr();
             $qr->user_id = $targetUser->id;

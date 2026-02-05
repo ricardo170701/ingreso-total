@@ -144,7 +144,7 @@ class AccessController extends Controller
         $isStaff = in_array($userRole, $staffRoles, true);
 
         if ($isStaff) {
-            if ($user->fecha_expiracion && Carbon::parse($user->fecha_expiracion)->lt($now->startOfDay())) {
+            if ($user->fecha_expiracion && Carbon::parse($user->fecha_expiracion)->lt($now->copy()->startOfDay())) {
                 $this->registrarAcceso($user->id, $puerta->id, $qrId, $tarjetaNfcId, false, 'Usuario expirado', $data['codigo_fisico'], $tipoEvento, $dispositivoId);
                 return response()->json(['permitido' => false, 'message' => 'Usuario expirado.'], 200);
             }
@@ -367,11 +367,12 @@ class AccessController extends Controller
             return false;
         }
 
-        // Fechas
-        if (!empty($rule->fecha_inicio) && Carbon::parse($rule->fecha_inicio)->gt($now->startOfDay())) {
+        // Fechas (usar copy() para no mutar $now; si no, fecha_acceso quedaría en 00:00:00)
+        $startOfDay = $now->copy()->startOfDay();
+        if (!empty($rule->fecha_inicio) && Carbon::parse($rule->fecha_inicio)->gt($startOfDay)) {
             return false;
         }
-        if (!empty($rule->fecha_fin) && Carbon::parse($rule->fecha_fin)->lt($now->startOfDay())) {
+        if (!empty($rule->fecha_fin) && Carbon::parse($rule->fecha_fin)->lt($startOfDay)) {
             return false;
         }
 

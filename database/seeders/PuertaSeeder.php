@@ -6,7 +6,6 @@ use App\Models\Material;
 use App\Models\Piso;
 use App\Models\Puerta;
 use App\Models\TipoPuerta;
-use App\Models\Zona;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
@@ -20,7 +19,6 @@ class PuertaSeeder extends Seeder
         $pisos = Piso::all();
         $tiposPuerta = TipoPuerta::all();
         $materiales = Material::all();
-        $zonas = Zona::where('activa', true)->get();
 
         if ($pisos->isEmpty()) {
             $this->command->warn('No hay pisos en la base de datos. Ejecuta PisoSeeder primero.');
@@ -75,7 +73,6 @@ class PuertaSeeder extends Seeder
             for ($i = 0; $i < $cantidadPuertas; $i++) {
                 $tipoPuerta = $tiposPuerta->random();
                 $material = $materiales->random();
-                $zona = $zonas->isNotEmpty() ? $zonas->random() : null;
 
                 // Generar nombre más variado
                 $nombreBase = $nombresPuertas[array_rand($nombresPuertas)];
@@ -113,7 +110,6 @@ class PuertaSeeder extends Seeder
                 Puerta::updateOrCreate(
                     ['codigo_fisico' => $codigoFisico],
                     [
-                        'zona_id' => $zona?->id,
                         'piso_id' => $piso->id,
                         'tipo_puerta_id' => $tipoPuerta->id,
                         'material_id' => $material->id,

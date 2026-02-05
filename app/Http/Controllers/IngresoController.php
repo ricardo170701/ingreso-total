@@ -61,7 +61,6 @@ class IngresoController extends Controller
         $puertas = Puerta::query()
             ->where('activo', true)
             ->assignableToVisitantes()
-            ->with('zona')
             ->orderBy('nombre')
             ->get();
 
@@ -507,7 +506,6 @@ class IngresoController extends Controller
         $puertas = Puerta::query()
             ->where('activo', true)
             ->assignableToVisitantes()
-            ->with('zona')
             ->orderBy('nombre')
             ->get();
 

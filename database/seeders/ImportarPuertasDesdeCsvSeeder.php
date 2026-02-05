@@ -137,7 +137,6 @@ class ImportarPuertasDesdeCsvSeeder extends Seeder
             $codigoFisico = $codigoBase !== '' ? $codigoBase : Str::upper(Str::slug(($pasillo . '-' . $perfil), '-'));
 
             $attrs = [
-                'zona_id' => null,
                 'piso_id' => $pisoId,
                 'tipo_puerta_id' => $tipoPuertaId,
                 'material_id' => $materialId,
@@ -169,7 +168,6 @@ class ImportarPuertasDesdeCsvSeeder extends Seeder
             $codigoSalida = $this->limitCode($base . '-SAL');
 
             $attrs = [
-                'zona_id' => null,
                 'piso_id' => $g['piso_id'],
                 'tipo_puerta_id' => $g['tipo_puerta_id'],
                 'material_id' => $g['material_id'],

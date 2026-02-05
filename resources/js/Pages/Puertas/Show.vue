@@ -48,8 +48,6 @@
                     </h1>
                     <p class="text-sm text-slate-600 dark:text-slate-400">
                         {{ puerta.piso?.nombre || "Sin piso" }}
-                        <span class="text-slate-300 dark:text-slate-600">·</span>
-                        {{ puerta.zona?.nombre || "Sin zona" }}
                     </p>
                 </div>
                 <div class="flex gap-2 flex-wrap">

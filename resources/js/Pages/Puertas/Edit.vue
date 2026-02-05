@@ -27,7 +27,7 @@
                     @submit.prevent="showConfirmModal = true"
                     class="grid grid-cols-1 gap-4"
                 >
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="grid grid-cols-1 gap-4">
                         <FormField label="Nombre" :error="form.errors.nombre">
                             <input
                                 v-model="form.nombre"
@@ -35,21 +35,6 @@
                                 class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-transparent transition-colors duration-200"
                                 required
                             />
-                        </FormField>
-                        <FormField label="Zona" :error="form.errors.zona_id">
-                            <select
-                                v-model="form.zona_id"
-                                class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-transparent transition-colors duration-200"
-                            >
-                                <option :value="null">- Sin zona -</option>
-                                <option
-                                    v-for="z in zonas"
-                                    :key="z.id"
-                                    :value="z.id"
-                                >
-                                    {{ z.nombre }}
-                                </option>
-                            </select>
                         </FormField>
                     </div>
 
@@ -499,7 +484,6 @@ import { ref } from "vue";
 
 const props = defineProps({
     puerta: Object,
-    zonas: Array,
     pisos: Array,
     tiposPuerta: Array,
     materiales: Array,
@@ -510,7 +494,6 @@ const showConfirmModal = ref(false);
 
 const form = useForm({
     nombre: props.puerta.nombre || "",
-    zona_id: props.puerta.zona_id ?? null,
     piso_id: props.puerta.piso_id ?? null,
     tipo_puerta_id: props.puerta.tipo_puerta_id ?? null,
     material_id: props.puerta.material_id ?? null,

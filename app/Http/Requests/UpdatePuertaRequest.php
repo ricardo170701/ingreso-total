@@ -27,7 +27,6 @@ class UpdatePuertaRequest extends FormRequest
         $puertaId = $puertaParam instanceof Puerta ? $puertaParam->id : $puertaParam;
 
         $rules = [
-            'zona_id' => ['nullable', 'integer', 'exists:zonas,id'],
             'piso_id' => ['nullable', 'integer', 'exists:pisos,id'],
             'tipo_puerta_id' => ['nullable', 'integer', 'exists:tipo_puertas,id'],
             'material_id' => ['nullable', 'integer', 'exists:materials,id'],

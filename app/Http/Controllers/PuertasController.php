@@ -8,7 +8,6 @@ use App\Models\Material;
 use App\Models\Piso;
 use App\Models\Puerta;
 use App\Models\TipoPuerta;
-use App\Models\Zona;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
@@ -41,7 +40,7 @@ class PuertasController extends Controller
         $pisoId = $request->query('piso_id');
 
         $query = Puerta::query()
-            ->with(['zona', 'piso', 'tipoPuerta', 'material', 'mantenimientos']);
+            ->with(['piso', 'tipoPuerta', 'material', 'mantenimientos']);
 
         // Filtrar por piso si se proporciona
         if ($pisoId) {
@@ -85,13 +84,11 @@ class PuertasController extends Controller
     {
         $this->authorize('create', Puerta::class);
 
-        $zonas = Zona::query()->where('activa', true)->orderBy('nombre')->get();
         $pisos = Piso::query()->where('activo', true)->orderBy('orden')->get();
         $tiposPuerta = TipoPuerta::query()->where('activo', true)->orderBy('nombre')->get();
         $materiales = Material::query()->where('activo', true)->orderBy('nombre')->get();
 
         return Inertia::render('Puertas/Create', [
-            'zonas' => $zonas,
             'pisos' => $pisos,
             'tiposPuerta' => $tiposPuerta,
             'materiales' => $materiales,
@@ -131,15 +128,13 @@ class PuertasController extends Controller
     {
         $this->authorize('update', $puerta);
 
-        $puerta->load(['zona', 'piso', 'tipoPuerta', 'material']);
-        $zonas = Zona::query()->where('activa', true)->orderBy('nombre')->get();
+        $puerta->load(['piso', 'tipoPuerta', 'material']);
         $pisos = Piso::query()->where('activo', true)->orderBy('orden')->get();
         $tiposPuerta = TipoPuerta::query()->where('activo', true)->orderBy('nombre')->get();
         $materiales = Material::query()->where('activo', true)->orderBy('nombre')->get();
 
         return Inertia::render('Puertas/Edit', [
             'puerta' => $puerta,
-            'zonas' => $zonas,
             'pisos' => $pisos,
             'tiposPuerta' => $tiposPuerta,
             'materiales' => $materiales,
@@ -155,7 +150,6 @@ class PuertasController extends Controller
         $this->authorize('view', $puerta);
 
         $puerta->load([
-            'zona',
             'piso',
             'tipoPuerta',
             'material',

@@ -33,7 +33,7 @@ class PuertaController extends Controller
         $perPage = (int) ($request->query('per_page', 15));
         $perPage = max(1, min(100, $perPage));
 
-        $query = Puerta::query()->with('zona');
+        $query = Puerta::query();
 
         // Filtrar puertas ocultas: solo mostrarlas si el usuario tiene el permiso
         $user = $request->user();
@@ -75,7 +75,7 @@ class PuertaController extends Controller
         }
 
         $puerta = Puerta::query()->create($request->validated());
-        return response()->json(['data' => $puerta->load('zona')], 201);
+        return response()->json(['data' => $puerta], 201);
     }
 
     /**
@@ -98,7 +98,7 @@ class PuertaController extends Controller
             return response()->json(['message' => 'No autorizado.'], 403);
         }
 
-        return response()->json(['data' => $puerta->load('zona')]);
+        return response()->json(['data' => $puerta]);
     }
 
     /**
@@ -111,7 +111,6 @@ class PuertaController extends Controller
      *   security={{"sanctum":{}}},
      *   @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
      *   @OA\RequestBody(required=true, @OA\JsonContent(
-     *     @OA\Property(property="zona_id", type="integer", nullable=true, example=1),
      *     @OA\Property(property="nombre", type="string", example="Entrada P1"),
      *     @OA\Property(property="ubicacion", type="string", nullable=true, example="Piso 1 - Lobby"),
      *     @OA\Property(property="descripcion", type="string", nullable=true, example=null),
@@ -138,7 +137,7 @@ class PuertaController extends Controller
         $puerta->fill($data);
         $puerta->save();
 
-        return response()->json(['data' => $puerta->load('zona')]);
+        return response()->json(['data' => $puerta]);
     }
 
     /**

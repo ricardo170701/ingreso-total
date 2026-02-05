@@ -107,7 +107,6 @@ class TarjetasNfcController extends Controller
 
         $puertas = Puerta::query()
             ->where('activo', true)
-            ->with('zona')
             ->orderBy('nombre')
             ->get();
 
@@ -333,7 +332,6 @@ class TarjetasNfcController extends Controller
 
         $puertas = Puerta::query()
             ->where('activo', true)
-            ->with('zona')
             ->orderBy('nombre')
             ->get();
 

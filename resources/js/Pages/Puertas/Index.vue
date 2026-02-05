@@ -237,10 +237,6 @@
                                         <span>{{ puerta.piso?.nombre || "-" }}</span>
                                     </div>
                                     <div class="flex items-center gap-2">
-                                        <span class="font-medium">Zona:</span>
-                                        <span>{{ puerta.zona?.nombre || "-" }}</span>
-                                    </div>
-                                    <div class="flex items-center gap-2">
                                         <span class="font-medium">Tipo:</span>
                                         <span
                                             :class="[

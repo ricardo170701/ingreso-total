@@ -14,8 +14,6 @@ class Puerta extends Model
     use HasFactory;
 
     protected $fillable = [
-        // Asociar puerta a una zona (piso/área)
-        'zona_id',
         'piso_id', // Foreign key a tabla pisos
         'tipo_puerta_id', // Foreign key a tabla tipo_puertas
         'material_id', // Foreign key a tabla materials
@@ -55,14 +53,6 @@ class Puerta extends Model
         'ancho' => 'decimal:2',
         'peso' => 'decimal:2',
     ];
-
-    /**
-     * Relación: Una puerta pertenece a una zona
-     */
-    public function zona(): BelongsTo
-    {
-        return $this->belongsTo(Zona::class);
-    }
 
     /**
      * Relación: Una puerta pertenece a un piso

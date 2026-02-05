@@ -68,7 +68,6 @@ class BuildingSeeder extends Seeder
                     Puerta::query()->updateOrCreate(
                         ['codigo_fisico' => $p['codigo_fisico']],
                         [
-                            'zona_id' => $zona->id,
                             'nombre' => $p['nombre'],
                             'ubicacion' => $zona->nombre,
                             'descripcion' => null,

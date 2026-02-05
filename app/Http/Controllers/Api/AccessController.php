@@ -55,12 +55,15 @@ class AccessController extends Controller
     public function verify(Request $request): JsonResponse
     {
         // Seguridad obligatoria por dispositivo lector (fail-closed)
+        // Normalizar valores para evitar problemas por comillas/espacios en .env o en el header
         $requiredKey = env('ACCESS_DEVICE_KEY');
+        $requiredKey = is_string($requiredKey) ? trim($requiredKey, " \t\n\r\0\x0B\"'") : null;
         if (!$requiredKey) {
             return response()->json(['message' => 'ACCESS_DEVICE_KEY no configurada en el servidor.'], 500);
         }
 
         $provided = $request->header('X-DEVICE-KEY');
+        $provided = is_string($provided) ? trim($provided, " \t\n\r\0\x0B\"'") : null;
         if (!$provided || !hash_equals($requiredKey, $provided)) {
             return response()->json(['message' => 'Dispositivo no autorizado.'], 403);
         }
@@ -136,7 +139,8 @@ class AccessController extends Controller
         // Para visitantes: verificar la fecha de expiración de la credencial (QR/Tarjeta)
         // Tipos de vinculación (compatibilidad: 'funcionario' legado)
         $userRole = $user->role?->name ?? null;
-        $staffRoles = ['servidor_publico', 'proveedor', 'funcionario'];
+        // Compatibilidad: en algunos entornos antiguos existía "contratista" y luego se renombró a "proveedor"
+        $staffRoles = ['servidor_publico', 'proveedor', 'contratista', 'funcionario'];
         $isStaff = in_array($userRole, $staffRoles, true);
 
         if ($isStaff) {
@@ -185,6 +189,8 @@ class AccessController extends Controller
             ->where('permitido', true)
             ->whereIn('tipo_evento', ['entrada', 'salida'])
             ->orderByDesc('fecha_acceso')
+            // Evita comportamiento no determinista si dos accesos caen en el mismo segundo
+            ->orderByDesc('id')
             ->first();
 
         if ($tipoEvento === 'entrada' && $lastOk?->tipo_evento === 'entrada') {
@@ -198,7 +204,8 @@ class AccessController extends Controller
 
         // Determinar si el usuario es funcionario o visitante
         $userRole = $user->role?->name ?? null;
-        $staffRoles = $staffRoles ?? ['servidor_publico', 'proveedor', 'funcionario'];
+        // (ver arriba) Mantener compatibilidad proveedor/contratista
+        $staffRoles = $staffRoles ?? ['servidor_publico', 'proveedor', 'contratista', 'funcionario'];
         $isStaff = in_array($userRole, $staffRoles, true);
 
         $permitido = false;

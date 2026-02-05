@@ -27,9 +27,9 @@ class RouteServiceProvider extends ServiceProvider
         RateLimiter::for('api', function (Request $request) {
             // Lector de acceso: muchas peticiones por minuto (entrada/salida, reintentos). Sin esto, 429 tras ~60 requests.
             if ($request->is('api/access/verify')) {
-                return Limit::perMinute(1000)->by($request->ip());
+                return Limit::perMinute(6000)->by($request->ip());
             }
-            return Limit::perMinute(60)->by($request->user()?->id ?: $request->ip());
+            return Limit::perMinute(6000)->by($request->user()?->id ?: $request->ip());
         });
 
         $this->routes(function () {

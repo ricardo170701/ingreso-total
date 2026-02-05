@@ -167,15 +167,17 @@ class VisitanteAccesoCiclosTest extends TestCase
             'pisos' => [$piso1->id],
         ]);
 
+        // Loguear SIEMPRE (aunque sea 500) para diagnóstico en producción
+        $this->debugLog('qr_created_response', [
+            'status' => $qrRes->status(),
+            'json' => $qrRes->json(),
+            'content' => method_exists($qrRes, 'getContent') ? $qrRes->getContent() : null,
+        ]);
+
         $qrRes->assertStatus(201);
         $plainToken = $qrRes->json('data.token');
         $this->assertIsString($plainToken);
         $this->assertNotEmpty($plainToken);
-
-        $this->debugLog('qr_created_response', [
-            'status' => $qrRes->status(),
-            'json' => $qrRes->json(),
-        ]);
 
         $qr = CodigoQr::query()
             ->where('user_id', $visitante->id)

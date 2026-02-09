@@ -178,14 +178,10 @@ class AccessController extends Controller
         // Estado entrada/salida:
         // - entrada: si la última operación permitida fue entrada, se debe registrar salida antes de otra entrada
         // - salida: solo se permite si la última operación permitida fue entrada
+        // IMPORTANTE: el estado debe estar ligado al usuario, NO a la credencial (QR/NFC).
+        // Si un usuario tiene múltiples credenciales, todas deben compartir el mismo ciclo entrada/salida.
         $lastOk = Acceso::query()
-            ->where(function ($q) use ($qr, $tarjetaNfc) {
-                if ($qr) {
-                    $q->where('codigo_qr_id', $qr->id);
-                } else {
-                    $q->where('tarjeta_nfc_id', $tarjetaNfc->id);
-                }
-            })
+            ->where('user_id', $user->id)
             ->where('permitido', true)
             ->whereIn('tipo_evento', ['entrada', 'salida'])
             ->orderByDesc('fecha_acceso')
@@ -194,12 +190,20 @@ class AccessController extends Controller
             ->first();
 
         if ($tipoEvento === 'entrada' && $lastOk?->tipo_evento === 'entrada') {
-            $this->registrarAcceso($user->id, $puerta->id, $qr?->id, $tarjetaNfc?->id, false, 'Entrada ya registrada (falta salida)', $data['codigo_fisico'], $tipoEvento, $dispositivoId);
-            return response()->json(['permitido' => false, 'message' => 'Entrada ya registrada. Debe registrarse salida antes de otra entrada.'], 200);
+            $motivo = 'Usuario ya se encuentra dentro (falta registrar salida)';
+            $this->registrarAcceso($user->id, $puerta->id, $qr?->id, $tarjetaNfc?->id, false, $motivo, $data['codigo_fisico'], $tipoEvento, $dispositivoId);
+            return response()->json([
+                'permitido' => false,
+                'message' => 'Usuario ya se encuentra dentro. Registre salida para poder volver a entrar.',
+            ], 200);
         }
         if ($tipoEvento === 'salida' && (!$lastOk || $lastOk->tipo_evento !== 'entrada')) {
-            $this->registrarAcceso($user->id, $puerta->id, $qr?->id, $tarjetaNfc?->id, false, 'No hay entrada activa', $data['codigo_fisico'], $tipoEvento, $dispositivoId);
-            return response()->json(['permitido' => false, 'message' => 'No hay una entrada activa para registrar salida.'], 200);
+            $motivo = 'Usuario no tiene entrada activa (no puede registrar salida)';
+            $this->registrarAcceso($user->id, $puerta->id, $qr?->id, $tarjetaNfc?->id, false, $motivo, $data['codigo_fisico'], $tipoEvento, $dispositivoId);
+            return response()->json([
+                'permitido' => false,
+                'message' => 'Usuario no tiene una entrada activa. Primero registre entrada.',
+            ], 200);
         }
 
         // Determinar si el usuario es funcionario o visitante

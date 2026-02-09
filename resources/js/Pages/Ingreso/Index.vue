@@ -720,10 +720,10 @@
             class="fixed inset-0 bg-black/60 dark:bg-black/70 flex items-center justify-center z-50 p-4 transition-colors duration-200"
         >
             <div
-                class="w-full max-w-lg bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-xl"
+                class="w-full max-w-lg max-h-[90vh] flex flex-col bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-xl"
                 @click.stop
             >
-                <div class="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-slate-200 dark:border-slate-700">
+                <div class="shrink-0 flex items-center justify-between px-4 sm:px-6 py-4 border-b border-slate-200 dark:border-slate-700">
                     <h3 class="text-lg font-semibold text-slate-900 dark:text-slate-100">
                         Agregar visitante
                     </h3>
@@ -737,7 +737,7 @@
                     </button>
                 </div>
 
-                <form @submit.prevent="submitVisitante" class="p-4 sm:p-6 space-y-4">
+                <form @submit.prevent="submitVisitante" class="flex-1 min-h-0 overflow-y-auto p-4 sm:p-6 space-y-4">
                     <div
                         v-if="visitanteServerError"
                         class="p-3 rounded-lg bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-sm text-red-800 dark:text-red-200"
@@ -887,10 +887,10 @@
         <div
             v-if="visitanteCameraOpen"
             @click="closeVisitanteCamera"
-            class="fixed inset-0 bg-black/70 dark:bg-black/80 flex items-center justify-center z-50 p-4 transition-colors duration-200"
+            class="fixed inset-0 bg-black/70 dark:bg-black/80 flex items-start justify-center z-50 p-4 overflow-y-auto min-h-full transition-colors duration-200"
         >
             <div
-                class="w-full max-w-2xl bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-xl"
+                class="w-full max-w-2xl bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-xl my-4"
                 @click.stop
             >
                 <div class="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-slate-200 dark:border-slate-700">

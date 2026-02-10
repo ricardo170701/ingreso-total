@@ -82,11 +82,9 @@ class ProtocoloController extends Controller
                     return [
                         'id' => $run->id,
                         'usuario' => $run->user->name ?? 'N/A',
-                        'estado' => $run->estado,
-                        'total_puertas' => $run->total_puertas,
-                        'puertas_exitosas' => $run->puertas_exitosas,
-                        'puertas_fallidas' => $run->puertas_fallidas,
-                        'fecha' => $run->created_at->format('d/m/Y H:i'),
+                        'fecha_inicio' => $run->created_at->format('d/m/Y H:i'),
+                        'created_at_iso' => $run->created_at->toIso8601String(),
+                        'duration_seconds' => (int) $run->duration_seconds,
                     ];
                 });
         } catch (QueryException | \Throwable $e) {
@@ -214,12 +212,12 @@ class ProtocoloController extends Controller
 
         // Sin caché: queremos estado actual (a menos que se fuerce)
         if ($force) {
-            // Modo forzado: usar todas las puertas sin verificar
+            // Modo forzado: usar todas las puertas sin verificar (abrir salidas; si solo tiene entrada, esa)
             Log::warning('Protocolo emergencia: FORZADO - sin verificación de conexiones');
             $puertasElegibles = $puertasAll->map(function ($puerta) {
-                // Preferir IP entrada si existe, sino salida
-                $ipUsada = $puerta->ip_entrada ?? $puerta->ip_salida;
-                $tipoIp = $puerta->ip_entrada ? 'entrada' : 'salida';
+                // Preferir IP salida (evacuación); si solo tiene entrada, usar entrada
+                $ipUsada = $puerta->ip_salida ?? $puerta->ip_entrada;
+                $tipoIp = $puerta->ip_salida ? 'salida' : 'entrada';
 
                 return [
                     'puerta' => $puerta,
@@ -434,7 +432,7 @@ class ProtocoloController extends Controller
      * Determina qué puertas se incluirán en el protocolo (mismo criterio visual que "Puertas").
      *
      * Una puerta es elegible si responde al puerto 8000 en al menos una IP (entrada o salida).
-     * Preferencia para ejecutar: entrada si responde; si no, salida.
+     * Preferencia para emergencia (evacuación): salida si responde; si la puerta solo tiene entrada, usar entrada.
      *
      * @param \Illuminate\Database\Eloquent\Collection $puertas
      * @param bool $useCache true para UI (rápido), false para ejecutar (estado actual)
@@ -517,25 +515,26 @@ class ProtocoloController extends Controller
             }
         }
 
+        // Emergencia: abrir SALIDAS (evacuación). Si la puerta solo tiene entrada, abrir la entrada.
         $out = collect();
         foreach ($puertas as $puerta) {
             $pid = (int) $puerta->id;
             $entradaOk = $estados[$pid]['entrada'] ?? null;
             $salidaOk = $estados[$pid]['salida'] ?? null;
 
-            if ($entradaOk === true && $puerta->ip_entrada) {
-                $out->push([
-                    'puerta' => $puerta,
-                    'ip_usada' => (string) $puerta->ip_entrada,
-                    'tipo_ip_usada' => 'entrada',
-                    'entrada_ok' => $entradaOk,
-                    'salida_ok' => $salidaOk,
-                ]);
-            } elseif ($salidaOk === true && $puerta->ip_salida) {
+            if ($salidaOk === true && $puerta->ip_salida) {
                 $out->push([
                     'puerta' => $puerta,
                     'ip_usada' => (string) $puerta->ip_salida,
                     'tipo_ip_usada' => 'salida',
+                    'entrada_ok' => $entradaOk,
+                    'salida_ok' => $salidaOk,
+                ]);
+            } elseif ($entradaOk === true && $puerta->ip_entrada) {
+                $out->push([
+                    'puerta' => $puerta,
+                    'ip_usada' => (string) $puerta->ip_entrada,
+                    'tipo_ip_usada' => 'entrada',
                     'entrada_ok' => $entradaOk,
                     'salida_ok' => $salidaOk,
                 ]);

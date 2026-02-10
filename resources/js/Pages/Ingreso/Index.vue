@@ -525,7 +525,7 @@
                                     </option>
                                 </select>
                                 <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                                    Selecciona una tarjeta NFC disponible para asignar al visitante. La tarjeta tendrá los mismos permisos que el QR.
+                                    Selecciona una tarjeta NFC disponible para asignar al visitante. La tarjeta tendrá los mismos permisos que el QR. Tras asignar, los datos se mantienen para verificar o editar; para asignar a otro usuario, usa el botón <strong>Limpiar datos</strong>.
                                 </p>
                             </FormField>
                             <div v-if="tarjetaNfcAsignadaAUsuarioSeleccionado" class="mb-3 p-3 rounded-lg border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/30">
@@ -1258,6 +1258,8 @@ const formTarjetaNfc = useForm({
     tarjeta_nfc_id: null,
     user_id: null,
     gerencia_id: null,
+    secretaria_id: null,
+    responsable_id: null,
     puertas: [],
     hora_inicio: null,
     hora_fin: null,
@@ -1442,6 +1444,31 @@ onMounted(() => {
                         qr.dias_semana ?? "1,2,3,4,5,6,7";
                     form.fecha_inicio = qr.fecha_inicio ?? form.fecha_inicio;
                     form.fecha_fin = qr.fecha_fin ?? form.fecha_fin;
+                } else if (u?.tarjeta_nfc_asignada && Array.isArray(u.tarjeta_nfc_asignada.puerta_ids)) {
+                    const nfc = u.tarjeta_nfc_asignada;
+                    form.puertas = [...nfc.puerta_ids];
+
+                    // Gerencia/secretaría (guardamos ambas en NFC)
+                    form.gerencia_id = nfc.gerencia_id ?? null;
+                    if (form.gerencia_id) {
+                        const g = (props.gerencias || []).find(
+                            (x) => x.id === form.gerencia_id,
+                        );
+                        form.secretaria_id = g?.secretaria_id ?? nfc.secretaria_id ?? null;
+                    } else {
+                        form.secretaria_id = nfc.secretaria_id ?? null;
+                    }
+
+                    // Responsable
+                    form.responsable_id = nfc.responsable_id ?? null;
+
+                    // Reglas horarias (si existen)
+                    form.hora_inicio = nfc.hora_inicio ?? null;
+                    form.hora_fin = nfc.hora_fin ?? null;
+                    form.dias_semana =
+                        nfc.dias_semana ?? "1,2,3,4,5,6,7";
+                    form.fecha_inicio = nfc.fecha_inicio ?? form.fecha_inicio;
+                    form.fecha_fin = nfc.fecha_fin ?? form.fecha_fin;
                 } else {
                     // Si no tiene QR activo, evitar que queden puertas del usuario anterior
                     form.puertas = [];
@@ -1452,6 +1479,8 @@ onMounted(() => {
             if (userId && usuarioSeleccionado.value?.role?.name === 'visitante') {
                 formTarjetaNfc.user_id = userId;
                 formTarjetaNfc.gerencia_id = form.gerencia_id;
+                formTarjetaNfc.secretaria_id = form.secretaria_id;
+                formTarjetaNfc.responsable_id = form.responsable_id;
                 formTarjetaNfc.puertas = [...form.puertas];
                 formTarjetaNfc.hora_inicio = form.hora_inicio;
                 formTarjetaNfc.hora_fin = form.hora_fin;
@@ -1466,16 +1495,19 @@ onMounted(() => {
                 }
                 formTarjetaNfc.user_id = null;
                 formTarjetaNfc.tarjeta_nfc_id = null;
+                formTarjetaNfc.responsable_id = null;
             }
         }
     );
 
     // Sincronizar campos relacionados cuando cambian en form
     watch(
-        [() => form.gerencia_id, () => form.puertas, () => form.hora_inicio, () => form.hora_fin, () => form.dias_semana, () => form.fecha_inicio, () => form.fecha_fin],
+        [() => form.gerencia_id, () => form.secretaria_id, () => form.responsable_id, () => form.puertas, () => form.hora_inicio, () => form.hora_fin, () => form.dias_semana, () => form.fecha_inicio, () => form.fecha_fin],
         () => {
             if (usuarioSeleccionado.value?.role?.name === 'visitante' && form.user_id) {
                 formTarjetaNfc.gerencia_id = form.gerencia_id;
+                formTarjetaNfc.secretaria_id = form.secretaria_id;
+                formTarjetaNfc.responsable_id = form.responsable_id;
                 formTarjetaNfc.puertas = [...form.puertas];
                 formTarjetaNfc.hora_inicio = form.hora_inicio;
                 formTarjetaNfc.hora_fin = form.hora_fin;
@@ -2113,9 +2145,11 @@ const asignarTarjetaNfc = async () => {
         return;
     }
 
-    // Sincronizar datos del form principal al formTarjetaNfc
+    // Sincronizar datos del form principal al formTarjetaNfc (gerencia y secretaría incluidos)
     formTarjetaNfc.user_id = form.user_id;
-    formTarjetaNfc.gerencia_id = form.gerencia_id;
+    formTarjetaNfc.gerencia_id = form.gerencia_id ?? null;
+    formTarjetaNfc.secretaria_id = form.secretaria_id ?? null;
+    formTarjetaNfc.responsable_id = form.responsable_id ?? null;
     formTarjetaNfc.puertas = [...form.puertas];
     formTarjetaNfc.hora_inicio = form.hora_inicio;
     formTarjetaNfc.hora_fin = form.hora_fin;
@@ -2131,7 +2165,9 @@ const asignarTarjetaNfc = async () => {
         await window.axios.post(route("ingreso.tarjetas-nfc.asignar"), {
             tarjeta_nfc_id: formTarjetaNfc.tarjeta_nfc_id,
             user_id: formTarjetaNfc.user_id,
-            gerencia_id: formTarjetaNfc.gerencia_id,
+            gerencia_id: form.gerencia_id ? Number(form.gerencia_id) : null,
+            secretaria_id: form.secretaria_id ? Number(form.secretaria_id) : null,
+            responsable_id: form.responsable_id ? Number(form.responsable_id) : null,
             puertas: formTarjetaNfc.puertas,
             hora_inicio: formTarjetaNfc.hora_inicio,
             hora_fin: formTarjetaNfc.hora_fin,
@@ -2142,22 +2178,31 @@ const asignarTarjetaNfc = async () => {
 
         showNotification("Tarjeta NFC asignada correctamente.", "success");
 
-        // Actualizar estado local para que se refleje sin recargar toda la página
+        // Actualizar estado local con todos los datos de la tarjeta para que, al volver a
+        // seleccionar este visitante (tras "Limpiar datos"), el formulario se rellene sin recargar.
         const assignedUserId = formTarjetaNfc.user_id;
         const assignedTarjetaId = formTarjetaNfc.tarjeta_nfc_id;
-        const tarjetaObj =
+        const baseTarjeta =
             (props.tarjetasNfcDisponibles || []).find((t) => t.id === assignedTarjetaId) ||
-            { id: assignedTarjetaId, codigo: String(assignedTarjetaId) };
+            { id: assignedTarjetaId, codigo: String(assignedTarjetaId), nombre: (props.tarjetasNfcDisponibles || []).find((t) => t.id === assignedTarjetaId)?.nombre };
+        const tarjetaObj = {
+            ...baseTarjeta,
+            gerencia_id: form.gerencia_id ? Number(form.gerencia_id) : null,
+            secretaria_id: form.secretaria_id ? Number(form.secretaria_id) : null,
+            responsable_id: form.responsable_id ? Number(form.responsable_id) : null,
+            puerta_ids: [...(form.puertas || [])],
+            hora_inicio: formTarjetaNfc.hora_inicio ?? null,
+            hora_fin: formTarjetaNfc.hora_fin ?? null,
+            dias_semana: formTarjetaNfc.dias_semana ?? "1,2,3,4,5,6,7",
+            fecha_inicio: formTarjetaNfc.fecha_inicio ?? null,
+            fecha_fin: formTarjetaNfc.fecha_fin ?? null,
+        };
         usuariosLocal.value = (usuariosLocal.value || []).map((u) =>
             u.id === assignedUserId ? { ...u, tarjeta_nfc_asignada: tarjetaObj } : u
         );
 
-        // Limpiar los datos del formulario para buscar a otro visitante
-        form.reset();
-        formTarjetaNfc.reset();
-
-        // Recargar también usuarios para mantener consistencia con el backend
-        router.reload({ only: ["tarjetasNfcDisponibles", "usuarios"], preserveScroll: true });
+        // No reiniciar ni recargar: dejar los datos para verificar y/o hacer cambios.
+        // Para usar otro usuario, el operador debe pulsar "Limpiar datos".
     } catch (err) {
         const status = err?.response?.status;
         if (status === 422) {

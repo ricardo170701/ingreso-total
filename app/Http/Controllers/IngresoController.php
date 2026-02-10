@@ -18,6 +18,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Schema;
 use Inertia\Inertia;
 use Inertia\Response;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
@@ -740,9 +741,13 @@ class IngresoController extends Controller
             'tarjeta_nfc_id' => ['required', 'integer', 'exists:tarjetas_nfc,id'],
             'user_id' => ['required', 'integer', 'exists:users,id'],
             'gerencia_id' => ['nullable', 'integer', 'exists:gerencias,id'],
-            // Selección explícita por puertas (acordeón por piso)
-            'puertas' => ['required', 'array', 'min:1'],
+            'secretaria_id' => ['nullable', 'integer', 'exists:secretarias,id'],
+            'responsable_id' => ['nullable', 'integer', 'exists:users,id'],
+            // Compatibilidad: permitir enviar puertas explícitas o pisos (expandir a puertas activas).
+            'puertas' => ['nullable', 'array', 'min:1', 'required_without:pisos'],
             'puertas.*' => ['integer', 'exists:puertas,id'],
+            'pisos' => ['nullable', 'array', 'min:1', 'required_without:puertas'],
+            'pisos.*' => ['integer', 'exists:pisos,id'],
             'hora_inicio' => ['nullable', 'date_format:H:i'],
             'hora_fin' => ['nullable', 'date_format:H:i', 'after:hora_inicio'],
             'dias_semana' => ['nullable', 'string', 'max:20'],
@@ -780,6 +785,17 @@ class IngresoController extends Controller
         $expiresAt = $now->copy()->addDays(15); // Similar a QR de visitantes
 
         // Normalizar puertas a activas (fail-closed)
+        $puertaIdsInput = [];
+        if (isset($data['puertas']) && is_array($data['puertas']) && count($data['puertas']) > 0) {
+            $puertaIdsInput = $data['puertas'];
+        } elseif (isset($data['pisos']) && is_array($data['pisos']) && count($data['pisos']) > 0) {
+            $puertaIdsInput = Puerta::query()
+                ->where('activo', true)
+                ->whereIn('piso_id', $data['pisos'])
+                ->pluck('id')
+                ->toArray();
+        }
+
         $puertas = Puerta::query()
             ->where('activo', true)
             // Visitantes: no permitir puertas staff-only
@@ -787,7 +803,7 @@ class IngresoController extends Controller
                 $q->whereNull('solo_servidores_publicos')
                     ->orWhere('solo_servidores_publicos', false);
             })
-            ->whereIn('id', $data['puertas'])
+            ->whereIn('id', $puertaIdsInput)
             ->pluck('id')
             ->map(fn($id) => (int) $id)
             ->unique()
@@ -810,24 +826,38 @@ class IngresoController extends Controller
                 ]);
 
             // Asignar tarjeta al usuario
-            $tarjeta->update([
+            $updateTarjeta = [
                 'user_id' => $targetUser->id,
                 'gerencia_id' => $data['gerencia_id'] ?? null,
                 'fecha_asignacion' => $now,
                 'fecha_expiracion' => $expiresAt,
                 'activo' => true,
                 'asignado_por' => $actor->id,
-            ]);
+            ];
+            if (Schema::hasColumn('tarjetas_nfc', 'secretaria_id')) {
+                $updateTarjeta['secretaria_id'] = $data['secretaria_id'] ?? null;
+            }
+            if (Schema::hasColumn('tarjetas_nfc', 'responsable_id')) {
+                $updateTarjeta['responsable_id'] = $data['responsable_id'] ?? null;
+            }
+            $tarjeta->update($updateTarjeta);
 
             // Registrar historial
-            TarjetaNfcAsignacion::query()->create([
+            $createAsignacion = [
                 'tarjeta_nfc_id' => $tarjeta->id,
                 'user_id' => $targetUser->id,
                 'asignado_por' => $actor->id,
                 'gerencia_id' => $data['gerencia_id'] ?? null,
                 'fecha_asignacion' => $now,
                 'fecha_desasignacion' => null,
-            ]);
+            ];
+            if (Schema::hasColumn('tarjeta_nfc_asignaciones', 'secretaria_id')) {
+                $createAsignacion['secretaria_id'] = $data['secretaria_id'] ?? null;
+            }
+            if (Schema::hasColumn('tarjeta_nfc_asignaciones', 'responsable_id')) {
+                $createAsignacion['responsable_id'] = $data['responsable_id'] ?? null;
+            }
+            TarjetaNfcAsignacion::query()->create($createAsignacion);
 
             // Eliminar relaciones anteriores
             DB::table('tarjeta_nfc_puerta_acceso')
@@ -911,13 +941,20 @@ class IngresoController extends Controller
                 ]);
 
             // Desasignar tarjeta
-            $tarjeta->update([
+            $updateTarjeta = [
                 'user_id' => null,
                 'gerencia_id' => null,
                 'fecha_asignacion' => null,
                 'fecha_expiracion' => null,
                 'asignado_por' => null,
-            ]);
+            ];
+            if (Schema::hasColumn('tarjetas_nfc', 'secretaria_id')) {
+                $updateTarjeta['secretaria_id'] = null;
+            }
+            if (Schema::hasColumn('tarjetas_nfc', 'responsable_id')) {
+                $updateTarjeta['responsable_id'] = null;
+            }
+            $tarjeta->update($updateTarjeta);
         });
 
         return response()->json([
@@ -1020,11 +1057,56 @@ class IngresoController extends Controller
         }
 
         // Tarjeta NFC asignada (1 query)
+        $hasTarjetaResponsableId = Schema::hasColumn('tarjetas_nfc', 'responsable_id');
+        $hasTarjetaSecretariaId = Schema::hasColumn('tarjetas_nfc', 'secretaria_id');
+        $tarjetaCols = ['id', 'codigo', 'nombre', 'user_id', 'gerencia_id'];
+        if ($hasTarjetaSecretariaId) {
+            $tarjetaCols[] = 'secretaria_id';
+        }
+        if ($hasTarjetaResponsableId) {
+            $tarjetaCols[] = 'responsable_id';
+        }
         $tarjetasByUserId = TarjetaNfc::query()
             ->where('activo', true)
             ->whereIn('user_id', $userIds)
-            ->get(['id', 'codigo', 'nombre', 'user_id'])
+            ->get($tarjetaCols)
             ->keyBy('user_id');
+
+        // Reglas de NFC por tarjeta (1 query pivots)
+        $tarjetaIds = $tarjetasByUserId->values()->pluck('id')->filter()->map(fn($id) => (int) $id)->values()->toArray();
+        $puertaIdsByTarjetaId = [];
+        $ruleByTarjetaId = [];
+        if (count($tarjetaIds) > 0) {
+            $rows = DB::table('tarjeta_nfc_puerta_acceso')
+                ->whereIn('tarjeta_nfc_id', $tarjetaIds)
+                ->get([
+                    'tarjeta_nfc_id',
+                    'puerta_id',
+                    'hora_inicio',
+                    'hora_fin',
+                    'dias_semana',
+                    'fecha_inicio',
+                    'fecha_fin',
+                    'activo',
+                ]);
+
+            foreach ($rows as $r) {
+                $tid = (int) $r->tarjeta_nfc_id;
+                $puertaIdsByTarjetaId[$tid] = $puertaIdsByTarjetaId[$tid] ?? [];
+                $puertaIdsByTarjetaId[$tid][] = (int) $r->puerta_id;
+
+                if (!isset($ruleByTarjetaId[$tid])) {
+                    $ruleByTarjetaId[$tid] = [
+                        'hora_inicio' => $r->hora_inicio,
+                        'hora_fin' => $r->hora_fin,
+                        'dias_semana' => $r->dias_semana,
+                        'fecha_inicio' => $r->fecha_inicio,
+                        'fecha_fin' => $r->fecha_fin,
+                        'activo' => (bool) $r->activo,
+                    ];
+                }
+            }
+        }
 
         // QR activo por visitante (1 query + pivots)
         $now = Carbon::now();
@@ -1086,15 +1168,19 @@ class IngresoController extends Controller
         }
 
         // Aplicar al payload de cada usuario
-        return $usuarios->map(function ($u) use ($tarjetasByUserId, $qrByUserId, $puertaIdsByQrId, $ruleByQrId) {
+        return $usuarios->map(function ($u) use ($hasTarjetaResponsableId, $hasTarjetaSecretariaId, $tarjetasByUserId, $puertaIdsByTarjetaId, $ruleByTarjetaId, $qrByUserId, $puertaIdsByQrId, $ruleByQrId) {
             $uid = (int) $u->id;
 
             $tarjeta = $tarjetasByUserId->get($uid);
-            $u->tarjeta_nfc_asignada = $tarjeta ? [
+            $u->tarjeta_nfc_asignada = $tarjeta ? array_merge([
                 'id' => (int) $tarjeta->id,
                 'codigo' => $tarjeta->codigo,
                 'nombre' => $tarjeta->nombre,
-            ] : null;
+                'gerencia_id' => $tarjeta->gerencia_id ? (int) $tarjeta->gerencia_id : null,
+                'secretaria_id' => ($hasTarjetaSecretariaId && $tarjeta->secretaria_id) ? (int) $tarjeta->secretaria_id : null,
+                'responsable_id' => ($hasTarjetaResponsableId && $tarjeta->responsable_id) ? (int) $tarjeta->responsable_id : null,
+                'puerta_ids' => array_values(array_unique($puertaIdsByTarjetaId[(int) $tarjeta->id] ?? [])),
+            ], $ruleByTarjetaId[(int) $tarjeta->id] ?? []) : null;
 
             $qr = $qrByUserId[$uid] ?? null;
             if ($qr) {

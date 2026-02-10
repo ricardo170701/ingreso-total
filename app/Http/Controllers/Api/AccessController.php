@@ -155,6 +155,19 @@ class AccessController extends Controller
                 $this->registrarAcceso($user->id, $puerta->id, $qrId, $tarjetaNfcId, false, $msg, $data['codigo_fisico'], $tipoEvento, $dispositivoId);
                 return response()->json(['permitido' => false, 'message' => $msg . '.'], 200);
             }
+
+            // Visitantes: solo pueden ingresar entre 5:00 y 19:00 (hora Colombia)
+            $colombiaNow = Carbon::now('America/Bogota');
+            $hora = (int) $colombiaNow->format('H');
+            $minuto = (int) $colombiaNow->format('i');
+            $minutosDesdeMedianoche = $hora * 60 + $minuto;
+            $inicioPermitido = 5 * 60;   // 5:00
+            $finPermitido = 19 * 60;     // 19:00 (7 PM) — a partir de las 19:00 ya no se permite
+            if ($minutosDesdeMedianoche < $inicioPermitido || $minutosDesdeMedianoche >= $finPermitido) {
+                $motivo = 'Los visitantes solo pueden ingresar entre 5:00 y 19:00 (hora Colombia).';
+                $this->registrarAcceso($user->id, $puerta->id, $qrId, $tarjetaNfcId, false, $motivo, $data['codigo_fisico'], $tipoEvento, $dispositivoId);
+                return response()->json(['permitido' => false, 'message' => $motivo], 200);
+            }
         }
 
         // Puerta de discapacidad: requiere usuario discapacitado, además de permiso

@@ -19,6 +19,8 @@ class TarjetaNfc extends Model
         'nombre',
         'user_id',
         'gerencia_id',
+        'secretaria_id',
+        'responsable_id',
         'fecha_asignacion',
         'fecha_expiracion',
         'activo',
@@ -46,6 +48,22 @@ class TarjetaNfc extends Model
     public function gerencia(): BelongsTo
     {
         return $this->belongsTo(Gerencia::class);
+    }
+
+    /**
+     * Secretaría destino (para visitantes).
+     */
+    public function secretaria(): BelongsTo
+    {
+        return $this->belongsTo(Secretaria::class);
+    }
+
+    /**
+     * Responsable asociado a la visita (staff).
+     */
+    public function responsable(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'responsable_id');
     }
 
     /**

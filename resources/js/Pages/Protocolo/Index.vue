@@ -132,28 +132,24 @@
                         :key="corrida.id"
                         class="p-4 bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-700 rounded-lg transition-colors duration-200"
                     >
-                        <div class="flex items-start justify-between">
-                            <div class="flex-1">
+                        <div class="flex items-start justify-between gap-4">
+                            <div class="flex-1 min-w-0 space-y-1">
                                 <p class="font-medium text-slate-900 dark:text-slate-100">
                                     Ejecutado por: {{ corrida.usuario }}
                                 </p>
-                                <p class="text-sm text-slate-600 dark:text-slate-400 mt-1">
-                                    {{ corrida.fecha }}
+                                <p class="text-sm text-slate-600 dark:text-slate-400">
+                                    Fecha y hora: {{ corrida.fecha_inicio }}
                                 </p>
-                                <div class="mt-2 flex items-center gap-4 text-sm">
-                                    <span
-                                        :class="[
-                                            'px-2 py-1 rounded text-xs font-medium transition-colors duration-200',
-                                            getEstadoClass(corrida.estado),
-                                        ]"
-                                    >
-                                        {{ corrida.estado }}
-                                    </span>
-                                    <span class="text-slate-600 dark:text-slate-400">
-                                        {{ corrida.puertas_exitosas }}/{{ corrida.total_puertas }}
-                                        exitosas
-                                    </span>
-                                </div>
+                                <p class="text-sm text-slate-600 dark:text-slate-400">
+                                    <template v-if="corridaEnProceso(corrida)">
+                                        <span class="font-medium text-amber-700 dark:text-amber-400">Cierra en: </span>
+                                        {{ countdownParaCorrida(corrida) }}
+                                    </template>
+                                    <template v-else>
+                                        <span class="font-medium text-slate-700 dark:text-slate-300">Culminación: </span>
+                                        {{ culminacionCalculada(corrida) }}
+                                    </template>
+                                </p>
                             </div>
                         </div>
                     </div>
@@ -168,6 +164,7 @@
 
 <script setup>
 import { useForm } from "@inertiajs/vue3";
+import { ref, onMounted, onUnmounted } from "vue";
 import AppLayout from "@/Layouts/AppLayout.vue";
 
 const props = defineProps({
@@ -185,6 +182,48 @@ const form = useForm({
     duration_seconds: 900, // 15 minutos por defecto
 });
 
+// Ticker para actualizar el countdown cada segundo (solo mientras haya alguna corrida en proceso)
+const now = ref(Date.now());
+let tickInterval = null;
+
+function fechaFinCorrida(corrida) {
+    if (!corrida?.created_at_iso || corrida.duration_seconds == null) return null;
+    const inicio = new Date(corrida.created_at_iso).getTime();
+    return inicio + corrida.duration_seconds * 1000;
+}
+
+function corridaEnProceso(corrida) {
+    const fin = fechaFinCorrida(corrida);
+    return fin != null && now.value < fin;
+}
+
+function countdownParaCorrida(corrida) {
+    const fin = fechaFinCorrida(corrida);
+    if (fin == null || now.value >= fin) return "—";
+    const restante = Math.max(0, Math.floor((fin - now.value) / 1000));
+    const m = Math.floor(restante / 60);
+    const s = restante % 60;
+    return `${m} min ${String(s).padStart(2, "0")} s`;
+}
+
+function culminacionCalculada(corrida) {
+    const fin = fechaFinCorrida(corrida);
+    if (fin == null) return "—";
+    const d = new Date(fin);
+    const pad = (n) => String(n).padStart(2, "0");
+    return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+onMounted(() => {
+    tickInterval = setInterval(() => {
+        now.value = Date.now();
+    }, 1000);
+});
+
+onUnmounted(() => {
+    if (tickInterval) clearInterval(tickInterval);
+});
+
 const activarEmergencia = () => {
     if (
         !confirm(
@@ -197,22 +236,11 @@ const activarEmergencia = () => {
     form.post(route("protocolo.emergencia.activate"), {
         preserveScroll: true,
         onSuccess: () => {
-            // Recargar la página después de un breve delay para ver los resultados
             setTimeout(() => {
                 window.location.reload();
             }, 2000);
         },
     });
-};
-
-const getEstadoClass = (estado) => {
-    const classes = {
-        iniciado: "bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300",
-        en_proceso: "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300",
-        completado: "bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300",
-        fallido: "bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300",
-    };
-    return classes[estado] || "bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-300";
 };
 </script>
 

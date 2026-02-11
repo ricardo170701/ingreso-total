@@ -14,14 +14,14 @@ use Illuminate\Support\Facades\DB;
 class CodigoQrController extends Controller
 {
     /**
-     * Genera un QR temporal (15 días).
+     * Genera un QR temporal (24 h por defecto; o rango fecha inicio/fin si se indica).
      * En BD se guarda sha256(token) en `codigos_qr.codigo` (hash) y se retorna el token plano para convertirlo a QR.
      * Nota: el token retornado es corto (10 caracteres) para facilitar lectura en dispositivos.
      *
      * @OA\Post(
      *   path="/api/qrs",
      *   tags={"QR"},
-     *   summary="Generar QR temporal (15 días)",
+     *   summary="Generar QR temporal (24 h o rango fecha)",
      *   security={{"sanctum":{}}},
      *   @OA\RequestBody(required=true, @OA\JsonContent(
      *     required={"user_id"},
@@ -34,8 +34,6 @@ class CodigoQrController extends Controller
      *       @OA\Items(type="integer"),
      *       example={1,2}
      *     ),
-     *     @OA\Property(property="hora_inicio", type="string", nullable=true, example="08:00"),
-     *     @OA\Property(property="hora_fin", type="string", nullable=true, example="18:00"),
      *     @OA\Property(property="dias_semana", type="string", nullable=true, example="1,2,3,4,5"),
      *     @OA\Property(property="fecha_inicio", type="string", format="date", nullable=true, example=null),
      *     @OA\Property(property="fecha_fin", type="string", format="date", nullable=true, example=null)
@@ -120,7 +118,7 @@ class CodigoQrController extends Controller
         // Para staff (servidor público/proveedor):
         // - Si tiene fecha_expiracion: usar esa fecha
         // - Si NO tiene fecha_expiracion (contrato indefinido): null (el acceso se controla solo por campo 'activo')
-        // Para visitantes: si envía fecha_fin (y opcional hora_fin), usarla como expiración; si no, mantener 15 días
+        // Para visitantes: si envía fecha_fin, fin de ese día; si no, 24 h. Rango 5am-7pm en AccessController.
         $staffRoles = ['servidor_publico', 'proveedor', 'funcionario']; // 'funcionario' legado
         $isStaff = in_array($targetRole, $staffRoles, true);
 
@@ -133,15 +131,10 @@ class CodigoQrController extends Controller
             }
         } else {
             $fechaFin = $data['fecha_fin'] ?? $data['fecha_inicio'] ?? null;
-            $horaFin = $data['hora_fin'] ?? null;
             if ($fechaFin) {
-                if ($horaFin) {
-                    $expiresAt = Carbon::createFromFormat('Y-m-d H:i', $fechaFin . ' ' . $horaFin)->setSecond(59);
-                } else {
-                    $expiresAt = Carbon::parse($fechaFin)->endOfDay();
-                }
+                $expiresAt = Carbon::parse($fechaFin)->endOfDay();
             } else {
-                $expiresAt = $now->copy()->addDays(15);
+                $expiresAt = $now->copy()->addHours(24);
             }
         }
 
@@ -219,8 +212,8 @@ class CodigoQrController extends Controller
 
             if (is_array($puertas) && count($puertas) > 0) {
                 $pivot = [
-                    'hora_inicio' => $data['hora_inicio'] ?? null,
-                    'hora_fin' => $data['hora_fin'] ?? null,
+                    'hora_inicio' => null,
+                    'hora_fin' => null,
                     'dias_semana' => $data['dias_semana'] ?? '1,2,3,4,5,6,7',
                     'fecha_inicio' => $data['fecha_inicio'] ?? null,
                     'fecha_fin' => $data['fecha_fin'] ?? null,

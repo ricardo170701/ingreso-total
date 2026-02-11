@@ -28,7 +28,7 @@
                             Generar Código QR de Ingreso
                         </h1>
                         <p class="text-sm lg:text-base text-white/90 max-w-2xl mx-auto">
-                            Genera un código QR para acceso al edificio. Para funcionarios, el QR estará activo hasta la fecha de expiración del usuario. Para visitantes, el QR es válido por 15 días.
+                            Genera un código QR para acceso al edificio. Para funcionarios, el QR estará activo hasta la fecha de expiración del usuario. Para visitantes, el QR es válido 24 h por defecto; si indicas Fecha inicio/fin, se usa ese rango.
                         </p>
                     </div>
                 </div>
@@ -117,7 +117,7 @@
                                 class="text-sm text-slate-600 dark:text-slate-300 space-y-1 list-disc list-inside"
                             >
                                 <li>
-                                    Para funcionarios: el código QR está activo hasta la fecha de expiración del usuario. Para visitantes: el QR es válido por 15 días desde su generación.
+                                    Para funcionarios: el código QR está activo hasta la fecha de expiración del usuario. Para visitantes: el QR es válido 24 h por defecto; si indicas Fecha inicio/fin, se usa ese rango.
                                 </li>
                                 <li>
                                     Usa este QR para acceder a los accesos autorizados.
@@ -676,7 +676,7 @@
                                 class="text-sm text-slate-600 dark:text-slate-300 space-y-1 list-disc list-inside"
                             >
                                 <li>
-                                    Para funcionarios: el código QR está activo hasta la fecha de expiración del usuario. Para visitantes: el QR es válido por 15 días desde su generación.
+                                    Para funcionarios: el código QR está activo hasta la fecha de expiración del usuario. Para visitantes: el QR es válido 24 h por defecto; si indicas Fecha inicio/fin, se usa ese rango.
                                 </li>
                                 <li>
                                     El usuario puede usar este QR para acceder a
@@ -1437,9 +1437,6 @@ onMounted(() => {
                     // Responsable
                     form.responsable_id = qr.responsable_id ?? null;
 
-                    // Reglas horarias (si existen)
-                    form.hora_inicio = qr.hora_inicio ?? null;
-                    form.hora_fin = qr.hora_fin ?? null;
                     form.dias_semana =
                         qr.dias_semana ?? "1,2,3,4,5,6,7";
                     form.fecha_inicio = qr.fecha_inicio ?? form.fecha_inicio;
@@ -1462,9 +1459,6 @@ onMounted(() => {
                     // Responsable
                     form.responsable_id = nfc.responsable_id ?? null;
 
-                    // Reglas horarias (si existen)
-                    form.hora_inicio = nfc.hora_inicio ?? null;
-                    form.hora_fin = nfc.hora_fin ?? null;
                     form.dias_semana =
                         nfc.dias_semana ?? "1,2,3,4,5,6,7";
                     form.fecha_inicio = nfc.fecha_inicio ?? form.fecha_inicio;
@@ -1482,8 +1476,6 @@ onMounted(() => {
                 formTarjetaNfc.secretaria_id = form.secretaria_id;
                 formTarjetaNfc.responsable_id = form.responsable_id;
                 formTarjetaNfc.puertas = [...form.puertas];
-                formTarjetaNfc.hora_inicio = form.hora_inicio;
-                formTarjetaNfc.hora_fin = form.hora_fin;
                 formTarjetaNfc.dias_semana = form.dias_semana;
                 formTarjetaNfc.fecha_inicio = form.fecha_inicio;
                 formTarjetaNfc.fecha_fin = form.fecha_fin;
@@ -1502,15 +1494,13 @@ onMounted(() => {
 
     // Sincronizar campos relacionados cuando cambian en form
     watch(
-        [() => form.gerencia_id, () => form.secretaria_id, () => form.responsable_id, () => form.puertas, () => form.hora_inicio, () => form.hora_fin, () => form.dias_semana, () => form.fecha_inicio, () => form.fecha_fin],
+        [() => form.gerencia_id, () => form.secretaria_id, () => form.responsable_id, () => form.puertas, () => form.dias_semana, () => form.fecha_inicio, () => form.fecha_fin],
         () => {
             if (usuarioSeleccionado.value?.role?.name === 'visitante' && form.user_id) {
                 formTarjetaNfc.gerencia_id = form.gerencia_id;
                 formTarjetaNfc.secretaria_id = form.secretaria_id;
                 formTarjetaNfc.responsable_id = form.responsable_id;
                 formTarjetaNfc.puertas = [...form.puertas];
-                formTarjetaNfc.hora_inicio = form.hora_inicio;
-                formTarjetaNfc.hora_fin = form.hora_fin;
                 formTarjetaNfc.dias_semana = form.dias_semana;
                 formTarjetaNfc.fecha_inicio = form.fecha_inicio;
                 formTarjetaNfc.fecha_fin = form.fecha_fin;
@@ -1768,10 +1758,6 @@ watch(
             // Cuando se selecciona un visitante, establecer valores por defecto de seguridad
             const fechaHoy = todayIsoLocal(); // Formato YYYY-MM-DD (local)
 
-            // Para visitantes, no establecer hora_inicio ni hora_fin
-            form.hora_inicio = null;
-            form.hora_fin = null;
-
             if (!form.fecha_inicio) {
                 form.fecha_inicio = fechaHoy;
             }
@@ -1785,8 +1771,6 @@ watch(
 
         // Si se selecciona staff (servidor público/proveedor), limpiar campos de fecha y horario
         if (["servidor_publico", "proveedor", "funcionario"].includes(roleName)) {
-            form.hora_inicio = null;
-            form.hora_fin = null;
             form.fecha_inicio = null;
             form.fecha_fin = null;
             form.dias_semana = "1,2,3,4,5,6,7";
@@ -2151,9 +2135,7 @@ const asignarTarjetaNfc = async () => {
     formTarjetaNfc.secretaria_id = form.secretaria_id ?? null;
     formTarjetaNfc.responsable_id = form.responsable_id ?? null;
     formTarjetaNfc.puertas = [...form.puertas];
-    formTarjetaNfc.hora_inicio = form.hora_inicio;
-    formTarjetaNfc.hora_fin = form.hora_fin;
-    // Siempre: todos los días
+    // Siempre: todos los días (rango 5am-7pm visitantes se valida en backend)
     formTarjetaNfc.dias_semana = "1,2,3,4,5,6,7";
     formTarjetaNfc.fecha_inicio = form.fecha_inicio;
     formTarjetaNfc.fecha_fin = form.fecha_fin;
@@ -2169,8 +2151,6 @@ const asignarTarjetaNfc = async () => {
             secretaria_id: form.secretaria_id ? Number(form.secretaria_id) : null,
             responsable_id: form.responsable_id ? Number(form.responsable_id) : null,
             puertas: formTarjetaNfc.puertas,
-            hora_inicio: formTarjetaNfc.hora_inicio,
-            hora_fin: formTarjetaNfc.hora_fin,
             dias_semana: formTarjetaNfc.dias_semana,
             fecha_inicio: formTarjetaNfc.fecha_inicio,
             fecha_fin: formTarjetaNfc.fecha_fin,
@@ -2191,8 +2171,6 @@ const asignarTarjetaNfc = async () => {
             secretaria_id: form.secretaria_id ? Number(form.secretaria_id) : null,
             responsable_id: form.responsable_id ? Number(form.responsable_id) : null,
             puerta_ids: [...(form.puertas || [])],
-            hora_inicio: formTarjetaNfc.hora_inicio ?? null,
-            hora_fin: formTarjetaNfc.hora_fin ?? null,
             dias_semana: formTarjetaNfc.dias_semana ?? "1,2,3,4,5,6,7",
             fecha_inicio: formTarjetaNfc.fecha_inicio ?? null,
             fecha_fin: formTarjetaNfc.fecha_fin ?? null,

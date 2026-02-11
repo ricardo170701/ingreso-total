@@ -69,9 +69,7 @@ class GenerateCodigoQrRequest extends FormRequest
             'puertas' => ['nullable', 'array'],
             'puertas.*' => ['integer', 'exists:puertas,id'],
 
-            // Reglas horarias opcionales (se aplican a todas las puertas enviadas)
-            'hora_inicio' => ['nullable', 'date_format:H:i'],
-            'hora_fin' => ['nullable', 'date_format:H:i'],
+            // Reglas por fecha (visitantes: rango 5am-7pm se valida en AccessController; no se envía hora)
             'dias_semana' => ['nullable', 'string', 'max:20'], // "1,2,3,4,5"
             'fecha_inicio' => ['nullable', 'date'],
             'fecha_fin' => ['nullable', 'date'],

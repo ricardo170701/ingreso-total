@@ -343,7 +343,7 @@ class IngresoController extends Controller
         // Para staff (servidor público/proveedor):
         // - Si tiene fecha_expiracion: usar esa fecha
         // - Si NO tiene fecha_expiracion (contrato indefinido): null (el acceso se controla solo por campo 'activo')
-        // Para visitantes: si envía fecha_fin (y opcional hora_fin), usarla como expiración; si no, mantener 15 días
+        // Para visitantes: si envía fecha_fin, usarla (fin del día); si no, 24 h. Rango de entrada 5am-7pm se valida en AccessController.
         $staffRoles = ['servidor_publico', 'proveedor', 'funcionario']; // 'funcionario' legado
         $isStaff = in_array($targetRole, $staffRoles, true);
         if ($isStaff) {
@@ -355,15 +355,10 @@ class IngresoController extends Controller
             }
         } else {
             $fechaFin = $data['fecha_fin'] ?? $data['fecha_inicio'] ?? null;
-            $horaFin = $data['hora_fin'] ?? null;
             if ($fechaFin) {
-                if ($horaFin) {
-                    $expiresAt = Carbon::createFromFormat('Y-m-d H:i', $fechaFin . ' ' . $horaFin)->setSecond(59);
-                } else {
-                    $expiresAt = Carbon::parse($fechaFin)->endOfDay();
-                }
+                $expiresAt = Carbon::parse($fechaFin)->endOfDay();
             } else {
-                $expiresAt = $now->copy()->addDays(15);
+                $expiresAt = $now->copy()->addHours(24); // Por defecto 24 h si no hay fecha inicio/fin
             }
         }
 
@@ -455,10 +450,10 @@ class IngresoController extends Controller
                         'updated_at' => now(),
                     ];
                 } else {
-                    // Para visitantes: usar las fechas y horarios proporcionados
+                    // Para visitantes: solo fechas (rango 5am-7pm se valida en AccessController; no se usa hora)
                     $pivot = [
-                        'hora_inicio' => $data['hora_inicio'] ?? null,
-                        'hora_fin' => $data['hora_fin'] ?? null,
+                        'hora_inicio' => null,
+                        'hora_fin' => null,
                         'dias_semana' => $data['dias_semana'] ?? '1,2,3,4,5,6,7',
                         'fecha_inicio' => $data['fecha_inicio'] ?? null,
                         'fecha_fin' => $data['fecha_fin'] ?? null,
@@ -755,8 +750,6 @@ class IngresoController extends Controller
             'puertas.*' => ['integer', 'exists:puertas,id'],
             'pisos' => ['nullable', 'array', 'min:1', 'required_without:puertas'],
             'pisos.*' => ['integer', 'exists:pisos,id'],
-            'hora_inicio' => ['nullable', 'date_format:H:i'],
-            'hora_fin' => ['nullable', 'date_format:H:i', 'after:hora_inicio'],
             'dias_semana' => ['nullable', 'string', 'max:20'],
             'fecha_inicio' => ['nullable', 'date'],
             'fecha_fin' => ['nullable', 'date', 'after_or_equal:fecha_inicio'],
@@ -789,7 +782,13 @@ class IngresoController extends Controller
         }
 
         $now = Carbon::now();
-        $expiresAt = $now->copy()->addDays(15); // Similar a QR de visitantes
+        // Criterio igual que QR: 24 h por defecto; si hay fecha_fin, fin de ese día (sin hora)
+        $fechaFin = $data['fecha_fin'] ?? $data['fecha_inicio'] ?? null;
+        if ($fechaFin) {
+            $expiresAt = Carbon::parse($fechaFin)->endOfDay();
+        } else {
+            $expiresAt = $now->copy()->addHours(24);
+        }
 
         // Normalizar puertas a activas (fail-closed)
         $puertaIdsInput = [];
@@ -874,8 +873,8 @@ class IngresoController extends Controller
             // Crear nuevas relaciones
             if (count($puertas) > 0) {
                 $pivot = [
-                    'hora_inicio' => $data['hora_inicio'] ?? null,
-                    'hora_fin' => $data['hora_fin'] ?? null,
+                    'hora_inicio' => null,
+                    'hora_fin' => null,
                     'dias_semana' => $data['dias_semana'] ?? '1,2,3,4,5,6,7',
                     'fecha_inicio' => $data['fecha_inicio'] ?? null,
                     'fecha_fin' => $data['fecha_fin'] ?? null,

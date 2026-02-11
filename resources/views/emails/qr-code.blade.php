@@ -65,7 +65,7 @@
     <div class="content">
         <p>Hola <strong>{{ $userName }}</strong>,</p>
 
-        <p>Se ha generado un código QR para tu acceso al edificio. Para funcionarios, el QR estará activo hasta tu fecha de expiración (si aplica) o hasta que se marque como inactivo. Para visitantes, el QR es válido por 15 días.</p>
+        <p>Se ha generado un código QR para tu acceso al edificio. Para funcionarios, el QR estará activo hasta tu fecha de expiración (si aplica) o hasta que se marque como inactivo. Para visitantes, el QR es válido 24 h por defecto; si se indicó Fecha inicio/fin, rige ese rango.</p>
 
         <div class="qr-container">
             {!! $qrSvg !!}

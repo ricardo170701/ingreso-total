@@ -44,7 +44,7 @@
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <FormField label="Usuario Asignado (opcional)" :error="form.errors.user_id">
-                            <div class="relative">
+                            <div ref="userPickerRef" class="relative">
                                 <input
                                     v-model="userPickerQuery"
                                     type="text"
@@ -144,7 +144,7 @@
 import AppLayout from "@/Layouts/AppLayout.vue";
 import FormField from "@/Components/FormField.vue";
 import { Link, useForm } from "@inertiajs/vue3";
-import { ref, computed, watch } from "vue";
+import { ref, computed, watch, onMounted, onBeforeUnmount } from "vue";
 
 const props = defineProps({
     usuarios: Array,
@@ -161,9 +161,24 @@ const form = useForm({
 });
 
 // Selector buscable de usuarios
+const userPickerRef = ref(null);
 const userPickerOpen = ref(false);
 const userPickerQuery = ref("");
 const userPickerActiveIndex = ref(0);
+
+const handleClickOutsideUserPicker = (e) => {
+    if (!userPickerOpen.value || !userPickerRef.value) return;
+    if (!userPickerRef.value.contains(e.target)) {
+        closeUserPicker();
+    }
+};
+
+onMounted(() => {
+    document.addEventListener("click", handleClickOutsideUserPicker);
+});
+onBeforeUnmount(() => {
+    document.removeEventListener("click", handleClickOutsideUserPicker);
+});
 
 const formatUsuarioLabel = (u) => {
     if (!u) return "";

@@ -128,8 +128,15 @@ class IngresoController extends Controller
 
             $qrPersonal = $qrQ->first();
 
-            // Si es servidor público o proveedor y no tiene QR activo, generar uno automáticamente
-            if (!$qrPersonal && in_array($actorRole, ['servidor_publico', 'proveedor'], true)) {
+            // Si es staff y tiene QR pero el token no se puede desencriptar (ej. APP_KEY cambió en producción),
+            // el frontend mostraría "No se pudo generar el código QR visual". Tratar como QR inválido y reemplazarlo.
+            if ($qrPersonal && $isStaff && $qrPersonal->token_original === null) {
+                CodigoQr::query()->where('id', $qrPersonal->id)->delete();
+                $qrPersonal = null;
+            }
+
+            // Si es staff (servidor público, proveedor o funcionario) y no tiene QR activo usable, generar uno automáticamente
+            if (!$qrPersonal && in_array($actorRole, ['servidor_publico', 'proveedor', 'funcionario'], true)) {
                 $now = Carbon::now();
 
                 // Generar token único
@@ -1212,5 +1219,4 @@ class IngresoController extends Controller
         }
         return $out;
     }
-
 }

@@ -146,6 +146,11 @@ class UsersController extends Controller
             $data['fecha_expiracion'] = null;
         }
 
+        // Contraseña por defecto = cédula
+        if (empty($data['password'])) {
+            $data['password'] = $data['n_identidad'] ?? '';
+        }
+
         // Si el tipo de contrato es indefinido, no debe tener fecha de expiración
         // tipo_contrato ahora se guarda en el usuario incluso sin documento
         $tipoContrato = $request->input('tipo_contrato');
@@ -264,8 +269,8 @@ class UsersController extends Controller
                 ->value('id');
         }
 
-        // Password opcional
-        if (array_key_exists('password', $data) && ($data['password'] === null || $data['password'] === '')) {
+        // No se permite cambiar contraseña desde el formulario de edición
+        if (array_key_exists('password', $data)) {
             unset($data['password']);
         }
 

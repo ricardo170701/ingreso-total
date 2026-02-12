@@ -37,7 +37,7 @@ class StoreUserRequest extends FormRequest
                 'max:255',
                 Rule::unique('users', 'email'),
             ])),
-            'password' => ['required', 'string', 'min:8', 'max:255'],
+            'password' => ['nullable', 'string', 'max:255'],
 
             // Aceptamos role por id o por name para facilidad
             'role_id' => [

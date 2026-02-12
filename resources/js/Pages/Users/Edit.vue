@@ -38,17 +38,6 @@
                                 Si no tiene correo, no podrá iniciar sesión ni tener QR. Solo se le puede asignar tarjeta NFC.
                             </p>
                         </FormField>
-                        <FormField
-                            label="Nueva contraseña (opcional)"
-                            :error="form.errors.password"
-                        >
-                            <input
-                                v-model="form.password"
-                                type="password"
-                                class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-transparent transition-colors duration-200"
-                                placeholder="(dejar vacío para no cambiar)"
-                            />
-                        </FormField>
                     </div>
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -413,7 +402,6 @@ const esProveedor = computed(() => {
 
 const form = useForm({
     email: props.user.email || "",
-    password: "",
     role_id: props.user.role_id ?? null,
     cargo_id: props.user.cargo_id ?? null,
     cargo_texto: props.user.cargo_texto || "",

@@ -93,20 +93,6 @@
                     </div>
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <FormField
-                            label="Contraseña"
-                            :error="form.errors.password"
-                        >
-                            <input
-                                v-model="form.password"
-                                type="password"
-                                class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-transparent transition-colors duration-200"
-                                placeholder="********"
-                            />
-                        </FormField>
-                    </div>
-
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <FormField label="Tipo de vinculación" :error="form.errors.role_id">
                             <select
                                 v-model="form.role_id"
@@ -331,7 +317,6 @@ const esProveedor = computed(() => {
 
 const form = useForm({
     email: "",
-    password: "",
     role_id: null,
     cargo_id: null,
     cargo_texto: "",

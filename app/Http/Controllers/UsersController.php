@@ -269,8 +269,8 @@ class UsersController extends Controller
                 ->value('id');
         }
 
-        // No se permite cambiar contraseña desde el formulario de edición
-        if (array_key_exists('password', $data)) {
+        unset($data['password_confirmation']);
+        if (empty($data['password'])) {
             unset($data['password']);
         }
 

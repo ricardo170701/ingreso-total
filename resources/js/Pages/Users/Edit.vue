@@ -40,6 +40,34 @@
                         </FormField>
                     </div>
 
+                    <div v-if="!esVisitante" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <FormField
+                            label="Nueva contraseña (opcional)"
+                            :error="form.errors.password"
+                        >
+                            <input
+                                v-model="form.password"
+                                type="password"
+                                class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-transparent transition-colors duration-200"
+                                placeholder="Dejar en blanco para no cambiar"
+                            />
+                            <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                                Mínimo 8 caracteres. Solo completa si deseas cambiar la contraseña.
+                            </p>
+                        </FormField>
+                        <FormField
+                            label="Confirmar nueva contraseña"
+                            :error="form.errors.password_confirmation"
+                        >
+                            <input
+                                v-model="form.password_confirmation"
+                                type="password"
+                                class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-transparent transition-colors duration-200"
+                                placeholder="Repite la contraseña"
+                            />
+                        </FormField>
+                    </div>
+
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <FormField label="Nombre" :error="form.errors.nombre">
                             <input
@@ -402,6 +430,8 @@ const esProveedor = computed(() => {
 
 const form = useForm({
     email: props.user.email || "",
+    password: "",
+    password_confirmation: "",
     role_id: props.user.role_id ?? null,
     cargo_id: props.user.cargo_id ?? null,
     cargo_texto: props.user.cargo_texto || "",

@@ -47,6 +47,55 @@
                     <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
                         Formatos: JPEG, JPG, PNG. Tamaño máximo: 10MB por imagen. Puedes seleccionar hasta 5 imágenes.
                     </p>
+                    <div v-if="cameraAvailable" class="mt-3 flex flex-wrap gap-2">
+                        <button
+                            v-if="!cameraOpen"
+                            type="button"
+                            @click="openCamera"
+                            :disabled="cameraStarting || selectedFiles.length >= 5"
+                            class="px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 inline-flex items-center gap-2"
+                        >
+                            <span v-if="cameraStarting">Cargando cámara...</span>
+                            <span v-else>Tomar foto con cámara</span>
+                        </button>
+                        <template v-else>
+                            <div class="flex-1 min-w-0 space-y-2">
+                                <div class="relative rounded-lg overflow-hidden bg-slate-900 max-w-md">
+                                    <video
+                                        ref="videoRef"
+                                        autoplay
+                                        playsinline
+                                        muted
+                                        class="w-full h-auto max-h-64 object-cover"
+                                    />
+                                    <p
+                                        v-if="cameraError"
+                                        class="absolute inset-0 flex items-center justify-center bg-black/70 text-red-400 text-sm p-2"
+                                    >
+                                        {{ cameraError }}
+                                    </p>
+                                </div>
+                                <div class="flex gap-2">
+                                    <button
+                                        type="button"
+                                        @click="takePhoto"
+                                        :disabled="selectedFiles.length >= 5"
+                                        class="px-4 py-2 rounded-lg bg-blue-600 dark:bg-blue-700 text-white hover:bg-blue-700 dark:hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 font-medium"
+                                    >
+                                        Capturar
+                                    </button>
+                                    <button
+                                        type="button"
+                                        @click="closeCamera"
+                                        class="px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-colors duration-200"
+                                    >
+                                        Cerrar cámara
+                                    </button>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                    <canvas ref="canvasRef" class="hidden"></canvas>
                 </div>
 
                 <!-- Vista previa de imágenes seleccionadas -->
@@ -383,7 +432,7 @@
 </template>
 
 <script setup>
-import { ref } from "vue";
+import { ref, nextTick, onMounted, onUnmounted } from "vue";
 import AppLayout from "@/Layouts/AppLayout.vue";
 import { Link, router, useForm } from "@inertiajs/vue3";
 import axios from "axios";
@@ -395,6 +444,15 @@ const props = defineProps({
 const fileInput = ref(null);
 const selectedFiles = ref([]);
 const previewImages = ref([]);
+
+// Cámara
+const cameraAvailable = ref(false);
+const cameraOpen = ref(false);
+const cameraError = ref("");
+const cameraStarting = ref(false);
+const cameraStream = ref(null);
+const videoRef = ref(null);
+const canvasRef = ref(null);
 const previewData = ref(null);
 const analyzing = ref(false);
 const analyzingProgress = ref(0);
@@ -431,6 +489,142 @@ const removeImage = (index) => {
     previewImages.value.splice(index, 1);
     // No limpiar el input para permitir agregar más imágenes
 };
+
+// --- Cámara ---
+const stopCameraStream = () => {
+    const stream = cameraStream.value;
+    if (stream && typeof stream.getTracks === "function") {
+        for (const t of stream.getTracks()) {
+            try { t.stop(); } catch { /* ignore */ }
+        }
+    }
+    cameraStream.value = null;
+    if (videoRef.value) {
+        try { videoRef.value.srcObject = null; } catch { /* ignore */ }
+    }
+};
+
+const startCamera = async () => {
+    cameraError.value = "";
+    cameraStarting.value = true;
+
+    try {
+        if (typeof window === "undefined") {
+            cameraError.value = "La cámara no está disponible en este entorno.";
+            return;
+        }
+        if (!window.isSecureContext) {
+            cameraError.value = "La cámara requiere HTTPS (o localhost).";
+            return;
+        }
+        const md = navigator?.mediaDevices;
+        if (!md?.getUserMedia) {
+            cameraError.value = "Este navegador no soporta acceso a cámara.";
+            return;
+        }
+
+        stopCameraStream();
+
+        let stream = null;
+        try {
+            stream = await md.getUserMedia({
+                video: { facingMode: { ideal: "environment" } },
+                audio: false,
+            });
+        } catch {
+            stream = await md.getUserMedia({ video: true, audio: false });
+        }
+
+        cameraStream.value = stream;
+        if (videoRef.value) {
+            videoRef.value.srcObject = stream;
+            try { await videoRef.value.play(); } catch { /* ignore */ }
+        }
+    } catch (e) {
+        cameraError.value =
+            "No se pudo acceder a la cámara. Revisa permisos del navegador y vuelve a intentar.";
+    } finally {
+        cameraStarting.value = false;
+    }
+};
+
+const openCamera = async () => {
+    cameraOpen.value = true;
+    cameraError.value = "";
+    await nextTick();
+    await startCamera();
+};
+
+const closeCamera = () => {
+    stopCameraStream();
+    cameraOpen.value = false;
+    cameraError.value = "";
+};
+
+const takePhoto = async () => {
+    cameraError.value = "";
+    const video = videoRef.value;
+    const canvas = canvasRef.value;
+    if (!video || !canvas) {
+        cameraError.value = "La cámara aún no está lista.";
+        return;
+    }
+
+    if (selectedFiles.value.length >= 5) {
+        cameraError.value = "Ya has alcanzado el máximo de 5 imágenes.";
+        return;
+    }
+
+    const w = video.videoWidth || 1280;
+    const h = video.videoHeight || 720;
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) {
+        cameraError.value = "No se pudo inicializar el canvas.";
+        return;
+    }
+    ctx.drawImage(video, 0, 0, w, h);
+
+    const blob = await new Promise((resolve) => {
+        canvas.toBlob(
+            (b) => resolve(b),
+            "image/jpeg",
+            0.9
+        );
+    });
+
+    if (!blob) {
+        cameraError.value = "No se pudo capturar la foto.";
+        return;
+    }
+
+    const file = new File([blob], `bitacora_ups_${Date.now()}.jpg`, { type: blob.type });
+
+    selectedFiles.value.push(file);
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        previewImages.value.push(e.target.result);
+    };
+    reader.readAsDataURL(file);
+
+    error.value = null;
+    previewData.value = null;
+
+    closeCamera();
+};
+
+onMounted(() => {
+    cameraAvailable.value = Boolean(
+        typeof window !== "undefined" &&
+        window.isSecureContext &&
+        navigator?.mediaDevices?.getUserMedia
+    );
+});
+
+onUnmounted(() => {
+    stopCameraStream();
+});
 
 const formatFileSize = (bytes) => {
     if (bytes === 0) return '0 Bytes';
@@ -563,16 +757,18 @@ const guardarRegistro = async () => {
         formData.append('indicador_battery', previewData.value.indicador_battery ? '1' : '0');
         formData.append('indicador_bypass', previewData.value.indicador_bypass ? '1' : '0');
         formData.append('indicador_fault', previewData.value.indicador_fault ? '1' : '0');
-        if (previewData.value.input_voltage !== null) formData.append('input_voltage', previewData.value.input_voltage);
-        if (previewData.value.input_frequency !== null) formData.append('input_frequency', previewData.value.input_frequency);
-        if (previewData.value.output_voltage !== null) formData.append('output_voltage', previewData.value.output_voltage);
-        if (previewData.value.output_frequency !== null) formData.append('output_frequency', previewData.value.output_frequency);
-        if (previewData.value.output_power !== null) formData.append('output_power', previewData.value.output_power);
-        if (previewData.value.battery_voltage !== null) formData.append('battery_voltage', previewData.value.battery_voltage);
-        if (previewData.value.battery_percentage !== null) formData.append('battery_percentage', previewData.value.battery_percentage);
-        if (previewData.value.battery_tiempo_respaldo !== null) formData.append('battery_tiempo_respaldo', previewData.value.battery_tiempo_respaldo);
-        if (previewData.value.battery_tiempo_descarga !== null) formData.append('battery_tiempo_descarga', previewData.value.battery_tiempo_descarga);
+        const hasVal = (v) => v != null && v !== '';
+        if (hasVal(previewData.value.input_voltage)) formData.append('input_voltage', previewData.value.input_voltage);
+        if (hasVal(previewData.value.input_frequency)) formData.append('input_frequency', previewData.value.input_frequency);
+        if (hasVal(previewData.value.output_voltage)) formData.append('output_voltage', previewData.value.output_voltage);
+        if (hasVal(previewData.value.output_frequency)) formData.append('output_frequency', previewData.value.output_frequency);
+        if (hasVal(previewData.value.output_power)) formData.append('output_power', previewData.value.output_power);
+        if (hasVal(previewData.value.battery_voltage)) formData.append('battery_voltage', previewData.value.battery_voltage);
+        if (hasVal(previewData.value.battery_percentage)) formData.append('battery_percentage', previewData.value.battery_percentage);
+        if (hasVal(previewData.value.battery_tiempo_respaldo)) formData.append('battery_tiempo_respaldo', previewData.value.battery_tiempo_respaldo);
+        if (hasVal(previewData.value.battery_tiempo_descarga)) formData.append('battery_tiempo_descarga', previewData.value.battery_tiempo_descarga);
         if (previewData.value.battery_estado) formData.append('battery_estado', previewData.value.battery_estado);
+        if (hasVal(previewData.value.temperatura)) formData.append('temperatura', previewData.value.temperatura);
         if (previewData.value.observaciones) formData.append('observaciones', previewData.value.observaciones);
         if (previewData.value.datos_extraidos) formData.append('datos_extraidos', JSON.stringify(previewData.value.datos_extraidos));
 

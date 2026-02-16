@@ -37,7 +37,7 @@ class UpsVitacoraController extends Controller
         }
 
         $vitacora = $query->orderBy('created_at', 'desc')
-            ->paginate(15)
+            ->paginate(8)
             ->withQueryString();
 
         return Inertia::render('Ups/Vitacora/Index', [
@@ -397,6 +397,7 @@ Si no puedes ver algún valor, usa null. Solo responde con el JSON, sin texto ad
             'battery_tiempo_respaldo' => 'nullable|integer|min:0',
             'battery_tiempo_descarga' => 'nullable|integer|min:0',
             'battery_estado' => 'nullable|string|max:50',
+            'temperatura' => 'nullable|numeric|min:-50|max:100',
             'observaciones' => 'nullable|string|max:1000',
             'datos_extraidos' => 'nullable|string', // JSON string
         ]);
@@ -447,6 +448,12 @@ Si no puedes ver algún valor, usa null. Solo responde con el JSON, sin texto ad
                     : $request->input('datos_extraidos');
             }
 
+            // Helper: conservar 0 como valor válido (?: convierte 0 en null)
+            $num = fn ($key) => $request->has($key) && $request->input($key) !== '' && $request->input($key) !== null
+                ? $request->input($key)
+                : null;
+            $str = fn ($key) => $request->filled($key) ? $request->input($key) : null;
+
             // Crear registro de bitácora
             $vitacora = UpsVitacora::create([
                 'ups_id' => $ups->id,
@@ -454,19 +461,19 @@ Si no puedes ver algún valor, usa null. Solo responde con el JSON, sin texto ad
                 'indicador_battery' => (bool) $request->input('indicador_battery', false),
                 'indicador_bypass' => (bool) $request->input('indicador_bypass', false),
                 'indicador_fault' => (bool) $request->input('indicador_fault', false),
-                'input_voltage' => $request->input('input_voltage') ?: null,
-                'input_frequency' => $request->input('input_frequency') ?: null,
-                'output_voltage' => $request->input('output_voltage') ?: null,
-                'output_frequency' => $request->input('output_frequency') ?: null,
-                'output_power' => $request->input('output_power') ?: null,
-                'battery_voltage' => $request->input('battery_voltage') ?: null,
-                'battery_percentage' => $request->input('battery_percentage') ?: null,
-                'battery_tiempo_respaldo' => $request->input('battery_tiempo_respaldo') ?: null,
-                'battery_tiempo_descarga' => $request->input('battery_tiempo_descarga') ?: null,
-                'battery_estado' => $request->input('battery_estado') ?: null,
-                'temperatura' => $request->input('temperatura') ?: null,
+                'input_voltage' => $num('input_voltage'),
+                'input_frequency' => $num('input_frequency'),
+                'output_voltage' => $num('output_voltage'),
+                'output_frequency' => $num('output_frequency'),
+                'output_power' => $num('output_power'),
+                'battery_voltage' => $num('battery_voltage'),
+                'battery_percentage' => $num('battery_percentage'),
+                'battery_tiempo_respaldo' => $num('battery_tiempo_respaldo'),
+                'battery_tiempo_descarga' => $num('battery_tiempo_descarga'),
+                'battery_estado' => $str('battery_estado'),
+                'temperatura' => $num('temperatura'),
                 'datos_extraidos' => $datosExtraidos,
-                'observaciones' => $request->input('observaciones'),
+                'observaciones' => $str('observaciones'),
                 'created_by' => auth()->id(),
             ]);
 

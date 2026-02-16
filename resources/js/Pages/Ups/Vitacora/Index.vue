@@ -82,6 +82,9 @@
                 </form>
             </div>
 
+            <!-- Gráficos de resumen visual -->
+            <VitacoraCharts v-if="vitacora?.data?.length > 0" :records="vitacora.data" />
+
             <!-- Lista de registros -->
             <div v-if="vitacora.data.length > 0" class="space-y-4">
                 <div
@@ -162,7 +165,7 @@
                             </div>
 
                             <!-- Datos -->
-                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                                 <!-- Input -->
                                 <div class="p-4 rounded-lg bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-700 transition-colors duration-200">
                                     <h3 class="font-semibold text-slate-900 dark:text-slate-100 mb-2">Input</h3>
@@ -243,13 +246,18 @@
                                         </div>
                                     </div>
                                 </div>
-                            </div>
 
-                            <!-- Temperatura -->
-                            <div v-if="registro.temperatura !== null" class="mt-4 p-4 rounded-lg bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 transition-colors duration-200">
-                                <h3 class="font-semibold text-slate-900 dark:text-slate-100 mb-2">Temperatura</h3>
-                                <div class="text-lg font-medium text-blue-800 dark:text-blue-300">
-                                    {{ registro.temperatura }} °C
+                                <!-- Temperatura -->
+                                <div class="p-4 rounded-lg bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-700 transition-colors duration-200">
+                                    <h3 class="font-semibold text-slate-900 dark:text-slate-100 mb-2">Temperatura</h3>
+                                    <div class="space-y-1 text-sm">
+                                        <div>
+                                            <span class="text-slate-600 dark:text-slate-400">°C:</span>
+                                            <span class="font-medium ml-2 text-slate-900 dark:text-slate-100">
+                                                {{ registro.temperatura != null && registro.temperatura !== '' ? `${Number(registro.temperatura)} °C` : '—' }}
+                                            </span>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
 
@@ -273,21 +281,26 @@
                 </div>
 
                 <!-- Paginación -->
-                <div v-if="vitacora.links && vitacora.links.length > 3" class="flex justify-center">
-                    <div class="flex gap-1">
-                        <Link
-                            v-for="link in vitacora.links"
-                            :key="link.label"
-                            :href="link.url || '#'"
-                            :class="[
-                                'px-3 py-2 rounded-lg border text-sm transition-colors duration-200',
-                                link.active
-                                    ? 'bg-slate-900 dark:bg-slate-700 text-white border-slate-900 dark:border-slate-700'
-                                    : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700',
-                                !link.url ? 'opacity-50 cursor-not-allowed' : '',
-                            ]"
-                            v-html="link.label"
-                        ></Link>
+                <div v-if="vitacora.links && vitacora.links.length > 0" class="mt-6 p-4 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 transition-colors duration-200">
+                    <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
+                        <p class="text-sm text-slate-600 dark:text-slate-400">
+                            Mostrando {{ vitacora.from ?? 0 }} a {{ vitacora.to ?? 0 }} de {{ vitacora.total ?? 0 }} registros
+                        </p>
+                        <div class="flex items-center gap-2">
+                            <Link
+                                v-for="link in vitacora.links"
+                                :key="link.label"
+                                :href="link.url || '#'"
+                                :class="[
+                                    'px-3 py-2 rounded-lg border text-sm font-medium transition-colors duration-200 min-w-10 text-center',
+                                    link.active
+                                        ? 'bg-slate-900 dark:bg-slate-700 text-white border-slate-900 dark:border-slate-700'
+                                        : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700',
+                                    !link.url ? 'opacity-50 cursor-not-allowed' : '',
+                                ]"
+                                v-html="link.label"
+                            ></Link>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -365,6 +378,7 @@
 import { ref, onMounted } from 'vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { Link, router, useForm } from '@inertiajs/vue3';
+import VitacoraCharts from '@/Components/Charts/VitacoraCharts.vue';
 
 const props = defineProps({
     ups: Object,

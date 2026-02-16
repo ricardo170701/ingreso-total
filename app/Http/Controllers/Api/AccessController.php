@@ -80,7 +80,7 @@ class AccessController extends Controller
         $dispositivoId = $data['dispositivo_id'] ?? null;
 
         $puerta = Puerta::query()
-            ->with('piso')
+            ->with(['piso', 'tipoPuerta'])
             ->where(function ($q) use ($data) {
                 $q->where('codigo_fisico', $data['codigo_fisico'])
                     ->orWhere('codigo_fisico_salida', $data['codigo_fisico']);
@@ -188,35 +188,34 @@ class AccessController extends Controller
             return response()->json(['permitido' => false, 'message' => 'Acceso denegado (solo servidores públicos o proveedores).'], 200);
         }
 
-        // Estado entrada/salida:
-        // - entrada: si la última operación permitida fue entrada, se debe registrar salida antes de otra entrada
-        // - salida: solo se permite si la última operación permitida fue entrada
-        // IMPORTANTE: el estado debe estar ligado al usuario, NO a la credencial (QR/NFC).
-        // Si un usuario tiene múltiples credenciales, todas deben compartir el mismo ciclo entrada/salida.
-        $lastOk = Acceso::query()
-            ->where('user_id', $user->id)
-            ->where('permitido', true)
-            ->whereIn('tipo_evento', ['entrada', 'salida'])
-            ->orderByDesc('fecha_acceso')
-            // Evita comportamiento no determinista si dos accesos caen en el mismo segundo
-            ->orderByDesc('id')
-            ->first();
+        // Estado entrada/salida: solo para MOLINETES.
+        // Molinetes: entrada requiere haber registrado salida antes; salida requiere entrada previa.
+        // Puertas: solo registran entrada, sin restricción por salida (no se valida ciclo).
+        if ($puerta->esMolinete()) {
+            $lastOk = Acceso::query()
+                ->where('user_id', $user->id)
+                ->where('permitido', true)
+                ->whereIn('tipo_evento', ['entrada', 'salida'])
+                ->orderByDesc('fecha_acceso')
+                ->orderByDesc('id')
+                ->first();
 
-        if ($tipoEvento === 'entrada' && $lastOk?->tipo_evento === 'entrada') {
-            $motivo = 'Usuario ya se encuentra dentro (falta registrar salida)';
-            $this->registrarAcceso($user->id, $puerta->id, $qr?->id, $tarjetaNfc?->id, false, $motivo, $data['codigo_fisico'], $tipoEvento, $dispositivoId);
-            return response()->json([
-                'permitido' => false,
-                'message' => 'Usuario ya se encuentra dentro. Registre salida para poder volver a entrar.',
-            ], 200);
-        }
-        if ($tipoEvento === 'salida' && (!$lastOk || $lastOk->tipo_evento !== 'entrada')) {
-            $motivo = 'Usuario no tiene entrada activa (no puede registrar salida)';
-            $this->registrarAcceso($user->id, $puerta->id, $qr?->id, $tarjetaNfc?->id, false, $motivo, $data['codigo_fisico'], $tipoEvento, $dispositivoId);
-            return response()->json([
-                'permitido' => false,
-                'message' => 'Usuario no tiene una entrada activa. Primero registre entrada.',
-            ], 200);
+            if ($tipoEvento === 'entrada' && $lastOk?->tipo_evento === 'entrada') {
+                $motivo = 'Usuario ya se encuentra dentro (falta registrar salida)';
+                $this->registrarAcceso($user->id, $puerta->id, $qr?->id, $tarjetaNfc?->id, false, $motivo, $data['codigo_fisico'], $tipoEvento, $dispositivoId);
+                return response()->json([
+                    'permitido' => false,
+                    'message' => 'Usuario ya se encuentra dentro. Registre salida para poder volver a entrar.',
+                ], 200);
+            }
+            if ($tipoEvento === 'salida' && (!$lastOk || $lastOk->tipo_evento !== 'entrada')) {
+                $motivo = 'Usuario no tiene entrada activa (no puede registrar salida)';
+                $this->registrarAcceso($user->id, $puerta->id, $qr?->id, $tarjetaNfc?->id, false, $motivo, $data['codigo_fisico'], $tipoEvento, $dispositivoId);
+                return response()->json([
+                    'permitido' => false,
+                    'message' => 'Usuario no tiene una entrada activa. Primero registre entrada.',
+                ], 200);
+            }
         }
 
         // Determinar si el usuario es funcionario o visitante

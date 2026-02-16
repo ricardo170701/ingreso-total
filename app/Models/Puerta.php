@@ -130,6 +130,23 @@ class Puerta extends Model
     }
 
     /**
+     * Indica si esta puerta es un molinete (control de ciclo entrada/salida).
+     * Solo los molinetes exigen: entrada previa para salir, salida previa para volver a entrar.
+     * Las puertas normales solo registran entrada sin restricción por salida.
+     */
+    public function esMolinete(): bool
+    {
+        $tipo = $this->tipoPuerta;
+        if (!$tipo) {
+            return false;
+        }
+        $nombre = strtolower((string) $tipo->nombre);
+        $codigo = strtolower((string) $tipo->codigo);
+
+        return str_contains($nombre, 'molinete') || str_contains($codigo, 'molinete');
+    }
+
+    /**
      * Puertas que pueden asignarse a visitantes (no solo funcionarios ni datacenter).
      * Oculta en UI de Ingreso para que no se ofrezcan al asignar QR/NFC a visitantes.
      */

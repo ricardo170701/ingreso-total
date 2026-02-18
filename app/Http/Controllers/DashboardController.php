@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Models\Acceso;
-use App\Models\CodigoQr;
 use App\Models\Puerta;
 use App\Models\User;
 use Carbon\Carbon;
@@ -20,10 +19,19 @@ class DashboardController extends Controller
         $endOfDay = $now->copy()->endOfDay();
 
         // Estadísticas principales
-        $totalUsuarios = User::query()->where('activo', true)->count();
+        $totalUsuarios = User::query()->count();
+        $usuariosActivos = User::query()->where('activo', true)->count();
+        $usuariosInactivos = $totalUsuarios - $usuariosActivos;
         $totalPuertas = Puerta::query()->where('activo', true)->count();
 
-        // Accesos de hoy
+        // Ingresos únicos hoy (solo uno por persona aunque haya entrado muchas veces)
+        $ingresosUnicosHoy = (int) Acceso::query()
+            ->whereBetween('fecha_acceso', [$startOfDay, $endOfDay])
+            ->where('permitido', true)
+            ->selectRaw('COUNT(DISTINCT user_id) as total')
+            ->value('total');
+
+        // Accesos de hoy (totales, para gráficos)
         $accesosHoy = Acceso::query()
             ->whereBetween('fecha_acceso', [$startOfDay, $endOfDay])
             ->count();
@@ -38,15 +46,17 @@ class DashboardController extends Controller
             ->where('permitido', false)
             ->count();
 
-        // QR activos (no expirados y activos)
-        $qrActivos = CodigoQr::query()
-            ->where('activo', true)
-            ->where('fecha_expiracion', '>', $now)
+        // Usuarios por tipo de vinculación
+        $totalVisitantes = User::query()
+            ->whereHas('role', fn ($q) => $q->where('name', 'visitante'))
             ->count();
 
-        // QR generados hoy
-        $qrGeneradosHoy = CodigoQr::query()
-            ->whereBetween('fecha_generacion', [$startOfDay, $endOfDay])
+        $totalServidoresPublicos = User::query()
+            ->whereHas('role', fn ($q) => $q->whereIn('name', ['servidor_publico', 'funcionario']))
+            ->count();
+
+        $totalContratistas = User::query()
+            ->whereHas('role', fn ($q) => $q->whereIn('name', ['proveedor', 'contratista']))
             ->count();
 
         // Accesos recientes (últimos 10)
@@ -175,12 +185,16 @@ class DashboardController extends Controller
         return Inertia::render('Dashboard', [
             'stats' => [
                 'total_usuarios' => $totalUsuarios,
+                'usuarios_activos' => $usuariosActivos,
+                'usuarios_inactivos' => $usuariosInactivos,
                 'total_puertas' => $totalPuertas,
                 'accesos_hoy' => $accesosHoy,
                 'accesos_permitidos_hoy' => $accesosPermitidosHoy,
                 'accesos_denegados_hoy' => $accesosDenegadosHoy,
-                'qr_activos' => $qrActivos,
-                'qr_generados_hoy' => $qrGeneradosHoy,
+                'ingresos_unicos_hoy' => $ingresosUnicosHoy,
+                'total_visitantes' => $totalVisitantes,
+                'total_servidores_publicos' => $totalServidoresPublicos,
+                'total_contratistas' => $totalContratistas,
             ],
             'accesos_recientes' => $accesosRecientes,
             'puertas_mas_usadas' => $puertasMasUsadas,

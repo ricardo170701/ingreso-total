@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class UpsVitacoraImagen extends Model
+class UpsBitacoraImagen extends Model
 {
     use HasFactory;
 
@@ -23,8 +23,8 @@ class UpsVitacoraImagen extends Model
         'orden' => 'integer',
     ];
 
-    public function vitacora(): BelongsTo
+    public function bitacora(): BelongsTo
     {
-        return $this->belongsTo(UpsVitacora::class, 'ups_vitacora_id');
+        return $this->belongsTo(UpsBitacora::class, 'ups_vitacora_id');
     }
 }

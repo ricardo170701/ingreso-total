@@ -174,7 +174,7 @@
                         </p>
                     </div>
                     <Link
-                        :href="route('ups.vitacora.index', { ups: ups.id })"
+                        :href="route('ups.bitacora.index', { ups: ups.id })"
                         class="px-4 py-2 rounded-lg bg-blue-600 dark:bg-blue-700 text-white hover:bg-blue-700 dark:hover:bg-blue-600 font-medium text-sm transition-colors duration-200"
                     >
                         Ver Bitácora

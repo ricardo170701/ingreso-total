@@ -12,7 +12,7 @@
                     </p>
                 </div>
                 <Link
-                    :href="route('ups.vitacora.index', { ups: ups.id })"
+                    :href="route('ups.bitacora.index', { ups: ups.id })"
                     class="px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-colors duration-200"
                 >
                     Volver
@@ -648,7 +648,7 @@ const analyzeImage = async () => {
         });
 
         const response = await axios.post(
-            route("ups.vitacora.analyze", { ups: props.ups.id }),
+            route("ups.bitacora.analyze", { ups: props.ups.id }),
             formData,
             {
                 headers: {
@@ -773,7 +773,7 @@ const guardarRegistro = async () => {
         if (previewData.value.datos_extraidos) formData.append('datos_extraidos', JSON.stringify(previewData.value.datos_extraidos));
 
         await axios.post(
-            route("ups.vitacora.store", { ups: props.ups.id }),
+            route("ups.bitacora.store", { ups: props.ups.id }),
             formData,
             {
                 headers: {
@@ -782,7 +782,7 @@ const guardarRegistro = async () => {
             }
         );
 
-        router.visit(route("ups.vitacora.index", { ups: props.ups.id }), {
+        router.visit(route("ups.bitacora.index", { ups: props.ups.id }), {
             method: "get",
         });
     } catch (err) {

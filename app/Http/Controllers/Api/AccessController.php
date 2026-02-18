@@ -188,6 +188,15 @@ class AccessController extends Controller
             return response()->json(['permitido' => false, 'message' => 'Acceso denegado (solo servidores públicos o proveedores).'], 200);
         }
 
+        // Puertas (no molinetes): solo registran entrada; no se permiten ni registran eventos de salida.
+        if (!$puerta->esMolinete() && $tipoEvento === 'salida') {
+            $this->registrarAcceso($user->id, $puerta->id, $qr?->id, $tarjetaNfc?->id, false, 'Esta puerta solo registra entrada', $data['codigo_fisico'], $tipoEvento, $dispositivoId);
+            return response()->json([
+                'permitido' => false,
+                'message' => 'Esta puerta solo registra entrada, no salida.',
+            ], 200);
+        }
+
         // Estado entrada/salida: solo para MOLINETES.
         // Molinetes: entrada requiere haber registrado salida antes; salida requiere entrada previa.
         // Puertas: solo registran entrada, sin restricción por salida (no se valida ciclo).
@@ -302,10 +311,12 @@ class AccessController extends Controller
             $now
         );
 
-        // Puertas con solo ip_entrada (sin ip_salida): el egreso se hace con botón físico,
+        // Molinetes con solo ip_entrada (sin ip_salida): el egreso se hace con botón físico,
         // así que registramos una salida automática para no dejar la "entrada" activa.
+        // Las puertas (no molinetes) solo registran entrada; no se genera salida.
         if (
             $permitido
+            && $puerta->esMolinete()
             && $tipoEvento === 'entrada'
             && !empty($puerta->ip_entrada)
             && empty($puerta->ip_salida)

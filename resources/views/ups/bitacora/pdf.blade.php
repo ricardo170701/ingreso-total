@@ -148,18 +148,18 @@
     <div class="metadata">
         <div class="info-row">
             <span class="info-label">Fecha de registro:</span>
-            <span class="info-value">{{ $vitacora->created_at->format('d/m/Y H:i:s') }}</span>
+            <span class="info-value">{{ $bitacora->created_at->format('d/m/Y H:i:s') }}</span>
         </div>
         <div class="info-row">
             <span class="info-label">Registrado por:</span>
             <span class="info-value">
-                @if($vitacora->creadoPor)
-                    @if($vitacora->creadoPor->nombre && $vitacora->creadoPor->apellido)
-                        {{ $vitacora->creadoPor->nombre }} {{ $vitacora->creadoPor->apellido }}
-                    @elseif($vitacora->creadoPor->name)
-                        {{ $vitacora->creadoPor->name }}
+                @if($bitacora->creadoPor)
+                    @if($bitacora->creadoPor->nombre && $bitacora->creadoPor->apellido)
+                        {{ $bitacora->creadoPor->nombre }} {{ $bitacora->creadoPor->apellido }}
+                    @elseif($bitacora->creadoPor->name)
+                        {{ $bitacora->creadoPor->name }}
                     @else
-                        {{ $vitacora->creadoPor->email }}
+                        {{ $bitacora->creadoPor->email }}
                     @endif
                 @else
                     Desconocido
@@ -170,17 +170,17 @@
 
     <div class="section-title">Indicadores</div>
     <div class="indicadores">
-        <span class="indicador {{ $vitacora->indicador_normal ? 'on' : 'off' }}">
-            NORMAL: {{ $vitacora->indicador_normal ? 'ON' : 'OFF' }}
+        <span class="indicador {{ $bitacora->indicador_normal ? 'on' : 'off' }}">
+            NORMAL: {{ $bitacora->indicador_normal ? 'ON' : 'OFF' }}
         </span>
-        <span class="indicador {{ $vitacora->indicador_battery ? 'on' : 'off' }}">
-            BATTERY: {{ $vitacora->indicador_battery ? 'ON' : 'OFF' }}
+        <span class="indicador {{ $bitacora->indicador_battery ? 'on' : 'off' }}">
+            BATTERY: {{ $bitacora->indicador_battery ? 'ON' : 'OFF' }}
         </span>
-        <span class="indicador {{ $vitacora->indicador_bypass ? 'on' : 'off' }}">
-            BYPASS: {{ $vitacora->indicador_bypass ? 'ON' : 'OFF' }}
+        <span class="indicador {{ $bitacora->indicador_bypass ? 'on' : 'off' }}">
+            BYPASS: {{ $bitacora->indicador_bypass ? 'ON' : 'OFF' }}
         </span>
-        <span class="indicador {{ $vitacora->indicador_fault ? 'on' : 'off' }}">
-            FAULT: {{ $vitacora->indicador_fault ? 'ON' : 'OFF' }}
+        <span class="indicador {{ $bitacora->indicador_fault ? 'on' : 'off' }}">
+            FAULT: {{ $bitacora->indicador_fault ? 'ON' : 'OFF' }}
         </span>
     </div>
 
@@ -190,11 +190,11 @@
             <h3>Input</h3>
             <div class="info-row">
                 <span class="info-label">Voltaje:</span>
-                <span class="info-value">{{ $vitacora->input_voltage ? number_format($vitacora->input_voltage, 2) . ' V' : '-' }}</span>
+                <span class="info-value">{{ $bitacora->input_voltage ? number_format($bitacora->input_voltage, 2) . ' V' : '-' }}</span>
             </div>
             <div class="info-row">
                 <span class="info-label">Frecuencia:</span>
-                <span class="info-value">{{ $vitacora->input_frequency ? number_format($vitacora->input_frequency, 2) . ' Hz' : '-' }}</span>
+                <span class="info-value">{{ $bitacora->input_frequency ? number_format($bitacora->input_frequency, 2) . ' Hz' : '-' }}</span>
             </div>
         </div>
 
@@ -202,15 +202,15 @@
             <h3>Output</h3>
             <div class="info-row">
                 <span class="info-label">Voltaje:</span>
-                <span class="info-value">{{ $vitacora->output_voltage ? number_format($vitacora->output_voltage, 2) . ' V' : '-' }}</span>
+                <span class="info-value">{{ $bitacora->output_voltage ? number_format($bitacora->output_voltage, 2) . ' V' : '-' }}</span>
             </div>
             <div class="info-row">
                 <span class="info-label">Frecuencia:</span>
-                <span class="info-value">{{ $vitacora->output_frequency ? number_format($vitacora->output_frequency, 2) . ' Hz' : '-' }}</span>
+                <span class="info-value">{{ $bitacora->output_frequency ? number_format($bitacora->output_frequency, 2) . ' Hz' : '-' }}</span>
             </div>
             <div class="info-row">
                 <span class="info-label">Potencia:</span>
-                <span class="info-value">{{ $vitacora->output_power ? number_format($vitacora->output_power, 2) . ' W' : '-' }}</span>
+                <span class="info-value">{{ $bitacora->output_power ? number_format($bitacora->output_power, 2) . ' W' : '-' }}</span>
             </div>
         </div>
 
@@ -218,54 +218,53 @@
             <h3>Battery</h3>
             <div class="info-row">
                 <span class="info-label">Voltaje:</span>
-                <span class="info-value">{{ $vitacora->battery_voltage ? number_format($vitacora->battery_voltage, 2) . ' V' : '-' }}</span>
+                <span class="info-value">{{ $bitacora->battery_voltage ? number_format($bitacora->battery_voltage, 2) . ' V' : '-' }}</span>
             </div>
             <div class="info-row">
                 <span class="info-label">Porcentaje:</span>
-                <span class="info-value">{{ $vitacora->battery_percentage !== null ? $vitacora->battery_percentage . '%' : '-' }}</span>
+                <span class="info-value">{{ $bitacora->battery_percentage !== null ? $bitacora->battery_percentage . '%' : '-' }}</span>
             </div>
-            @if($vitacora->battery_tiempo_respaldo !== null)
+            @if($bitacora->battery_tiempo_respaldo !== null)
             <div class="info-row">
                 <span class="info-label">Tiempo Respaldo:</span>
-                <span class="info-value">{{ $vitacora->battery_tiempo_respaldo }} min</span>
+                <span class="info-value">{{ $bitacora->battery_tiempo_respaldo }} min</span>
             </div>
             @endif
-            @if($vitacora->battery_tiempo_descarga !== null)
+            @if($bitacora->battery_tiempo_descarga !== null)
             <div class="info-row">
                 <span class="info-label">Tiempo Descarga:</span>
-                <span class="info-value">{{ $vitacora->battery_tiempo_descarga }} min</span>
+                <span class="info-value">{{ $bitacora->battery_tiempo_descarga }} min</span>
             </div>
             @endif
-            @if($vitacora->battery_estado)
+            @if($bitacora->battery_estado)
             <div class="info-row">
                 <span class="info-label">Estado:</span>
-                <span class="info-value">{{ ucfirst($vitacora->battery_estado) }}</span>
+                <span class="info-value">{{ ucfirst($bitacora->battery_estado) }}</span>
             </div>
             @endif
         </div>
     </div>
 
-    @if($vitacora->temperatura !== null)
+    @if($bitacora->temperatura !== null)
     <div class="temperatura-box">
         <h3>Temperatura</h3>
-        <div class="temperatura-value">{{ number_format($vitacora->temperatura, 2) }} °C</div>
+        <div class="temperatura-value">{{ number_format($bitacora->temperatura, 2) }} °C</div>
     </div>
     @endif
 
-    @if($vitacora->observaciones)
+    @if($bitacora->observaciones)
     <div class="section-title">Observaciones</div>
     <div class="observaciones">
-        {!! nl2br(e($vitacora->observaciones)) !!}
+        {!! nl2br(e($bitacora->observaciones)) !!}
     </div>
     @endif
 
-    @if($vitacora->imagenes && $vitacora->imagenes->count() > 0)
+    @if($bitacora->imagenes && $bitacora->imagenes->count() > 0)
     <div class="section-title">Imágenes</div>
     <p style="font-size: 10pt; color: #666;">
-        Este registro incluye {{ $vitacora->imagenes->count() }} imagen(es) que se encuentran en la carpeta <strong>fotos/</strong> de este directorio.
+        Este registro incluye {{ $bitacora->imagenes->count() }} imagen(es) que se encuentran en la carpeta <strong>fotos/</strong> de este directorio.
     </p>
     @endif
 </body>
 
 </html>
-

@@ -14,17 +14,20 @@
             </div>
 
             <!-- Stats Grid -->
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6">
                 <div
                     class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 transition-colors duration-200"
                 >
                     <div class="flex items-center justify-between">
                         <div>
                             <p class="text-sm text-slate-600 dark:text-slate-400 mb-1">
-                                Usuarios Activos
+                                Usuarios en sistema
                             </p>
                             <p class="text-3xl font-bold text-slate-900 dark:text-slate-100">
-                                {{ stats.total_usuarios }}
+                                {{ stats.total_usuarios || 0 }}
+                            </p>
+                            <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                                {{ stats.usuarios_activos || 0 }} activos · {{ stats.usuarios_inactivos || 0 }} inactivos
                             </p>
                         </div>
                         <div
@@ -41,22 +44,19 @@
                     <div class="flex items-center justify-between">
                         <div>
                             <p class="text-sm text-slate-600 dark:text-slate-400 mb-1">
-                                Accesos Hoy
+                                Ingresos únicos hoy
                             </p>
                             <p class="text-3xl font-bold text-green-600 dark:text-green-400">
-                                {{ stats.accesos_permitidos_hoy }}
+                                {{ stats.ingresos_unicos_hoy || 0 }}
                             </p>
-                            <p
-                                v-if="stats.accesos_denegados_hoy > 0"
-                                class="text-xs text-red-600 dark:text-red-400 mt-1"
-                            >
-                                {{ stats.accesos_denegados_hoy }} denegados
+                            <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                                Una entrada por persona
                             </p>
                         </div>
                         <div
                             class="w-12 h-12 rounded-lg bg-green-100 dark:bg-green-900/30 flex items-center justify-center transition-colors duration-200"
                         >
-                            <span class="text-2xl">🚪</span>
+                            <span class="text-2xl">📋</span>
                         </div>
                     </div>
                 </div>
@@ -67,19 +67,16 @@
                     <div class="flex items-center justify-between">
                         <div>
                             <p class="text-sm text-slate-600 dark:text-slate-400 mb-1">
-                                QR Activos
+                                Visitantes
                             </p>
                             <p class="text-3xl font-bold text-purple-600 dark:text-purple-400">
-                                {{ stats.qr_activos }}
-                            </p>
-                            <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                                {{ stats.qr_generados_hoy }} generados hoy
+                                {{ stats.total_visitantes || 0 }}
                             </p>
                         </div>
                         <div
                             class="w-12 h-12 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center transition-colors duration-200"
                         >
-                            <span class="text-2xl">📱</span>
+                            <span class="text-2xl">🕴️</span>
                         </div>
                     </div>
                 </div>
@@ -90,10 +87,50 @@
                     <div class="flex items-center justify-between">
                         <div>
                             <p class="text-sm text-slate-600 dark:text-slate-400 mb-1">
-                                Puertas Activas
+                                Servidores públicos
+                            </p>
+                            <p class="text-3xl font-bold text-indigo-600 dark:text-indigo-400">
+                                {{ stats.total_servidores_publicos || 0 }}
+                            </p>
+                        </div>
+                        <div
+                            class="w-12 h-12 rounded-lg bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center transition-colors duration-200"
+                        >
+                            <span class="text-2xl">🏛️</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div
+                    class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 transition-colors duration-200"
+                >
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm text-slate-600 dark:text-slate-400 mb-1">
+                                Contratistas
+                            </p>
+                            <p class="text-3xl font-bold text-amber-600 dark:text-amber-400">
+                                {{ stats.total_contratistas || 0 }}
+                            </p>
+                        </div>
+                        <div
+                            class="w-12 h-12 rounded-lg bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center transition-colors duration-200"
+                        >
+                            <span class="text-2xl">📦</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div
+                    class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 transition-colors duration-200"
+                >
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm text-slate-600 dark:text-slate-400 mb-1">
+                                Puertas activas
                             </p>
                             <p class="text-3xl font-bold text-slate-900 dark:text-slate-100">
-                                {{ stats.total_puertas }}
+                                {{ stats.total_puertas || 0 }}
                             </p>
                         </div>
                         <div

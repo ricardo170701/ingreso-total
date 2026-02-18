@@ -3,8 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\Ups;
-use App\Models\UpsVitacora;
-use App\Models\UpsVitacoraImagen;
+use App\Models\UpsBitacora;
+use App\Models\UpsBitacoraImagen;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
@@ -15,13 +15,13 @@ use ZipArchive;
 use ZipStream\ZipStream;
 use Barryvdh\DomPDF\Facade\Pdf;
 
-class UpsVitacoraController extends Controller
+class UpsBitacoraController extends Controller
 {
     public function index(Request $request, Ups $ups): Response
     {
         $this->authorize('view', $ups);
 
-        $query = $ups->vitacora()
+        $query = $ups->bitacora()
             ->with(['creadoPor', 'imagenes']);
 
         // Filtros por fecha
@@ -36,13 +36,13 @@ class UpsVitacoraController extends Controller
             $query->whereDate('created_at', '<=', $fechaHasta);
         }
 
-        $vitacora = $query->orderBy('created_at', 'desc')
+        $bitacora = $query->orderBy('created_at', 'desc')
             ->paginate(8)
             ->withQueryString();
 
-        return Inertia::render('Ups/Vitacora/Index', [
+        return Inertia::render('Ups/Bitacora/Index', [
             'ups' => $ups,
-            'vitacora' => $vitacora,
+            'bitacora' => $bitacora,
             'filtros' => [
                 'fecha_desde' => $fechaDesde,
                 'fecha_hasta' => $fechaHasta,
@@ -54,7 +54,7 @@ class UpsVitacoraController extends Controller
     {
         $this->authorize('view', $ups);
 
-        return Inertia::render('Ups/Vitacora/Create', [
+        return Inertia::render('Ups/Bitacora/Create', [
             'ups' => $ups,
         ]);
     }
@@ -190,7 +190,7 @@ Si no puedes ver algún valor, usa null. Solo responde con el JSON, sin texto ad
             // Procesar cada imagen
             foreach ($request->file('imagenes') as $index => $imagen) {
                 // Guardar imagen temporalmente
-                $imagenPath = $imagen->store('ups/vitacora/temp', 'public');
+                $imagenPath = $imagen->store('ups/bitacora/temp', 'public');
                 $imagenesPaths[] = $imagenPath;
                 $imagenFullPath = storage_path('app/public/' . $imagenPath);
 
@@ -409,7 +409,7 @@ Si no puedes ver algún valor, usa null. Solo responde con el JSON, sin texto ad
             if ($request->hasFile('imagenes_files')) {
                 foreach ($request->file('imagenes_files') as $index => $imagen) {
                     if ($imagen) {
-                        $imagenFinal = $imagen->store('ups/vitacora', 'public');
+                        $imagenFinal = $imagen->store('ups/bitacora', 'public');
                         $imagenesFinales[] = [
                             'ruta' => $imagenFinal,
                             'orden' => $index,
@@ -421,7 +421,7 @@ Si no puedes ver algún valor, usa null. Solo responde con el JSON, sin texto ad
             elseif ($request->has('imagenes') && is_array($request->input('imagenes'))) {
                 foreach ($request->input('imagenes') as $index => $imagenTemp) {
                     if ($imagenTemp) {
-                        $imagenFinal = str_replace('ups/vitacora/temp', 'ups/vitacora', $imagenTemp);
+                        $imagenFinal = str_replace('ups/bitacora/temp', 'ups/bitacora', $imagenTemp);
 
                         if (Storage::disk('public')->exists($imagenTemp)) {
                             Storage::disk('public')->move($imagenTemp, $imagenFinal);
@@ -455,7 +455,7 @@ Si no puedes ver algún valor, usa null. Solo responde con el JSON, sin texto ad
             $str = fn ($key) => $request->filled($key) ? $request->input($key) : null;
 
             // Crear registro de bitácora
-            $vitacora = UpsVitacora::create([
+            $bitacora = UpsBitacora::create([
                 'ups_id' => $ups->id,
                 'indicador_normal' => (bool) $request->input('indicador_normal', false),
                 'indicador_battery' => (bool) $request->input('indicador_battery', false),
@@ -479,8 +479,8 @@ Si no puedes ver algún valor, usa null. Solo responde con el JSON, sin texto ad
 
             // Guardar múltiples imágenes
             foreach ($imagenesFinales as $img) {
-                UpsVitacoraImagen::create([
-                    'ups_vitacora_id' => $vitacora->id,
+                UpsBitacoraImagen::create([
+                    'ups_vitacora_id' => $bitacora->id,
                     'ruta_imagen' => $img['ruta'],
                     'orden' => $img['orden'],
                     'descripcion' => null,
@@ -488,7 +488,7 @@ Si no puedes ver algún valor, usa null. Solo responde con el JSON, sin texto ad
             }
 
             return redirect()
-                ->route('ups.vitacora.index', ['ups' => $ups->id])
+                ->route('ups.bitacora.index', ['ups' => $ups->id])
                 ->with('message', 'Registro de bitácora guardado exitosamente.');
         } catch (\Exception $e) {
             Log::error('Error al guardar bitácora UPS: ' . $e->getMessage(), [
@@ -502,21 +502,21 @@ Si no puedes ver algún valor, usa null. Solo responde con el JSON, sin texto ad
         }
     }
 
-    public function destroy(Ups $ups, UpsVitacora $vitacora)
+    public function destroy(Ups $ups, UpsBitacora $bitacora)
     {
         $this->authorize('view', $ups);
 
         // Eliminar todas las imágenes asociadas
-        foreach ($vitacora->imagenes as $imagen) {
+        foreach ($bitacora->imagenes as $imagen) {
             if (Storage::disk('public')->exists($imagen->ruta_imagen)) {
                 Storage::disk('public')->delete($imagen->ruta_imagen);
             }
         }
 
-        $vitacora->delete();
+        $bitacora->delete();
 
         return redirect()
-            ->route('ups.vitacora.index', ['ups' => $ups->id])
+            ->route('ups.bitacora.index', ['ups' => $ups->id])
             ->with('message', 'Registro eliminado exitosamente.');
     }
 
@@ -532,14 +532,14 @@ Si no puedes ver algún valor, usa null. Solo responde con el JSON, sin texto ad
         }
 
         // Obtener bitácoras en el rango de fechas
-        $vitacoras = $ups->vitacora()
+        $bitacoras = $ups->bitacora()
             ->with(['creadoPor', 'imagenes'])
             ->whereDate('created_at', '>=', $fechaDesde)
             ->whereDate('created_at', '<=', $fechaHasta)
             ->orderBy('created_at', 'asc')
             ->get();
 
-        if ($vitacoras->isEmpty()) {
+        if ($bitacoras->isEmpty()) {
             abort(404, 'No hay registros de bitácora en el rango de fechas especificado');
         }
 
@@ -553,13 +553,13 @@ Si no puedes ver algún valor, usa null. Solo responde con el JSON, sin texto ad
         $useZipArchive = extension_loaded('zip') && class_exists(ZipArchive::class);
 
         if ($useZipArchive) {
-            return $this->exportWithZipArchive($vitacoras, $ups, $zipName);
+            return $this->exportWithZipArchive($bitacoras, $ups, $zipName);
         } else {
-            return $this->exportWithZipStream($vitacoras, $ups, $zipName);
+            return $this->exportWithZipStream($bitacoras, $ups, $zipName);
         }
     }
 
-    private function exportWithZipArchive($vitacoras, Ups $ups, string $zipName)
+    private function exportWithZipArchive($bitacoras, Ups $ups, string $zipName)
     {
         $tmpDir = storage_path('app/tmp');
         if (!is_dir($tmpDir)) {
@@ -573,21 +573,21 @@ Si no puedes ver algún valor, usa null. Solo responde con el JSON, sin texto ad
             abort(500, 'No se pudo crear el archivo ZIP.');
         }
 
-        foreach ($vitacoras as $index => $vitacora) {
-            $vitacora->load(['creadoPor', 'imagenes']);
-            $fechaRegistro = $vitacora->created_at->format('Y-m-d_H-i-s');
+        foreach ($bitacoras as $index => $bitacora) {
+            $bitacora->load(['creadoPor', 'imagenes']);
+            $fechaRegistro = $bitacora->created_at->format('Y-m-d_H-i-s');
             $folderName = sprintf('bitacora_%02d_%s', $index + 1, $fechaRegistro);
 
             // Generar PDF con los datos
-            $pdf = Pdf::loadView('ups.vitacora.pdf', [
-                'vitacora' => $vitacora,
+            $pdf = Pdf::loadView('ups.bitacora.pdf', [
+                'bitacora' => $bitacora,
                 'ups' => $ups,
             ]);
             $pdfContent = $pdf->output();
             $zip->addFromString("{$folderName}/datos.pdf", $pdfContent);
 
             // Agregar imágenes
-            foreach ($vitacora->imagenes->sortBy('orden') as $imgIndex => $imagen) {
+            foreach ($bitacora->imagenes->sortBy('orden') as $imgIndex => $imagen) {
                 $rel = $imagen->ruta_imagen;
                 if (!$rel || !Storage::disk('public')->exists($rel)) {
                     continue;
@@ -607,9 +607,9 @@ Si no puedes ver algún valor, usa null. Solo responde con el JSON, sin texto ad
         return response()->download($zipPath, $zipName)->deleteFileAfterSend(true);
     }
 
-    private function exportWithZipStream($vitacoras, Ups $ups, string $zipName)
+    private function exportWithZipStream($bitacoras, Ups $ups, string $zipName)
     {
-        return response()->streamDownload(function () use ($vitacoras, $ups, $zipName) {
+        return response()->streamDownload(function () use ($bitacoras, $ups, $zipName) {
             $outputStream = fopen('php://output', 'w');
             if (!$outputStream) {
                 abort(500, 'No se pudo abrir el stream de salida.');
@@ -621,14 +621,14 @@ Si no puedes ver algún valor, usa null. Solo responde con el JSON, sin texto ad
                 outputName: $zipName,
             );
 
-            foreach ($vitacoras as $index => $vitacora) {
-                $vitacora->load(['creadoPor', 'imagenes']);
-                $fechaRegistro = $vitacora->created_at->format('Y-m-d_H-i-s');
+            foreach ($bitacoras as $index => $bitacora) {
+                $bitacora->load(['creadoPor', 'imagenes']);
+                $fechaRegistro = $bitacora->created_at->format('Y-m-d_H-i-s');
                 $folderName = sprintf('bitacora_%02d_%s', $index + 1, $fechaRegistro);
 
                 // Generar PDF con los datos
-                $pdf = Pdf::loadView('ups.vitacora.pdf', [
-                    'vitacora' => $vitacora,
+                $pdf = Pdf::loadView('ups.bitacora.pdf', [
+                    'bitacora' => $bitacora,
                     'ups' => $ups,
                 ]);
                 $pdfContent = $pdf->output();
@@ -638,7 +638,7 @@ Si no puedes ver algún valor, usa null. Solo responde con el JSON, sin texto ad
                 );
 
                 // Agregar imágenes
-                foreach ($vitacora->imagenes->sortBy('orden') as $imgIndex => $imagen) {
+                foreach ($bitacora->imagenes->sortBy('orden') as $imgIndex => $imagen) {
                     $rel = $imagen->ruta_imagen;
                     if (!$rel || !Storage::disk('public')->exists($rel)) {
                         continue;
@@ -662,9 +662,9 @@ Si no puedes ver algún valor, usa null. Solo responde con el JSON, sin texto ad
         ]);
     }
 
-    private function generateHtmlDocument(UpsVitacora $vitacora, Ups $ups): string
+    private function generateHtmlDocument(UpsBitacora $bitacora, Ups $ups): string
     {
-        $creadoPor = $vitacora->creadoPor;
+        $creadoPor = $bitacora->creadoPor;
         $usuarioNombre = 'Desconocido';
         if ($creadoPor) {
             if ($creadoPor->nombre && $creadoPor->apellido) {
@@ -702,67 +702,67 @@ Si no puedes ver algún valor, usa null. Solo responde con el JSON, sin texto ad
     <h1>Bitácora UPS: ' . htmlspecialchars($ups->codigo ?? $ups->nombre) . '</h1>
 
     <div class="metadata">
-        <p><strong>Fecha de registro:</strong> ' . $vitacora->created_at->format('d/m/Y H:i:s') . '</p>
+        <p><strong>Fecha de registro:</strong> ' . $bitacora->created_at->format('d/m/Y H:i:s') . '</p>
         <p><strong>Registrado por:</strong> ' . htmlspecialchars($usuarioNombre) . '</p>
         <p><strong>UPS:</strong> ' . htmlspecialchars($ups->codigo ?? $ups->nombre) . ' - ' . htmlspecialchars($ups->nombre ?? '') . '</p>
     </div>
 
     <h2>Indicadores</h2>
     <div>
-        <span class="indicador ' . ($vitacora->indicador_normal ? 'on' : 'off') . '">NORMAL: ' . ($vitacora->indicador_normal ? 'ON' : 'OFF') . '</span>
-        <span class="indicador ' . ($vitacora->indicador_battery ? 'on' : 'off') . '">BATTERY: ' . ($vitacora->indicador_battery ? 'ON' : 'OFF') . '</span>
-        <span class="indicador ' . ($vitacora->indicador_bypass ? 'on' : 'off') . '">BYPASS: ' . ($vitacora->indicador_bypass ? 'ON' : 'OFF') . '</span>
-        <span class="indicador ' . ($vitacora->indicador_fault ? 'on' : 'off') . '">FAULT: ' . ($vitacora->indicador_fault ? 'ON' : 'OFF') . '</span>
+        <span class="indicador ' . ($bitacora->indicador_normal ? 'on' : 'off') . '">NORMAL: ' . ($bitacora->indicador_normal ? 'ON' : 'OFF') . '</span>
+        <span class="indicador ' . ($bitacora->indicador_battery ? 'on' : 'off') . '">BATTERY: ' . ($bitacora->indicador_battery ? 'ON' : 'OFF') . '</span>
+        <span class="indicador ' . ($bitacora->indicador_bypass ? 'on' : 'off') . '">BYPASS: ' . ($bitacora->indicador_bypass ? 'ON' : 'OFF') . '</span>
+        <span class="indicador ' . ($bitacora->indicador_fault ? 'on' : 'off') . '">FAULT: ' . ($bitacora->indicador_fault ? 'ON' : 'OFF') . '</span>
     </div>
 
     <h2>Datos Técnicos</h2>
     <div class="info-grid">
         <div class="info-box">
             <h3>Input</h3>
-            <div class="info-item"><span class="info-label">Voltaje:</span> ' . ($vitacora->input_voltage ? number_format($vitacora->input_voltage, 2) . ' V' : '-') . '</div>
-            <div class="info-item"><span class="info-label">Frecuencia:</span> ' . ($vitacora->input_frequency ? number_format($vitacora->input_frequency, 2) . ' Hz' : '-') . '</div>
+            <div class="info-item"><span class="info-label">Voltaje:</span> ' . ($bitacora->input_voltage ? number_format($bitacora->input_voltage, 2) . ' V' : '-') . '</div>
+            <div class="info-item"><span class="info-label">Frecuencia:</span> ' . ($bitacora->input_frequency ? number_format($bitacora->input_frequency, 2) . ' Hz' : '-') . '</div>
         </div>
         <div class="info-box">
             <h3>Output</h3>
-            <div class="info-item"><span class="info-label">Voltaje:</span> ' . ($vitacora->output_voltage ? number_format($vitacora->output_voltage, 2) . ' V' : '-') . '</div>
-            <div class="info-item"><span class="info-label">Frecuencia:</span> ' . ($vitacora->output_frequency ? number_format($vitacora->output_frequency, 2) . ' Hz' : '-') . '</div>
-            <div class="info-item"><span class="info-label">Potencia:</span> ' . ($vitacora->output_power ? number_format($vitacora->output_power, 2) . ' W' : '-') . '</div>
+            <div class="info-item"><span class="info-label">Voltaje:</span> ' . ($bitacora->output_voltage ? number_format($bitacora->output_voltage, 2) . ' V' : '-') . '</div>
+            <div class="info-item"><span class="info-label">Frecuencia:</span> ' . ($bitacora->output_frequency ? number_format($bitacora->output_frequency, 2) . ' Hz' : '-') . '</div>
+            <div class="info-item"><span class="info-label">Potencia:</span> ' . ($bitacora->output_power ? number_format($bitacora->output_power, 2) . ' W' : '-') . '</div>
         </div>
         <div class="info-box">
             <h3>Battery</h3>
-            <div class="info-item"><span class="info-label">Voltaje:</span> ' . ($vitacora->battery_voltage ? number_format($vitacora->battery_voltage, 2) . ' V' : '-') . '</div>
-            <div class="info-item"><span class="info-label">Porcentaje:</span> ' . ($vitacora->battery_percentage !== null ? $vitacora->battery_percentage . '%' : '-') . '</div>';
+            <div class="info-item"><span class="info-label">Voltaje:</span> ' . ($bitacora->battery_voltage ? number_format($bitacora->battery_voltage, 2) . ' V' : '-') . '</div>
+            <div class="info-item"><span class="info-label">Porcentaje:</span> ' . ($bitacora->battery_percentage !== null ? $bitacora->battery_percentage . '%' : '-') . '</div>';
 
-        if ($vitacora->battery_tiempo_respaldo !== null) {
-            $html .= '<div class="info-item"><span class="info-label">Tiempo Respaldo:</span> ' . $vitacora->battery_tiempo_respaldo . ' min</div>';
+        if ($bitacora->battery_tiempo_respaldo !== null) {
+            $html .= '<div class="info-item"><span class="info-label">Tiempo Respaldo:</span> ' . $bitacora->battery_tiempo_respaldo . ' min</div>';
         }
-        if ($vitacora->battery_tiempo_descarga !== null) {
-            $html .= '<div class="info-item"><span class="info-label">Tiempo Descarga:</span> ' . $vitacora->battery_tiempo_descarga . ' min</div>';
+        if ($bitacora->battery_tiempo_descarga !== null) {
+            $html .= '<div class="info-item"><span class="info-label">Tiempo Descarga:</span> ' . $bitacora->battery_tiempo_descarga . ' min</div>';
         }
-        if ($vitacora->battery_estado) {
-            $html .= '<div class="info-item"><span class="info-label">Estado:</span> ' . htmlspecialchars(ucfirst($vitacora->battery_estado)) . '</div>';
+        if ($bitacora->battery_estado) {
+            $html .= '<div class="info-item"><span class="info-label">Estado:</span> ' . htmlspecialchars(ucfirst($bitacora->battery_estado)) . '</div>';
         }
 
         $html .= '</div>';
 
-        if ($vitacora->temperatura !== null) {
+        if ($bitacora->temperatura !== null) {
             $html .= '<div class="info-box">
                 <h3>Temperatura</h3>
-                <div class="info-item"><span class="info-label">Temperatura:</span> ' . number_format($vitacora->temperatura, 2) . ' °C</div>
+                <div class="info-item"><span class="info-label">Temperatura:</span> ' . number_format($bitacora->temperatura, 2) . ' °C</div>
             </div>';
         }
 
         $html .= '</div>';
 
-        if ($vitacora->observaciones) {
+        if ($bitacora->observaciones) {
             $html .= '<h2>Observaciones</h2>
             <div class="observaciones">
-                ' . nl2br(htmlspecialchars($vitacora->observaciones)) . '
+                ' . nl2br(htmlspecialchars($bitacora->observaciones)) . '
             </div>';
         }
 
-        if ($vitacora->imagenes && $vitacora->imagenes->count() > 0) {
-            $html .= '<h2>Imágenes (' . $vitacora->imagenes->count() . ')</h2>
+        if ($bitacora->imagenes && $bitacora->imagenes->count() > 0) {
+            $html .= '<h2>Imágenes (' . $bitacora->imagenes->count() . ')</h2>
             <p>Las imágenes se encuentran en la carpeta <strong>fotos/</strong> de este directorio.</p>';
         }
 

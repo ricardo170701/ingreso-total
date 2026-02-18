@@ -347,6 +347,7 @@
                                     v-model="responsablePickerQuery"
                                     type="text"
                                     @focus="openResponsablePicker"
+                                    @blur="onResponsablePickerBlur"
                                     @keydown.down.prevent="responsablePickerMove(1)"
                                     @keydown.up.prevent="responsablePickerMove(-1)"
                                     @keydown.enter.prevent="responsablePickerSelectActive"
@@ -1620,6 +1621,16 @@ const openResponsablePicker = () => {
 const closeResponsablePicker = () => {
     responsablePickerOpen.value = false;
     responsablePickerActiveIndex.value = 0;
+};
+let responsablePickerBlurTimer = null;
+const onResponsablePickerBlur = () => {
+    if (responsablePickerBlurTimer) clearTimeout(responsablePickerBlurTimer);
+    responsablePickerBlurTimer = setTimeout(() => {
+        responsablePickerBlurTimer = null;
+        closeResponsablePicker();
+        const q = String(responsablePickerQuery.value || "").trim();
+        if (!q) form.responsable_id = null;
+    }, 200);
 };
 
 const filteredResponsablesForPicker = computed(() => {

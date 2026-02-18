@@ -57,8 +57,8 @@ class Ups extends Model
         return $this->hasMany(UpsMantenimiento::class, 'ups_id')->orderBy('fecha_mantenimiento', 'desc');
     }
 
-    public function vitacora()
+    public function bitacora()
     {
-        return $this->hasMany(UpsVitacora::class, 'ups_id')->orderBy('created_at', 'desc');
+        return $this->hasMany(UpsBitacora::class, 'ups_id')->orderBy('created_at', 'desc');
     }
 }

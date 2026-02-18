@@ -18,7 +18,7 @@ use App\Http\Controllers\ReportesController;
 use App\Http\Controllers\ProtocoloController;
 use App\Http\Controllers\UpsController;
 use App\Http\Controllers\UpsMantenimientosController;
-use App\Http\Controllers\UpsVitacoraController;
+use App\Http\Controllers\UpsBitacoraController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PasswordResetController;
 use App\Http\Controllers\TarjetasNfcController;
@@ -131,12 +131,12 @@ Route::middleware(['auth', 'force.password.change', 'visitante.restrict', 'permi
     Route::get('/ups/{ups}/mantenimientos/{mantenimiento}/zip', [UpsMantenimientosController::class, 'downloadZip'])->name('ups.mantenimientos.zip');
 
     // Bitácora de UPS
-    Route::get('/ups/{ups}/vitacora', [UpsVitacoraController::class, 'index'])->name('ups.vitacora.index');
-    Route::get('/ups/{ups}/vitacora/crear', [UpsVitacoraController::class, 'create'])->name('ups.vitacora.create');
-    Route::post('/ups/{ups}/vitacora/analizar', [UpsVitacoraController::class, 'analyzeImage'])->name('ups.vitacora.analyze');
-    Route::post('/ups/{ups}/vitacora', [UpsVitacoraController::class, 'store'])->name('ups.vitacora.store');
-    Route::get('/ups/{ups}/vitacora/exportar', [UpsVitacoraController::class, 'export'])->name('ups.vitacora.export');
-    Route::delete('/ups/{ups}/vitacora/{vitacora}', [UpsVitacoraController::class, 'destroy'])->name('ups.vitacora.destroy');
+    Route::get('/ups/{ups}/bitacora', [UpsBitacoraController::class, 'index'])->name('ups.bitacora.index');
+    Route::get('/ups/{ups}/bitacora/crear', [UpsBitacoraController::class, 'create'])->name('ups.bitacora.create');
+    Route::post('/ups/{ups}/bitacora/analizar', [UpsBitacoraController::class, 'analyzeImage'])->name('ups.bitacora.analyze');
+    Route::post('/ups/{ups}/bitacora', [UpsBitacoraController::class, 'store'])->name('ups.bitacora.store');
+    Route::get('/ups/{ups}/bitacora/exportar', [UpsBitacoraController::class, 'export'])->name('ups.bitacora.export');
+    Route::delete('/ups/{ups}/bitacora/{bitacora}', [UpsBitacoraController::class, 'destroy'])->name('ups.bitacora.destroy');
 
     // Soporte
     Route::get('/soporte', [SoporteController::class, 'index'])->name('soporte.index');

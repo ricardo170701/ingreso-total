@@ -5,7 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class UpsVitacora extends Model
+class UpsBitacora extends Model
 {
     use HasFactory;
 
@@ -63,6 +63,6 @@ class UpsVitacora extends Model
 
     public function imagenes()
     {
-        return $this->hasMany(UpsVitacoraImagen::class, 'ups_vitacora_id')->orderBy('orden');
+        return $this->hasMany(UpsBitacoraImagen::class, 'ups_vitacora_id')->orderBy('orden');
     }
 }

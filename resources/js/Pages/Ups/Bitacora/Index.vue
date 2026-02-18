@@ -26,7 +26,7 @@
                         {{ exportando ? 'Exportando...' : 'Exportar ZIP' }}
                     </button>
                     <Link
-                        :href="route('ups.vitacora.create', { ups: ups.id })"
+                        :href="route('ups.bitacora.create', { ups: ups.id })"
                         class="px-3 py-2 rounded-lg bg-slate-900 dark:bg-slate-700 text-white hover:bg-slate-800 dark:hover:bg-slate-600 font-medium transition-colors duration-200"
                     >
                         Nuevo Registro
@@ -83,12 +83,12 @@
             </div>
 
             <!-- Gráficos de resumen visual -->
-            <VitacoraCharts v-if="vitacora?.data?.length > 0" :records="vitacora.data" />
+            <BitacoraCharts v-if="bitacora?.data?.length > 0" :records="bitacora.data" />
 
             <!-- Lista de registros -->
-            <div v-if="vitacora.data.length > 0" class="space-y-4">
+            <div v-if="bitacora.data.length > 0" class="space-y-4">
                 <div
-                    v-for="registro in vitacora.data"
+                    v-for="registro in bitacora.data"
                     :key="registro.id"
                     class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-6 space-y-4 transition-colors duration-200"
                 >
@@ -281,14 +281,14 @@
                 </div>
 
                 <!-- Paginación -->
-                <div v-if="vitacora.links && vitacora.links.length > 0" class="mt-6 p-4 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 transition-colors duration-200">
+                <div v-if="bitacora.links && bitacora.links.length > 0" class="mt-6 p-4 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 transition-colors duration-200">
                     <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
                         <p class="text-sm text-slate-600 dark:text-slate-400">
-                            Mostrando {{ vitacora.from ?? 0 }} a {{ vitacora.to ?? 0 }} de {{ vitacora.total ?? 0 }} registros
+                            Mostrando {{ bitacora.from ?? 0 }} a {{ bitacora.to ?? 0 }} de {{ bitacora.total ?? 0 }} registros
                         </p>
                         <div class="flex items-center gap-2">
                             <Link
-                                v-for="link in vitacora.links"
+                                v-for="link in bitacora.links"
                                 :key="link.label"
                                 :href="link.url || '#'"
                                 :class="[
@@ -309,7 +309,7 @@
             <div v-else class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-12 text-center transition-colors duration-200">
                 <p class="text-slate-600 dark:text-slate-400">No hay registros de bitácora aún.</p>
                 <Link
-                    :href="route('ups.vitacora.create', { ups: ups.id })"
+                    :href="route('ups.bitacora.create', { ups: ups.id })"
                     class="inline-block mt-4 px-4 py-2 rounded-lg bg-slate-900 dark:bg-slate-700 text-white hover:bg-slate-800 dark:hover:bg-slate-600 font-medium transition-colors duration-200"
                 >
                     Crear Primer Registro
@@ -378,11 +378,11 @@
 import { ref, onMounted } from 'vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { Link, router, useForm } from '@inertiajs/vue3';
-import VitacoraCharts from '@/Components/Charts/VitacoraCharts.vue';
+import BitacoraCharts from '@/Components/Charts/BitacoraCharts.vue';
 
 const props = defineProps({
     ups: Object,
-    vitacora: Object,
+    bitacora: Object,
     filtros: {
         type: Object,
         default: () => ({
@@ -424,7 +424,7 @@ const previousImage = () => {
 };
 
 const aplicarFiltros = () => {
-    filtros.get(route('ups.vitacora.index', { ups: props.ups.id }), {
+    filtros.get(route('ups.bitacora.index', { ups: props.ups.id }), {
         preserveState: true,
         preserveScroll: true,
     });
@@ -432,7 +432,7 @@ const aplicarFiltros = () => {
 
 const limpiarFiltros = () => {
     filtros.reset();
-    filtros.get(route('ups.vitacora.index', { ups: props.ups.id }), {
+    filtros.get(route('ups.bitacora.index', { ups: props.ups.id }), {
         preserveState: true,
         preserveScroll: true,
     });
@@ -440,7 +440,7 @@ const limpiarFiltros = () => {
 
 const eliminarRegistro = (id) => {
     if (confirm('¿Estás seguro de eliminar este registro?')) {
-        router.delete(route('ups.vitacora.destroy', { ups: props.ups.id, vitacora: id }));
+        router.delete(route('ups.bitacora.destroy', { ups: props.ups.id, bitacora: id }));
     }
 };
 
@@ -483,7 +483,7 @@ const exportarBitacoras = (event) => {
 
     try {
         // Construir URL con filtros
-        const baseUrl = route('ups.vitacora.export', { ups: props.ups.id });
+        const baseUrl = route('ups.bitacora.export', { ups: props.ups.id });
         const url = `${baseUrl}?fecha_desde=${encodeURIComponent(fechaDesde)}&fecha_hasta=${encodeURIComponent(fechaHasta)}`;
 
         // Crear un elemento <a> temporal para forzar la descarga

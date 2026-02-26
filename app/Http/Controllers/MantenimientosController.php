@@ -182,12 +182,12 @@ class MantenimientosController extends Controller
                 ? ($data['fecha_fin_programada'] ?? $mantenimiento->fecha_fin_programada)
                 : null,
             'tipo' => $data['tipo'] ?? $mantenimiento->tipo,
-            'falla' => $data['falla'] ?? $mantenimiento->falla,
+            'descripcion_mantenimiento' => $data['descripcion_mantenimiento'] ?? $mantenimiento->descripcion_mantenimiento,
             'updated_by' => $request->user()->id,
         ]);
 
-        // Eliminar documentos solicitados
-        if (isset($data['documentos_eliminar']) && is_array($data['documentos_eliminar'])) {
+        // Eliminar solo los documentos cuyo ID esté en documentos_eliminar (los no enviados se conservan)
+        if (!empty($data['documentos_eliminar']) && is_array($data['documentos_eliminar'])) {
             foreach ($data['documentos_eliminar'] as $documentoId) {
                 $documento = MantenimientoDocumento::find($documentoId);
                 if ($documento && $documento->mantenimiento_id === $mantenimiento->id) {

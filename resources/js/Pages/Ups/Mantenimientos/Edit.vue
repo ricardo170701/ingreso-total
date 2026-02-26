@@ -88,10 +88,10 @@
                         <div class="space-y-2">
                             <label class="text-sm font-medium text-slate-700 dark:text-slate-300">Fotos actuales</label>
                             <div v-if="(mantenimiento.imagenes?.length || 0) > 0" class="flex flex-wrap gap-3">
-                                <label
+                                <div
                                     v-for="img in mantenimiento.imagenes"
                                     :key="img.id"
-                                    class="flex flex-col items-start gap-1 p-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 transition-colors duration-200"
+                                    class="relative group flex flex-col items-start gap-1 p-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 transition-colors duration-200"
                                 >
                                     <a :href="storageUrl(img.ruta_imagen)" target="_blank" class="block">
                                         <span class="block w-28 aspect-square rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden bg-slate-100 dark:bg-slate-700 transition-colors duration-200">
@@ -104,11 +104,21 @@
                                             />
                                         </span>
                                     </a>
-                                    <label class="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-400">
-                                        <input type="checkbox" v-model="form.imagenes_eliminar" :value="img.id" class="rounded border-slate-300 dark:border-slate-600 text-red-600 dark:text-red-400 focus:ring-red-500 dark:focus:ring-red-400" />
-                                        Eliminar
-                                    </label>
-                                </label>
+                                    <button
+                                        type="button"
+                                        :aria-label="'Eliminar foto'"
+                                        @click.prevent="toggleEliminarImagen(img.id)"
+                                        :class="[
+                                            'absolute top-3 right-3 w-7 h-7 rounded-full flex items-center justify-center text-white text-sm font-bold transition-colors',
+                                            form.imagenes_eliminar.includes(img.id)
+                                                ? 'bg-red-600 dark:bg-red-500'
+                                                : 'bg-slate-800/80 dark:bg-slate-700/80 hover:bg-red-600 dark:hover:bg-red-500'
+                                        ]"
+                                    >
+                                        ×
+                                    </button>
+                                    <span v-if="form.imagenes_eliminar.includes(img.id)" class="text-xs text-red-600 dark:text-red-400 font-medium">Se eliminará al guardar</span>
+                                </div>
                             </div>
                             <p v-else class="text-sm text-slate-500 dark:text-slate-400 italic">Sin fotos.</p>
                         </div>
@@ -116,10 +126,10 @@
                         <div class="space-y-2">
                             <label class="text-sm font-medium text-slate-700 dark:text-slate-300">PDFs actuales</label>
                             <div v-if="(mantenimiento.documentos?.length || 0) > 0" class="space-y-2">
-                                <label
+                                <div
                                     v-for="doc in mantenimiento.documentos"
                                     :key="doc.id"
-                                    class="flex items-center justify-between gap-2 p-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 transition-colors duration-200"
+                                    class="relative flex items-center justify-between gap-2 p-3 pr-10 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 transition-colors duration-200"
                                 >
                                     <a
                                         :href="storageUrl(doc.ruta_documento)"
@@ -129,11 +139,20 @@
                                         <span>📄</span>
                                         <span class="break-all">{{ doc.nombre_original || "Documento PDF" }}</span>
                                     </a>
-                                    <span class="text-xs text-slate-600 dark:text-slate-400 inline-flex items-center gap-2">
-                                        <input type="checkbox" v-model="form.documentos_eliminar" :value="doc.id" class="rounded border-slate-300 dark:border-slate-600 text-red-600 dark:text-red-400 focus:ring-red-500 dark:focus:ring-red-400" />
-                                        Eliminar
-                                    </span>
-                                </label>
+                                    <button
+                                        type="button"
+                                        :aria-label="'Eliminar documento'"
+                                        @click.prevent="toggleEliminarDocumento(doc.id)"
+                                        :class="[
+                                            'absolute top-2 right-2 w-6 h-6 rounded-full flex items-center justify-center text-white text-sm font-bold transition-colors',
+                                            form.documentos_eliminar.includes(doc.id)
+                                                ? 'bg-red-600 dark:bg-red-500'
+                                                : 'bg-slate-700/80 hover:bg-red-600 dark:hover:bg-red-500'
+                                        ]"
+                                    >
+                                        ×
+                                    </button>
+                                </div>
                             </div>
                             <p v-else class="text-sm text-slate-500 dark:text-slate-400 italic">Sin PDFs.</p>
                         </div>
@@ -252,7 +271,9 @@ import AppLayout from "@/Layouts/AppLayout.vue";
 import FormField from "@/Components/FormField.vue";
 import { Link, useForm } from "@inertiajs/vue3";
 import { submitUploadForm } from "@/Support/inertiaUploads";
-import { computed } from "vue";
+import { computed, ref } from "vue";
+
+const showConfirmModal = ref(false);
 
 const props = defineProps({
     ups: Object,
@@ -301,6 +322,24 @@ const onDocumentosChange = (e) => {
     form.documentos = files.slice(0, docsDisponibles.value);
 };
 
+function toggleEliminarImagen(id) {
+    const arr = Array.isArray(form.imagenes_eliminar) ? form.imagenes_eliminar : [];
+    if (arr.includes(id)) {
+        form.imagenes_eliminar = arr.filter((x) => x !== id);
+    } else {
+        form.imagenes_eliminar = [...arr, id];
+    }
+}
+
+function toggleEliminarDocumento(id) {
+    const arr = Array.isArray(form.documentos_eliminar) ? form.documentos_eliminar : [];
+    if (arr.includes(id)) {
+        form.documentos_eliminar = arr.filter((x) => x !== id);
+    } else {
+        form.documentos_eliminar = [...arr, id];
+    }
+}
+
 const fotosSeleccionadasCount = computed(() => (form.fotos || []).length);
 const docsSeleccionadosCount = computed(() => (form.documentos || []).length);
 const fotosRestantes = computed(() => fotosDisponibles.value);
@@ -310,13 +349,25 @@ const docsRestantesDespues = computed(() => Math.max(0, docsDisponibles.value - 
 
 const confirmSubmit = () => {
     showConfirmModal.value = false;
+    // No enviar "fotos" ni "documentos" si están vacíos para preservar los existentes al editar
     submitUploadForm(
         form,
         route("ups.mantenimientos.update", {
             ups: props.ups.id,
             mantenimiento: props.mantenimiento.id,
         }),
-        "put"
+        "put",
+        {
+            transform: (data) => {
+                const d = { ...data };
+                // No enviar archivos ni listas de eliminar vacías: el servidor conserva lo existente
+                if (Array.isArray(d.fotos) && d.fotos.length === 0) delete d.fotos;
+                if (Array.isArray(d.documentos) && d.documentos.length === 0) delete d.documentos;
+                if (Array.isArray(d.imagenes_eliminar) && d.imagenes_eliminar.length === 0) delete d.imagenes_eliminar;
+                if (Array.isArray(d.documentos_eliminar) && d.documentos_eliminar.length === 0) delete d.documentos_eliminar;
+                return d;
+            },
+        }
     );
 };
 </script>

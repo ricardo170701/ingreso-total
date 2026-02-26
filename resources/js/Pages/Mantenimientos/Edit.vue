@@ -328,6 +328,7 @@ const props = defineProps({
 
 const documentosPreview = ref([]);
 const documentosFiles = ref([]);
+const showConfirmModal = ref(false);
 const showDeleteModal = ref(false);
 
 const form = useForm({
@@ -404,10 +405,20 @@ const formatFileSize = (bytes) => {
 
 const confirmSubmit = () => {
     showConfirmModal.value = false;
+    // No enviar "documentos" si está vacío para que el servidor preserve los PDFs existentes
     submitUploadForm(
         form,
         route("mantenimientos.update", { mantenimiento: props.mantenimiento.id }),
-        "put"
+        "put",
+        {
+            transform: (data) => {
+                const d = { ...data };
+                if (Array.isArray(d.documentos) && d.documentos.length === 0) {
+                    delete d.documentos;
+                }
+                return d;
+            },
+        }
     );
 };
 

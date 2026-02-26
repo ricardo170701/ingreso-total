@@ -155,9 +155,16 @@
                             class="block w-full text-sm text-slate-700 dark:text-slate-300 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-slate-900 dark:file:bg-slate-700 file:text-white hover:file:bg-slate-800 dark:hover:file:bg-slate-600 transition-colors duration-200"
                         />
                         <div class="mt-3 flex flex-wrap gap-3 items-start">
-                            <div v-if="fotoActualUrl" class="space-y-1">
+                            <div v-if="fotoActualUrl" class="relative group space-y-1">
                                 <p class="text-xs text-slate-500 dark:text-slate-400">Actual</p>
-                                <div class="w-40 aspect-square rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden bg-slate-100 dark:bg-slate-700 transition-colors duration-200">
+                                <div
+                                    :class="[
+                                        'w-40 aspect-square rounded-xl border overflow-hidden bg-slate-100 dark:bg-slate-700 transition-colors duration-200',
+                                        form.eliminar_foto
+                                            ? 'border-red-400 dark:border-red-500 opacity-75'
+                                            : 'border-slate-200 dark:border-slate-700'
+                                    ]"
+                                >
                                     <img
                                         :src="fotoActualUrl"
                                         alt="Foto actual"
@@ -166,6 +173,18 @@
                                         decoding="async"
                                     />
                                 </div>
+                                <button
+                                    type="button"
+                                    aria-label="Eliminar foto"
+                                    @click.prevent="toggleEliminarFoto"
+                                    :class="[
+                                        'absolute top-6 right-0 w-7 h-7 rounded-full flex items-center justify-center text-white text-sm font-bold transition-colors',
+                                        form.eliminar_foto ? 'bg-red-600 dark:bg-red-500' : 'bg-slate-800/80 dark:bg-slate-700/80 hover:bg-red-600 dark:hover:bg-red-500'
+                                    ]"
+                                >
+                                    ×
+                                </button>
+                                <p v-if="form.eliminar_foto" class="text-xs text-red-600 dark:text-red-400 font-medium">Se eliminará al guardar</p>
                             </div>
                             <div v-if="fotoPreviewUrl" class="space-y-1">
                                 <p class="text-xs text-slate-500 dark:text-slate-400">Nueva</p>
@@ -252,14 +271,31 @@
                         <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
                             Formato PDF, máximo 10MB
                         </p>
-                        <div v-if="fichaTecnicaActualUrl" class="mt-2">
-                            <a
-                                :href="fichaTecnicaActualUrl"
-                                target="_blank"
-                                class="text-sm text-green-600 dark:text-green-400 hover:underline"
-                            >
-                                Ver ficha técnica actual
-                            </a>
+                        <div v-if="fichaTecnicaActualUrl" class="mt-2 flex flex-wrap items-center gap-2">
+                            <span class="relative inline-flex items-center">
+                                <a
+                                    :href="fichaTecnicaActualUrl"
+                                    target="_blank"
+                                    :class="[
+                                        'text-sm hover:underline transition-colors pr-8',
+                                        form.eliminar_ficha_tecnica ? 'text-red-600 dark:text-red-400 line-through' : 'text-green-600 dark:text-green-400'
+                                    ]"
+                                >
+                                    Ver ficha técnica actual
+                                </a>
+                                <button
+                                    type="button"
+                                    aria-label="Eliminar ficha técnica"
+                                    @click.prevent="toggleEliminarFichaTecnica"
+                                    :class="[
+                                        'absolute right-0 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full flex items-center justify-center text-white text-sm font-bold transition-colors',
+                                        form.eliminar_ficha_tecnica ? 'bg-red-600 dark:bg-red-500' : 'bg-slate-700/80 hover:bg-red-600 dark:hover:bg-red-500'
+                                    ]"
+                                >
+                                    ×
+                                </button>
+                            </span>
+                            <span v-if="form.eliminar_ficha_tecnica" class="text-xs text-red-600 dark:text-red-400 font-medium">Se eliminará al guardar</span>
                         </div>
                     </FormField>
 
@@ -391,6 +427,8 @@ const form = useForm({
     serial: props.ups.serial ?? "",
     foto: null,
     ficha_tecnica: null,
+    eliminar_foto: false,
+    eliminar_ficha_tecnica: false,
     potencia_va: props.ups.potencia_va ?? null,
     potencia_kva: props.ups.potencia_kva ?? null,
     potencia_w: props.ups.potencia_w ?? null,
@@ -401,14 +439,26 @@ const form = useForm({
     observaciones: props.ups.observaciones ?? "",
 });
 
+function toggleEliminarFoto() {
+    form.eliminar_foto = !form.eliminar_foto;
+    if (form.eliminar_foto) form.foto = null;
+}
+
+function toggleEliminarFichaTecnica() {
+    form.eliminar_ficha_tecnica = !form.eliminar_ficha_tecnica;
+    if (form.eliminar_ficha_tecnica) form.ficha_tecnica = null;
+}
+
 const onFotoChange = (e) => {
     const file = e.target?.files?.[0] || null;
     form.foto = file;
+    if (file) form.eliminar_foto = false;
 };
 
 const onFichaTecnicaChange = (e) => {
     const file = e.target?.files?.[0] || null;
     form.ficha_tecnica = file;
+    if (file) form.eliminar_ficha_tecnica = false;
 };
 
 const fotoPreviewUrl = computed(() => {
@@ -427,7 +477,15 @@ const showConfirmModal = ref(false);
 
 const confirmSubmit = () => {
     showConfirmModal.value = false;
-    submitUploadForm(form, route("ups.update", { ups: props.ups.id }), "put");
+    // No enviar foto ni ficha_tecnica si están vacíos para conservar los existentes al editar
+    submitUploadForm(form, route("ups.update", { ups: props.ups.id }), "put", {
+        transform: (data) => {
+            const d = { ...data };
+            if (d.foto == null || (typeof d.foto === 'object' && !(d.foto instanceof File))) delete d.foto;
+            if (d.ficha_tecnica == null || (typeof d.ficha_tecnica === 'object' && !(d.ficha_tecnica instanceof File))) delete d.ficha_tecnica;
+            return d;
+        },
+    });
 };
 
 const eliminar = () => {

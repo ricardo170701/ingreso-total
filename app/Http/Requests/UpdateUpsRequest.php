@@ -30,6 +30,8 @@ class UpdateUpsRequest extends FormRequest
             'serial' => ['nullable', 'string', 'max:255'],
             'foto' => ['nullable', 'image', 'max:4096'], // 4MB
             'ficha_tecnica' => ['nullable', 'file', 'mimes:pdf', 'max:10240'], // 10MB
+            'eliminar_foto' => ['nullable', 'boolean'],
+            'eliminar_ficha_tecnica' => ['nullable', 'boolean'],
             'potencia_va' => ['nullable', 'integer', 'min:0', 'max:2147483647'],
             'potencia_kva' => ['nullable', 'numeric', 'min:0'],
             'potencia_w' => ['nullable', 'integer', 'min:0', 'max:2147483647'],

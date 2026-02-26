@@ -120,19 +120,37 @@ class UpsController extends Controller
         $data = $request->validated();
         $data['activo'] = (bool) ($data['activo'] ?? $ups->activo);
 
-        if ($request->hasFile('foto')) {
+        // Foto: eliminar (X), reemplazar con nueva, o conservar actual
+        if (!empty($data['eliminar_foto'])) {
+            if ($ups->foto && Storage::disk('public')->exists($ups->foto)) {
+                Storage::disk('public')->delete($ups->foto);
+            }
+            $data['foto'] = null;
+        } elseif ($request->hasFile('foto') && $request->file('foto')) {
             if ($ups->foto && Storage::disk('public')->exists($ups->foto)) {
                 Storage::disk('public')->delete($ups->foto);
             }
             $data['foto'] = $request->file('foto')->store('ups/fotos', 'public');
+        } else {
+            unset($data['foto']);
         }
+        unset($data['eliminar_foto']);
 
-        if ($request->hasFile('ficha_tecnica')) {
+        // Ficha técnica: eliminar (X), reemplazar con nueva, o conservar actual
+        if (!empty($data['eliminar_ficha_tecnica'])) {
+            if ($ups->ficha_tecnica && Storage::disk('public')->exists($ups->ficha_tecnica)) {
+                Storage::disk('public')->delete($ups->ficha_tecnica);
+            }
+            $data['ficha_tecnica'] = null;
+        } elseif ($request->hasFile('ficha_tecnica') && $request->file('ficha_tecnica')) {
             if ($ups->ficha_tecnica && Storage::disk('public')->exists($ups->ficha_tecnica)) {
                 Storage::disk('public')->delete($ups->ficha_tecnica);
             }
             $data['ficha_tecnica'] = $request->file('ficha_tecnica')->store('ups/fichas_tecnicas', 'public');
+        } else {
+            unset($data['ficha_tecnica']);
         }
+        unset($data['eliminar_ficha_tecnica']);
 
         $ups->update($data);
 

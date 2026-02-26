@@ -141,8 +141,8 @@ class UpsMantenimientosController extends Controller
             'updated_by' => $request->user()->id,
         ]);
 
-        // Eliminar imágenes solicitadas
-        if (isset($data['imagenes_eliminar']) && is_array($data['imagenes_eliminar'])) {
+        // Eliminar solo las imágenes/documentos marcados para eliminar (los no enviados se conservan)
+        if (!empty($data['imagenes_eliminar']) && is_array($data['imagenes_eliminar'])) {
             foreach ($data['imagenes_eliminar'] as $imgId) {
                 $img = UpsMantenimientoImagen::find($imgId);
                 if ($img && (int) $img->ups_mantenimiento_id === (int) $mantenimiento->id) {
@@ -154,8 +154,7 @@ class UpsMantenimientosController extends Controller
             }
         }
 
-        // Eliminar documentos solicitados
-        if (isset($data['documentos_eliminar']) && is_array($data['documentos_eliminar'])) {
+        if (!empty($data['documentos_eliminar']) && is_array($data['documentos_eliminar'])) {
             foreach ($data['documentos_eliminar'] as $docId) {
                 $doc = UpsMantenimientoDocumento::find($docId);
                 if ($doc && (int) $doc->ups_mantenimiento_id === (int) $mantenimiento->id) {
@@ -167,11 +166,12 @@ class UpsMantenimientosController extends Controller
             }
         }
 
-        // Agregar nuevas fotos
-        if ($request->hasFile('fotos')) {
+        // Agregar nuevas fotos solo si se enviaron archivos (no tocar las existentes si no hay nuevos)
+        $archivosFotos = $request->file('fotos');
+        if (is_array($archivosFotos) && count($archivosFotos) > 0) {
             $ultimoOrden = $mantenimiento->imagenes()->max('orden') ?? -1;
             $orden = $ultimoOrden + 1;
-            foreach ($request->file('fotos') as $foto) {
+            foreach ($archivosFotos as $foto) {
                 $ruta = $foto->store('ups/mantenimientos/fotos', 'public');
                 UpsMantenimientoImagen::create([
                     'ups_mantenimiento_id' => $mantenimiento->id,
@@ -182,11 +182,12 @@ class UpsMantenimientosController extends Controller
             }
         }
 
-        // Agregar nuevos documentos
-        if ($request->hasFile('documentos')) {
+        // Agregar nuevos documentos solo si se enviaron archivos (no tocar los existentes si no hay nuevos)
+        $archivosDocumentos = $request->file('documentos');
+        if (is_array($archivosDocumentos) && count($archivosDocumentos) > 0) {
             $ultimoOrden = $mantenimiento->documentos()->max('orden') ?? -1;
             $orden = $ultimoOrden + 1;
-            foreach ($request->file('documentos') as $documento) {
+            foreach ($archivosDocumentos as $documento) {
                 $ruta = $documento->store('ups/mantenimientos/documentos', 'public');
                 UpsMantenimientoDocumento::create([
                     'ups_mantenimiento_id' => $mantenimiento->id,

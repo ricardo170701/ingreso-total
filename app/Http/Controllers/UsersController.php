@@ -239,10 +239,10 @@ class UsersController extends Controller
                 'fecha_expiracion' => $user->fecha_expiracion?->format('Y-m-d'),
                 'tipo_contrato' => $user->tipo_contrato,
                 'role_id' => $user->role_id,
-            'cargo_id' => $user->cargo_id,
-            'cargo_texto' => $user->cargo_texto,
-        ],
-        'roles' => Role::query()
+                'cargo_id' => $user->cargo_id,
+                'cargo_texto' => $user->cargo_texto,
+            ],
+            'roles' => Role::query()
                 ->whereIn('name', ['visitante', 'servidor_publico', 'proveedor', 'funcionario'])
                 ->orderBy('name')
                 ->get(['id', 'name']),

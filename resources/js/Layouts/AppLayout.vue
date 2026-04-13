@@ -1,32 +1,5 @@
 <template>
     <div class="min-h-screen bg-slate-50 dark:bg-slate-900 transition-colors duration-200">
-        <!-- Bloqueo visual (mejor esfuerzo) ante intento de captura/impresión -->
-        <!-- IMPORTANTE: el blur NO debe afectar el modal (solo el fondo) -->
-        <div
-            v-if="securityOverlayVisible"
-            class="fixed inset-0 z-9999 bg-black/85 flex items-center justify-center p-4"
-        >
-            <div class="max-w-md w-full rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 p-5 shadow-2xl">
-                <h3 class="text-base font-semibold text-slate-900 dark:text-slate-100">
-                    Acción bloqueada
-                </h3>
-                <p class="mt-2 text-sm text-slate-700 dark:text-slate-300">
-                    Las capturas de pantalla / impresión están deshabilitadas en este sistema.
-                </p>
-                <div class="mt-4 flex justify-end">
-                    <button
-                        type="button"
-                        class="px-4 py-2 rounded-lg bg-slate-900 dark:bg-slate-700 text-white hover:bg-slate-800 dark:hover:bg-slate-600 transition-colors"
-                        @click="hideSecurityOverlay"
-                    >
-                        Entendido
-                    </button>
-                </div>
-            </div>
-        </div>
-
-        <!-- App (se blurea solo el fondo, no el overlay) -->
-        <div :class="securityBlur ? 'blur-sm select-none' : ''">
         <!-- Overlay (mobile) -->
         <div
             v-if="sidebarOpen"
@@ -215,7 +188,8 @@
                 <slot />
             </main>
             </div>
-        </div>
+
+        <OfflineQrOverlay />
     </div>
 </template>
 
@@ -224,6 +198,7 @@ import { computed, ref, watch, onMounted, onUnmounted } from "vue";
 import { usePage, router, Link } from "@inertiajs/vue3";
 import { useDarkMode } from "@/composables/useDarkMode";
 import Modal from "@/Components/Modal.vue";
+import OfflineQrOverlay from "@/Components/OfflineQrOverlay.vue";
 
 const page = usePage();
 const sidebarOpen = ref(false);
@@ -494,85 +469,6 @@ const logout = () => {
     router.post(route("logout"));
 };
 
-// ===== Seguridad UI (bloqueo mejor-esfuerzo de captura/impresión) =====
-// Nota: En navegadores NO es posible impedir al 100% las capturas de pantalla a nivel SO.
-// Esto solo bloquea atajos comunes y agrega disuasión visual.
-const securityOverlayVisible = ref(false);
-const securityBlur = ref(false);
-let securityTimeout = null;
-
-const hideSecurityOverlay = () => {
-    securityOverlayVisible.value = false;
-    securityBlur.value = false;
-    if (securityTimeout) {
-        clearTimeout(securityTimeout);
-        securityTimeout = null;
-    }
-};
-
-const triggerSecurityBlock = () => {
-    securityOverlayVisible.value = true;
-    securityBlur.value = true;
-    if (securityTimeout) clearTimeout(securityTimeout);
-    securityTimeout = setTimeout(() => {
-        hideSecurityOverlay();
-    }, 2500);
-};
-
-const onKeyDownSecurity = (e) => {
-    const key = String(e.key || "").toLowerCase();
-
-    // Print Screen (algunos navegadores lo reportan, otros no)
-    const isPrintScreen = key === "printscreen" || key === "prtsc" || key === "prtscr";
-
-    // Windows Snipping Tool: Win + Shift + S
-    const isWinSnip = e.metaKey && e.shiftKey && key === "s";
-
-    // macOS screenshots: Cmd + Shift + 3/4/5
-    const isMacShot = e.metaKey && e.shiftKey && (key === "3" || key === "4" || key === "5");
-
-    // Impresión: Ctrl/Cmd + P (evita imprimir QR)
-    const isPrint = (e.ctrlKey || e.metaKey) && key === "p";
-
-    if (isPrintScreen || isWinSnip || isMacShot || isPrint) {
-        try {
-            e.preventDefault();
-            e.stopPropagation();
-        } catch (_) {}
-        triggerSecurityBlock();
-        return false;
-    }
-
-    return true;
-};
-
-const onContextMenuSecurity = (e) => {
-    // Deshabilitar clic derecho (evita “Guardar imagen como...” y algunas herramientas)
-    try {
-        e.preventDefault();
-        e.stopPropagation();
-    } catch (_) {}
-    triggerSecurityBlock();
-    return false;
-};
-
-const onDragStartSecurity = (e) => {
-    // Evitar arrastrar imágenes/textos fuera del navegador
-    try {
-        e.preventDefault();
-        e.stopPropagation();
-    } catch (_) {}
-    return false;
-};
-
-const onVisibilityChangeSecurity = () => {
-    // Mobile/desktop: SOLO cuando realmente la pestaña pasa a segundo plano.
-    // Evitamos usar `blur` porque dispara con interacciones normales (barra de direcciones, cambio de foco, etc).
-    if (typeof document !== "undefined" && document.hidden) {
-        triggerSecurityBlock();
-    }
-};
-
 // Cerrar sidebar al navegar (mobile)
 watch(
     () => page.url,
@@ -601,12 +497,6 @@ onMounted(() => {
     if (typeof window === "undefined") return;
     window.addEventListener("keydown", onKeyDown);
 
-    // Seguridad mejor-esfuerzo (capturas/impresión)
-    window.addEventListener("keydown", onKeyDownSecurity, true);
-    window.addEventListener("contextmenu", onContextMenuSecurity, true);
-    window.addEventListener("dragstart", onDragStartSecurity, true);
-    document.addEventListener("visibilitychange", onVisibilityChangeSecurity, true);
-    
     // Inicializar el estado del aviso de expiración solo si no se ha mostrado antes en esta sesión
     // Esto evita que se muestre en cada navegación
     if (user.value?.id && !verificarAvisoMostrado()) {
@@ -620,11 +510,5 @@ onMounted(() => {
 onUnmounted(() => {
     if (typeof window === "undefined") return;
     window.removeEventListener("keydown", onKeyDown);
-
-    window.removeEventListener("keydown", onKeyDownSecurity, true);
-    window.removeEventListener("contextmenu", onContextMenuSecurity, true);
-    window.removeEventListener("dragstart", onDragStartSecurity, true);
-    document.removeEventListener("visibilitychange", onVisibilityChangeSecurity, true);
-    hideSecurityOverlay();
 });
 </script>

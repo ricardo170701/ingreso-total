@@ -116,7 +116,7 @@ class VisitanteSinCorreoTest extends TestCase
             'tarjeta_nfc_id' => $tarjeta->id,
             'user_id' => $visitante->id,
             'gerencia_id' => null,
-            'pisos' => [$piso->id],
+            'puertas' => [$puerta->id],
             'hora_inicio' => null,
             'hora_fin' => null,
             'fecha_inicio' => null,

@@ -7,9 +7,12 @@ use App\Http\Requests\GenerateCodigoQrRequest;
 use App\Models\CodigoQr;
 use App\Models\Puerta;
 use App\Models\User;
+use App\Mail\QrCodeMail;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
+use SimpleSoftwareIO\QrCode\Facades\QrCode;
 
 class CodigoQrController extends Controller
 {
@@ -36,7 +39,8 @@ class CodigoQrController extends Controller
      *     ),
      *     @OA\Property(property="dias_semana", type="string", nullable=true, example="1,2,3,4,5"),
      *     @OA\Property(property="fecha_inicio", type="string", format="date", nullable=true, example=null),
-     *     @OA\Property(property="fecha_fin", type="string", format="date", nullable=true, example=null)
+     *     @OA\Property(property="fecha_fin", type="string", format="date", nullable=true, example=null),
+     *     @OA\Property(property="send_qr_email", type="boolean", nullable=true, description="Si es true, envía el QR por correo al usuario destino (requiere email).")
      *   )),
      *   @OA\Response(response=201, description="Creado"),
      *   @OA\Response(response=401, description="No autenticado"),
@@ -235,14 +239,34 @@ class CodigoQrController extends Controller
             return response()->json(['message' => 'No se pudo crear el QR.'], 500);
         }
 
+        if (!empty($data['send_qr_email'])) {
+            if (empty($targetUser->email)) {
+                return response()->json([
+                    'message' => 'El usuario destino no tiene correo; no se puede enviar el QR por email.',
+                    'errors' => ['send_qr_email' => ['El usuario destino no tiene correo electrónico.']],
+                ], 422);
+            }
+            $qrSvg = strval(QrCode::format('svg')->size(300)->margin(2)->generate($plainToken));
+            $expiresAtLabel = $qr->fecha_expiracion
+                ? Carbon::parse($qr->fecha_expiracion)->format('d/m/Y H:i')
+                : null;
+            Mail::to($targetUser->email)->send(new QrCodeMail(
+                userName: $targetUser->name ?? $targetUser->email,
+                qrToken: $plainToken,
+                qrSvg: $qrSvg,
+                expiresAt: $expiresAtLabel,
+            ));
+        }
+
         /** @var CodigoQr $qr */
         return response()->json([
-            'message' => 'QR temporal creado (24h).',
+            'message' => 'QR creado.',
             'data' => [
                 'id' => $qr->id,
                 'user_id' => $qr->user_id,
-                'expires_at' => $expiresAt->toIso8601String(),
-                'token' => $plainToken, // este es el valor a convertir a QR
+                'expires_at' => $expiresAt?->toIso8601String(),
+                'token' => $plainToken, // valor a convertir a QR
+                'email_sent' => !empty($data['send_qr_email']),
             ],
         ], 201);
     }

@@ -7,6 +7,7 @@ use App\Http\Requests\UpdateUpsRequest;
 use App\Models\Piso;
 use App\Models\Ups;
 use Illuminate\Http\Request;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -68,6 +69,7 @@ class UpsController extends Controller
 
         $data = $request->validated();
         $data['activo'] = (bool) ($data['activo'] ?? true);
+        $data['umbrales'] = Ups::normalizeUmbrales(Arr::get($data, 'umbrales'));
 
         if ($request->hasFile('foto')) {
             $data['foto'] = $request->file('foto')->store('ups/fotos', 'public');
@@ -119,6 +121,7 @@ class UpsController extends Controller
 
         $data = $request->validated();
         $data['activo'] = (bool) ($data['activo'] ?? $ups->activo);
+        $data['umbrales'] = Ups::normalizeUmbrales(Arr::get($data, 'umbrales'));
 
         // Foto: eliminar (X), reemplazar con nueva, o conservar actual
         if (!empty($data['eliminar_foto'])) {

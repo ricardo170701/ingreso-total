@@ -34,11 +34,13 @@ class Ups extends Model
         'voltaje_baterias',
         'activo',
         'observaciones',
+        'umbrales',
     ];
 
     protected $casts = [
         'activo' => 'boolean',
         'fecha_adquisicion' => 'date',
+        'umbrales' => 'array',
         'potencia_va' => 'integer',
         'potencia_w' => 'integer',
         'potencia_kva' => 'decimal:2',
@@ -60,5 +62,47 @@ class Ups extends Model
     public function bitacora()
     {
         return $this->hasMany(UpsBitacora::class, 'ups_id')->orderBy('created_at', 'desc');
+    }
+
+    /**
+     * @param  array<string, mixed>|null  $raw
+     */
+    public static function normalizeUmbrales(?array $raw): ?array
+    {
+        if (!$raw) {
+            return null;
+        }
+        $keys = [
+            'temperatura',
+            'battery_percentage',
+            'input_voltage',
+            'output_voltage',
+            'battery_voltage',
+            'output_power',
+        ];
+        $out = [];
+        foreach ($keys as $k) {
+            if (!isset($raw[$k]) || !is_array($raw[$k])) {
+                continue;
+            }
+            $min = $raw[$k]['min'] ?? null;
+            $max = $raw[$k]['max'] ?? null;
+            if ($min === '' || $min === null) {
+                $min = null;
+            } else {
+                $min = (float) $min;
+            }
+            if ($max === '' || $max === null) {
+                $max = null;
+            } else {
+                $max = (float) $max;
+            }
+            if ($min === null && $max === null) {
+                continue;
+            }
+            $out[$k] = ['min' => $min, 'max' => $max];
+        }
+
+        return $out === [] ? null : $out;
     }
 }

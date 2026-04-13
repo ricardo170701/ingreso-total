@@ -31,6 +31,7 @@ class AuthController extends Controller
         $data = $request->validate([
             'email' => ['required', 'email'],
             'password' => ['required', 'string'],
+            'remember' => ['sometimes', 'boolean'],
         ]);
 
         $user = $this->authService->validateCredentials($data['email'], $data['password']);
@@ -42,8 +43,9 @@ class AuthController extends Controller
             ])->onlyInput('email');
         }
 
-        // Autenticar con sesión (en lugar de token)
-        Auth::login($user, $request->boolean('remember'));
+        // Sesión + cookie "recordarme" (larga duración) para que al cerrar el navegador/PWA
+        // y volver a abrir no pida login de nuevo. Por defecto activado si no viene el campo.
+        Auth::login($user, $request->boolean('remember', true));
         $request->session()->regenerate();
 
         // Si el usuario no ha cambiado su contraseña, forzar cambio

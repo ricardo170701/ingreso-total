@@ -296,11 +296,11 @@
                                 <strong>Generar QR:</strong> Haz clic en el botón <strong>"Generar QR"</strong>. El sistema creará el código y lo mostrará en pantalla.
                             </li>
                             <li>
-                                <strong>Descargar o enviar:</strong>
+                                <strong>Descargar o correo:</strong>
                                 <ul class="list-disc list-inside ml-4 mt-1 space-y-1">
                                     <li>Haz clic en <strong>"Descargar QR"</strong> para guardar la imagen en tu dispositivo</li>
-                                    <li>Haz clic en <strong>"Enviar por Correo"</strong> para enviarlo directamente al correo del usuario (requiere que el usuario tenga correo configurado)</li>
-                                         </ul>
+                                    <li>Si el usuario tiene correo en el sistema, el sistema envía automáticamente una copia del QR a esa dirección al generarlo</li>
+                                </ul>
                             </li>
                         </ol>
                         <div class="mt-4 p-3 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-lg transition-colors duration-200">
@@ -904,7 +904,7 @@
                                     <li>Después de iniciar sesión, serás redirigido automáticamente a la sección de Ingreso</li>
                                     <li>Si ya tienes un QR activo, lo verás en pantalla</li>
                                     <li>Haz clic en "Descargar QR" para guardar la imagen en tu dispositivo móvil</li>
-                                    <li>También puedes usar "Enviar por Correo" para recibirlo en tu correo electrónico</li>
+                                    <li>Cuando un administrador genera tu QR y tu cuenta tiene correo, recibirás una copia automática por correo electrónico</li>
                                 </ul>
                             </li>
                             <li>

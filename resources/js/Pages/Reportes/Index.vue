@@ -418,6 +418,77 @@
                     </div>
                 </form>
             </div>
+
+            <!-- Monitoreo UPS (bitácora operativa) -->
+            <div
+                v-if="puedeExportarUpsMonitoreo"
+                class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-6 transition-colors duration-200"
+            >
+                <h2 class="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4">
+                    ⚡ Monitoreo UPS (CSV)
+                </h2>
+                <p class="text-sm text-slate-600 dark:text-slate-400 mb-4">
+                    Exporta las lecturas registradas en la bitácora operativa de los equipos UPS. Filtra por rango de fechas y, opcionalmente, por un equipo concreto.
+                </p>
+                <form
+                    @submit.prevent="exportarUpsMonitoreo"
+                    class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4"
+                >
+                    <FormField
+                        label="Fecha desde"
+                        :error="formUpsMonitoreo.errors.fecha_desde"
+                    >
+                        <input
+                            v-model="formUpsMonitoreo.fecha_desde"
+                            type="date"
+                            class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 transition-colors duration-200"
+                        />
+                    </FormField>
+                    <FormField
+                        label="Fecha hasta"
+                        :error="formUpsMonitoreo.errors.fecha_hasta"
+                    >
+                        <input
+                            v-model="formUpsMonitoreo.fecha_hasta"
+                            type="date"
+                            class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 transition-colors duration-200"
+                        />
+                    </FormField>
+                    <FormField
+                        label="UPS"
+                        :error="formUpsMonitoreo.errors.ups_id"
+                        class="md:col-span-2"
+                    >
+                        <select
+                            v-model="formUpsMonitoreo.ups_id"
+                            class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 transition-colors duration-200"
+                        >
+                            <option :value="null">Todos los equipos</option>
+                            <option
+                                v-for="u in upsList"
+                                :key="u.id"
+                                :value="u.id"
+                            >
+                                {{ u.nombre }}
+                                <template v-if="u.codigo"> ({{ u.codigo }})</template>
+                            </option>
+                        </select>
+                    </FormField>
+                    <div class="md:col-span-2 lg:col-span-4">
+                        <button
+                            type="submit"
+                            :disabled="formUpsMonitoreo.processing"
+                            class="px-4 py-2 rounded-lg bg-slate-900 dark:bg-slate-700 text-white hover:bg-slate-800 dark:hover:bg-slate-600 disabled:opacity-50 font-medium transition-colors duration-200"
+                        >
+                            {{
+                                formUpsMonitoreo.processing
+                                    ? "Exportando..."
+                                    : "📥 Exportar monitoreo UPS (CSV)"
+                            }}
+                        </button>
+                    </div>
+                </form>
+            </div>
         </div>
     </AppLayout>
 </template>
@@ -437,6 +508,8 @@ const props = defineProps({
     puertas: Array,
     tiposPuerta: Array,
     materiales: Array,
+    puedeExportarUpsMonitoreo: { type: Boolean, default: false },
+    upsList: { type: Array, default: () => [] },
 });
 
 const formatTipoVinculacion = (name) => {
@@ -508,6 +581,12 @@ const formPuertas = useForm({
     activo: null,
 });
 
+const formUpsMonitoreo = useForm({
+    fecha_desde: null,
+    fecha_hasta: null,
+    ups_id: null,
+});
+
 const downloadCsv = (url, form) => {
     form.processing = true;
 
@@ -550,6 +629,10 @@ const exportarMantenimientos = () => {
 
 const exportarPuertas = () => {
     downloadCsv(route("reportes.exportar.puertas"), formPuertas);
+};
+
+const exportarUpsMonitoreo = () => {
+    downloadCsv(route("reportes.exportar.ups-monitoreo"), formUpsMonitoreo);
 };
 </script>
 

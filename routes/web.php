@@ -135,7 +135,6 @@ Route::middleware(['auth', 'force.password.change', 'visitante.restrict', 'permi
     Route::get('/ups/{ups}/bitacora/crear', [UpsBitacoraController::class, 'create'])->name('ups.bitacora.create');
     Route::post('/ups/{ups}/bitacora/analizar', [UpsBitacoraController::class, 'analyzeImage'])->name('ups.bitacora.analyze');
     Route::post('/ups/{ups}/bitacora', [UpsBitacoraController::class, 'store'])->name('ups.bitacora.store');
-    Route::get('/ups/{ups}/bitacora/exportar', [UpsBitacoraController::class, 'export'])->name('ups.bitacora.export');
     Route::delete('/ups/{ups}/bitacora/{bitacora}', [UpsBitacoraController::class, 'destroy'])->name('ups.bitacora.destroy');
 
     // Soporte
@@ -168,6 +167,7 @@ Route::middleware(['auth', 'force.password.change', 'visitante.restrict', 'permi
     Route::get('/reportes/exportar/accesos', [ReportesController::class, 'exportarAccesos'])->name('reportes.exportar.accesos');
     Route::get('/reportes/exportar/mantenimientos', [ReportesController::class, 'exportarMantenimientos'])->name('reportes.exportar.mantenimientos');
     Route::get('/reportes/exportar/puertas', [ReportesController::class, 'exportarPuertas'])->name('reportes.exportar.puertas');
+    Route::get('/reportes/exportar/ups-monitoreo', [ReportesController::class, 'exportarUpsMonitoreo'])->name('reportes.exportar.ups-monitoreo');
 
     // Protocolo de Emergencia
     Route::get('/protocolo', [ProtocoloController::class, 'index'])->name('protocolo.index');

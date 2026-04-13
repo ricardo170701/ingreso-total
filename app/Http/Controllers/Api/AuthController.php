@@ -34,6 +34,12 @@ class AuthController extends Controller
      *             @OA\Property(property="token_type", type="string", example="Bearer"),
      *             @OA\Property(property="token", type="string", example="1|xxxx"),
      *             @OA\Property(
+     *                 property="token_expires_at",
+     *                 type="string",
+     *                 format="date-time",
+     *                 description="Caducidad del token (30 días desde el login). Renovar con un nuevo login antes de esta fecha."
+     *             ),
+     *             @OA\Property(
      *                 property="user",
      *                 type="object",
      *                 @OA\Property(property="id", type="integer", example=1),
@@ -63,11 +69,12 @@ class AuthController extends Controller
             }
 
             $tokenName = $data['device_name'] ?? 'api';
-            $token = $user->createToken($tokenName)->plainTextToken;
+            $newToken = $user->createToken($tokenName, ['*'], now()->addDays(30));
 
             return response()->json([
                 'token_type' => 'Bearer',
-                'token' => $token,
+                'token' => $newToken->plainTextToken,
+                'token_expires_at' => $newToken->accessToken->expires_at?->toIso8601String(),
                 'user' => [
                     'id' => $user->id,
                     'email' => $user->email,

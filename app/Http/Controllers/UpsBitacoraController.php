@@ -4,16 +4,16 @@ namespace App\Http\Controllers;
 
 use App\Models\Ups;
 use App\Models\UpsBitacora;
-use App\Models\UpsBitacoraImagen;
+use App\Support\UpsBitacoraVisionEnricher;
+use App\Support\UpsBitacoraVisionPrompt;
+use App\Support\UpsUmbralesEvaluator;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 use OpenAI\Laravel\Facades\OpenAI;
-use ZipArchive;
-use ZipStream\ZipStream;
-use Barryvdh\DomPDF\Facade\Pdf;
 
 class UpsBitacoraController extends Controller
 {
@@ -40,6 +40,13 @@ class UpsBitacoraController extends Controller
             ->paginate(8)
             ->withQueryString();
 
+        $bitacora->getCollection()->transform(static function (UpsBitacora $b) use ($ups) {
+            $row = $b->toArray();
+            $row['umbrales_alerta'] = UpsUmbralesEvaluator::alertas($ups, $b);
+
+            return $row;
+        });
+
         return Inertia::render('Ups/Bitacora/Index', [
             'ups' => $ups,
             'bitacora' => $bitacora,
@@ -62,6 +69,14 @@ class UpsBitacoraController extends Controller
     public function analyzeImage(Request $request, Ups $ups)
     {
         $this->authorize('view', $ups);
+
+        if (!config('openai.ups_bitacora_ai_enabled', true)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'El análisis asistido por IA está desactivado (UPS_BITACORA_AI_ENABLED). Puedes registrar la lectura manualmente.',
+                'allow_manual' => true,
+            ], 422);
+        }
 
         $request->validate([
             'imagenes' => 'required|array|min:1|max:5',
@@ -91,101 +106,12 @@ class UpsBitacoraController extends Controller
                 'datos_adicionales' => [],
             ];
 
-            // Preparar prompt mejorado para GPT-4 Vision
-            $prompt = "Analiza esta imagen del panel frontal de un UPS (Uninterruptible Power Supply). Puede ser de diferentes modelos (POWEST, APC, Eaton, etc.) que muestran los datos de forma diferente.
+            $imageDetail = strtolower((string) config('openai.ups_bitacora_image_detail', 'high'));
+            if (! in_array($imageDetail, ['auto', 'low', 'high'], true)) {
+                $imageDetail = 'high';
+            }
 
-IMPORTANTE: Reconoce estos 3 formatos comunes:
-1. Panel con indicadores NORMAL/BATTERY/BYPASS/FAULT y secciones Input/Output/Battery
-2. Pantalla POWEST con Modo Unitario, datos de batería, voltajes de fase (A, B, C), corrientes
-3. Pantalla con alarmas, estados, temperaturas, y otros datos operativos
-
-Debes identificar y extraer TODOS los datos visibles:
-
-1. INDICADORES DE ESTADO (luces/leds):
-   - NORMAL (verde) - si está encendido (true) o apagado (false)
-   - BATTERY (amarillo/amarillo-verde) - si está encendido (true) o apagado (false)
-   - BYPASS (amarillo) - si está encendido (true) o apagado (false)
-   - FAULT (rojo) - si está encendido (true) o apagado (false)
-   - COLORES: indica el color exacto de cada indicador (verde, amarillo, rojo, gris, apagado, etc.)
-
-2. INPUT (entrada):
-   - Voltaje en V (puede estar como \"Input\", \"Entrada\", \"Voltaje De Fase\", \"Línea Volt\")
-   - Frecuencia en Hz
-
-3. OUTPUT (salida):
-   - Voltaje en V (puede estar como \"Output\", \"Salida\", \"Voltaje De Fase\", \"Línea Volt\")
-   - Frecuencia en Hz
-   - Potencia en W o VA
-
-4. BATTERY (batería):
-   - Voltaje en V (puede estar como \"Battery Volt\", \"Voltaje Batería\")
-   - Porcentaje en % (puede estar como \"Battery level\", \"Cap. En Baterias\", \"Battery Capacity\")
-   - Tiempo de respaldo en minutos (si está visible)
-   - Tiempo de descarga en minutos (si está visible)
-   - Estado: \"charging\", \"discharging\", \"standby\" (si está visible)
-
-5. FASES (si el UPS es trifásico):
-   - Fase A: voltaje, corriente, frecuencia
-   - Fase B: voltaje, corriente, frecuencia
-   - Fase C: voltaje, corriente, frecuencia
-
-6. ALARMAS Y ESTADOS:
-   - Códigos de alarma (ej: \"AL*129\", \"CPY - EA warn\")
-   - Mensajes de estado (ej: \"No active alarms\", \"Battery charging\", \"STATUS: Cooling\")
-   - Fechas y horas de alarmas
-
-7. TEMPERATURA:
-   - Temperatura ambiente o interna del UPS en °C (si está visible)
-   - Puede estar como \"Temp\", \"Temperature\", \"°C\", o similar
-   - Busca valores numéricos seguidos de \"°C\" o \"C\"
-
-8. DATOS ADICIONALES:
-   - Modelo/marca del UPS (ej: \"POWEST\", \"30 kVA\", \"APC\")
-   - Modo operativo (ej: \"Modo Unitario\", \"Modo Principal\")
-   - Cualquier otro dato numérico o texto relevante
-
-Responde SOLO con un JSON válido en este formato exacto:
-{
-  \"indicadores\": {
-    \"normal\": true/false,
-    \"battery\": true/false,
-    \"bypass\": true/false,
-    \"fault\": true/false
-  },
-  \"colores_indicadores\": {
-    \"normal\": \"verde\" o \"apagado\" o null,
-    \"battery\": \"amarillo\" o \"verde\" o \"apagado\" o null,
-    \"bypass\": \"amarillo\" o \"apagado\" o null,
-    \"fault\": \"rojo\" o \"apagado\" o null
-  },
-  \"input\": {
-    \"voltage\": número o null,
-    \"frequency\": número o null
-  },
-  \"output\": {
-    \"voltage\": número o null,
-    \"frequency\": número o null,
-    \"power\": número o null
-  },
-  \"battery\": {
-    \"voltage\": número o null,
-    \"percentage\": número o null,
-    \"tiempo_respaldo_min\": número o null,
-    \"tiempo_descarga_min\": número o null,
-    \"estado\": \"charging\" o \"discharging\" o \"standby\" o null
-  },
-  \"fases\": {
-    \"a\": {\"voltage\": número o null, \"corriente\": número o null, \"frecuencia\": número o null},
-    \"b\": {\"voltage\": número o null, \"corriente\": número o null, \"frecuencia\": número o null},
-    \"c\": {\"voltage\": número o null, \"corriente\": número o null, \"frecuencia\": número o null}
-  },
-  \"alarmas\": [\"texto de alarma 1\", \"texto de alarma 2\"],
-  \"temperatura\": número o null,
-  \"modelo_ups\": \"texto del modelo\" o null,
-  \"datos_adicionales\": {\"campo\": \"valor\"}
-}
-
-Si no puedes ver algún valor, usa null. Solo responde con el JSON, sin texto adicional.";
+            $visionInstructions = UpsBitacoraVisionPrompt::instructions();
 
             // Procesar cada imagen
             foreach ($request->file('imagenes') as $index => $imagen) {
@@ -198,28 +124,38 @@ Si no puedes ver algún valor, usa null. Solo responde con el JSON, sin texto ad
                 $imagenBase64 = base64_encode(file_get_contents($imagenFullPath));
                 $mimeType = $imagen->getMimeType();
 
-                // Llamar a OpenAI GPT-4 Vision
-                $response = OpenAI::chat()->create([
-                    'model' => 'gpt-4o',
+                $createParams = [
+                    'model' => config('openai.ups_bitacora_model', 'gpt-4o'),
+                    'max_tokens' => (int) config('openai.ups_bitacora_max_output_tokens', 2000),
                     'messages' => [
+                        [
+                            'role' => 'system',
+                            'content' => 'Eres un extractor estricto de lecturas de equipos industriales. Cumples las instrucciones del usuario y respondes únicamente con el JSON solicitado, sin bloques markdown.',
+                        ],
                         [
                             'role' => 'user',
                             'content' => [
                                 [
                                     'type' => 'text',
-                                    'text' => $prompt,
+                                    'text' => $visionInstructions,
                                 ],
                                 [
                                     'type' => 'image_url',
                                     'image_url' => [
                                         'url' => "data:{$mimeType};base64,{$imagenBase64}",
+                                        'detail' => $imageDetail,
                                     ],
                                 ],
                             ],
                         ],
                     ],
-                    'max_tokens' => 1000,
-                ]);
+                ];
+
+                if (config('openai.ups_bitacora_json_object_mode', true)) {
+                    $createParams['response_format'] = ['type' => 'json_object'];
+                }
+
+                $response = OpenAI::chat()->create($createParams);
 
                 $content = $response->choices[0]->message->content;
 
@@ -312,6 +248,9 @@ Si no puedes ver algún valor, usa null. Solo responde con el JSON, sin texto ad
                 }
             }
 
+            // Rellenar input/output/power desde fases y datos_adicionales si el modelo dejó todo en tablas A/B/C
+            UpsBitacoraVisionEnricher::enrich($datosCombinados);
+
             // Preparar datos para vista previa
             $previewData = [
                 'imagenes' => $imagenesPaths,
@@ -379,10 +318,8 @@ Si no puedes ver algún valor, usa null. Solo responde con el JSON, sin texto ad
         $this->authorize('view', $ups);
 
         $request->validate([
-            'imagenes' => 'nullable|array|max:5', // Rutas de imágenes temporales (si viene del análisis)
+            'imagenes' => 'nullable|array|max:5',
             'imagenes.*' => 'nullable|string',
-            'imagenes_files' => 'nullable|array|max:5', // Archivos de imagen (si viene de entrada manual)
-            'imagenes_files.*' => 'nullable|image|mimes:jpeg,jpg,png|max:10240',
             'indicador_normal' => 'boolean',
             'indicador_battery' => 'boolean',
             'indicador_bypass' => 'boolean',
@@ -399,62 +336,24 @@ Si no puedes ver algún valor, usa null. Solo responde con el JSON, sin texto ad
             'battery_estado' => 'nullable|string|max:50',
             'temperatura' => 'nullable|numeric|min:-50|max:100',
             'observaciones' => 'nullable|string|max:1000',
-            'datos_extraidos' => 'nullable|string', // JSON string
+            'datos_extraidos' => 'nullable|string',
         ]);
 
+        $datosExtraidos = null;
+        if ($request->has('datos_extraidos') && $request->input('datos_extraidos')) {
+            $datosExtraidos = is_string($request->input('datos_extraidos'))
+                ? json_decode($request->input('datos_extraidos'), true)
+                : $request->input('datos_extraidos');
+        }
+
         try {
-            $imagenesFinales = [];
+            $this->validarLecturasContraDatosIa($request, $datosExtraidos);
 
-            // Si vienen archivos nuevos (entrada manual)
-            if ($request->hasFile('imagenes_files')) {
-                foreach ($request->file('imagenes_files') as $index => $imagen) {
-                    if ($imagen) {
-                        $imagenFinal = $imagen->store('ups/bitacora', 'public');
-                        $imagenesFinales[] = [
-                            'ruta' => $imagenFinal,
-                            'orden' => $index,
-                        ];
-                    }
-                }
-            }
-            // Si vienen rutas de imágenes temporales (análisis exitoso)
-            elseif ($request->has('imagenes') && is_array($request->input('imagenes'))) {
-                foreach ($request->input('imagenes') as $index => $imagenTemp) {
-                    if ($imagenTemp) {
-                        $imagenFinal = str_replace('ups/bitacora/temp', 'ups/bitacora', $imagenTemp);
-
-                        if (Storage::disk('public')->exists($imagenTemp)) {
-                            Storage::disk('public')->move($imagenTemp, $imagenFinal);
-                            $imagenesFinales[] = [
-                                'ruta' => $imagenFinal,
-                                'orden' => $index,
-                            ];
-                        } else {
-                            Log::warning('Imagen temporal no existe: ' . $imagenTemp);
-                        }
-                    }
-                }
-            }
-
-            if (empty($imagenesFinales)) {
-                throw new \Exception('Debe proporcionar al menos una imagen');
-            }
-
-            // Parsear datos_extraidos si viene como JSON string
-            $datosExtraidos = null;
-            if ($request->has('datos_extraidos') && $request->input('datos_extraidos')) {
-                $datosExtraidos = is_string($request->input('datos_extraidos'))
-                    ? json_decode($request->input('datos_extraidos'), true)
-                    : $request->input('datos_extraidos');
-            }
-
-            // Helper: conservar 0 como valor válido (?: convierte 0 en null)
             $num = fn ($key) => $request->has($key) && $request->input($key) !== '' && $request->input($key) !== null
                 ? $request->input($key)
                 : null;
             $str = fn ($key) => $request->filled($key) ? $request->input($key) : null;
 
-            // Crear registro de bitácora
             $bitacora = UpsBitacora::create([
                 'ups_id' => $ups->id,
                 'indicador_normal' => (bool) $request->input('indicador_normal', false),
@@ -477,19 +376,13 @@ Si no puedes ver algún valor, usa null. Solo responde con el JSON, sin texto ad
                 'created_by' => auth()->id(),
             ]);
 
-            // Guardar múltiples imágenes
-            foreach ($imagenesFinales as $img) {
-                UpsBitacoraImagen::create([
-                    'ups_vitacora_id' => $bitacora->id,
-                    'ruta_imagen' => $img['ruta'],
-                    'orden' => $img['orden'],
-                    'descripcion' => null,
-                ]);
-            }
+            $this->eliminarImagenesTemporalesBitacora($request);
 
             return redirect()
                 ->route('ups.bitacora.index', ['ups' => $ups->id])
                 ->with('message', 'Registro de bitácora guardado exitosamente.');
+        } catch (ValidationException $e) {
+            throw $e;
         } catch (\Exception $e) {
             Log::error('Error al guardar bitácora UPS: ' . $e->getMessage(), [
                 'ups_id' => $ups->id,
@@ -499,6 +392,76 @@ Si no puedes ver algún valor, usa null. Solo responde con el JSON, sin texto ad
             return back()->withErrors([
                 'error' => 'Error al guardar el registro: ' . $e->getMessage(),
             ]);
+        }
+    }
+
+    private function validarLecturasContraDatosIa(Request $request, ?array $datosExtraidos): void
+    {
+        if (!$datosExtraidos || !is_array($datosExtraidos) || !config('openai.ups_bitacora_ai_enabled', true)) {
+            return;
+        }
+        $tol = (float) config('openai.ups_bitacora_compare_tolerance_pct', 8);
+        if ($tol <= 0) {
+            return;
+        }
+
+        $checks = [
+            ['request' => 'input_voltage', 'dot' => 'input.voltage'],
+            ['request' => 'input_frequency', 'dot' => 'input.frequency'],
+            ['request' => 'output_voltage', 'dot' => 'output.voltage'],
+            ['request' => 'output_frequency', 'dot' => 'output.frequency'],
+            ['request' => 'output_power', 'dot' => 'output.power'],
+            ['request' => 'battery_voltage', 'dot' => 'battery.voltage'],
+            ['request' => 'battery_percentage', 'dot' => 'battery.percentage'],
+            ['request' => 'temperatura', 'dot' => 'temperatura'],
+        ];
+
+        $errors = [];
+        foreach ($checks as $c) {
+            $expected = data_get($datosExtraidos, $c['dot']);
+            if ($expected === null || $expected === '') {
+                continue;
+            }
+            $raw = $request->input($c['request']);
+            if ($raw === null || $raw === '') {
+                continue;
+            }
+            $actual = (float) $raw;
+            $exp = (float) $expected;
+            if (!$this->withinTolerance($actual, $exp, $tol)) {
+                $errors[$c['request']] = [
+                    'El valor no coincide con lo inferido en la imagen dentro de la tolerancia configurada. Ajusta el campo o vuelve a analizar la foto.',
+                ];
+            }
+        }
+
+        if ($errors !== []) {
+            throw ValidationException::withMessages($errors);
+        }
+    }
+
+    private function withinTolerance(float $actual, float $expected, float $tolerancePct): bool
+    {
+        if ($expected == 0.0) {
+            return abs($actual) <= max(0.01, abs($tolerancePct / 100) * 1);
+        }
+        $rel = abs($actual - $expected) / abs($expected);
+
+        return ($rel * 100) <= $tolerancePct;
+    }
+
+    private function eliminarImagenesTemporalesBitacora(Request $request): void
+    {
+        if (!$request->has('imagenes') || !is_array($request->input('imagenes'))) {
+            return;
+        }
+        foreach ($request->input('imagenes') as $path) {
+            if (!$path || !is_string($path)) {
+                continue;
+            }
+            if (str_starts_with($path, 'ups/bitacora/temp/') && Storage::disk('public')->exists($path)) {
+                Storage::disk('public')->delete($path);
+            }
         }
     }
 
@@ -518,257 +481,5 @@ Si no puedes ver algún valor, usa null. Solo responde con el JSON, sin texto ad
         return redirect()
             ->route('ups.bitacora.index', ['ups' => $ups->id])
             ->with('message', 'Registro eliminado exitosamente.');
-    }
-
-    public function export(Request $request, Ups $ups)
-    {
-        $this->authorize('view', $ups);
-
-        $fechaDesde = $request->query('fecha_desde');
-        $fechaHasta = $request->query('fecha_hasta');
-
-        if (!$fechaDesde || !$fechaHasta) {
-            abort(400, 'Debe especificar fecha_desde y fecha_hasta');
-        }
-
-        // Obtener bitácoras en el rango de fechas
-        $bitacoras = $ups->bitacora()
-            ->with(['creadoPor', 'imagenes'])
-            ->whereDate('created_at', '>=', $fechaDesde)
-            ->whereDate('created_at', '<=', $fechaHasta)
-            ->orderBy('created_at', 'asc')
-            ->get();
-
-        if ($bitacoras->isEmpty()) {
-            abort(404, 'No hay registros de bitácora en el rango de fechas especificado');
-        }
-
-        // Generar nombre del ZIP: nombre_ups + fecha
-        $nombreUps = preg_replace('/[^A-Za-z0-9_-]+/', '_', $ups->nombre ?: $ups->codigo ?: 'ups_' . $ups->id);
-        $fechaInicio = str_replace('-', '', $fechaDesde);
-        $fechaFin = str_replace('-', '', $fechaHasta);
-        $zipName = "bitacora_{$nombreUps}_{$fechaInicio}_{$fechaFin}.zip";
-
-        // Verificar disponibilidad de ZipArchive
-        $useZipArchive = extension_loaded('zip') && class_exists(ZipArchive::class);
-
-        if ($useZipArchive) {
-            return $this->exportWithZipArchive($bitacoras, $ups, $zipName);
-        } else {
-            return $this->exportWithZipStream($bitacoras, $ups, $zipName);
-        }
-    }
-
-    private function exportWithZipArchive($bitacoras, Ups $ups, string $zipName)
-    {
-        $tmpDir = storage_path('app/tmp');
-        if (!is_dir($tmpDir)) {
-            @mkdir($tmpDir, 0777, true);
-        }
-
-        $zipPath = $tmpDir . DIRECTORY_SEPARATOR . $zipName;
-
-        $zip = new ZipArchive();
-        if ($zip->open($zipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
-            abort(500, 'No se pudo crear el archivo ZIP.');
-        }
-
-        foreach ($bitacoras as $index => $bitacora) {
-            $bitacora->load(['creadoPor', 'imagenes']);
-            $fechaRegistro = $bitacora->created_at->format('Y-m-d_H-i-s');
-            $folderName = sprintf('bitacora_%02d_%s', $index + 1, $fechaRegistro);
-
-            // Generar PDF con los datos
-            $pdf = Pdf::loadView('ups.bitacora.pdf', [
-                'bitacora' => $bitacora,
-                'ups' => $ups,
-            ]);
-            $pdfContent = $pdf->output();
-            $zip->addFromString("{$folderName}/datos.pdf", $pdfContent);
-
-            // Agregar imágenes
-            foreach ($bitacora->imagenes->sortBy('orden') as $imgIndex => $imagen) {
-                $rel = $imagen->ruta_imagen;
-                if (!$rel || !Storage::disk('public')->exists($rel)) {
-                    continue;
-                }
-                $abs = storage_path('app/public/' . $rel);
-                if (!is_file($abs)) {
-                    continue;
-                }
-                $ext = pathinfo($rel, PATHINFO_EXTENSION) ?: 'jpg';
-                $imgName = sprintf('imagen_%02d.%s', $imgIndex + 1, $ext);
-                $zip->addFile($abs, "{$folderName}/fotos/{$imgName}");
-            }
-        }
-
-        $zip->close();
-
-        return response()->download($zipPath, $zipName)->deleteFileAfterSend(true);
-    }
-
-    private function exportWithZipStream($bitacoras, Ups $ups, string $zipName)
-    {
-        return response()->streamDownload(function () use ($bitacoras, $ups, $zipName) {
-            $outputStream = fopen('php://output', 'w');
-            if (!$outputStream) {
-                abort(500, 'No se pudo abrir el stream de salida.');
-            }
-
-            $zip = new ZipStream(
-                outputStream: $outputStream,
-                sendHttpHeaders: false,
-                outputName: $zipName,
-            );
-
-            foreach ($bitacoras as $index => $bitacora) {
-                $bitacora->load(['creadoPor', 'imagenes']);
-                $fechaRegistro = $bitacora->created_at->format('Y-m-d_H-i-s');
-                $folderName = sprintf('bitacora_%02d_%s', $index + 1, $fechaRegistro);
-
-                // Generar PDF con los datos
-                $pdf = Pdf::loadView('ups.bitacora.pdf', [
-                    'bitacora' => $bitacora,
-                    'ups' => $ups,
-                ]);
-                $pdfContent = $pdf->output();
-                $zip->addFile(
-                    fileName: "{$folderName}/datos.pdf",
-                    data: $pdfContent
-                );
-
-                // Agregar imágenes
-                foreach ($bitacora->imagenes->sortBy('orden') as $imgIndex => $imagen) {
-                    $rel = $imagen->ruta_imagen;
-                    if (!$rel || !Storage::disk('public')->exists($rel)) {
-                        continue;
-                    }
-                    $abs = storage_path('app/public/' . $rel);
-                    if (!is_file($abs)) {
-                        continue;
-                    }
-                    $ext = pathinfo($rel, PATHINFO_EXTENSION) ?: 'jpg';
-                    $imgName = sprintf('imagen_%02d.%s', $imgIndex + 1, $ext);
-                    $zip->addFileFromPath(
-                        fileName: "{$folderName}/fotos/{$imgName}",
-                        path: $abs
-                    );
-                }
-            }
-
-            $zip->finish();
-        }, $zipName, [
-            'Content-Type' => 'application/zip',
-        ]);
-    }
-
-    private function generateHtmlDocument(UpsBitacora $bitacora, Ups $ups): string
-    {
-        $creadoPor = $bitacora->creadoPor;
-        $usuarioNombre = 'Desconocido';
-        if ($creadoPor) {
-            if ($creadoPor->nombre && $creadoPor->apellido) {
-                $usuarioNombre = "{$creadoPor->nombre} {$creadoPor->apellido}";
-            } elseif ($creadoPor->name) {
-                $usuarioNombre = $creadoPor->name;
-            } elseif ($creadoPor->email) {
-                $usuarioNombre = $creadoPor->email;
-            }
-        }
-
-        $html = '<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bitácora UPS - ' . htmlspecialchars($ups->codigo ?? $ups->nombre) . '</title>
-    <style>
-        body { font-family: Arial, sans-serif; margin: 20px; line-height: 1.6; color: #333; }
-        h1 { color: #2c3e50; border-bottom: 3px solid #3498db; padding-bottom: 10px; }
-        h2 { color: #34495e; margin-top: 25px; border-bottom: 2px solid #ecf0f1; padding-bottom: 5px; }
-        .info-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; margin: 20px 0; }
-        .info-box { background: #f8f9fa; border-left: 4px solid #3498db; padding: 15px; border-radius: 5px; }
-        .info-box h3 { margin: 0 0 10px 0; color: #2c3e50; font-size: 16px; }
-        .info-item { margin: 8px 0; }
-        .info-label { font-weight: bold; color: #555; }
-        .indicador { display: inline-block; padding: 5px 10px; border-radius: 5px; font-weight: bold; margin: 5px 5px 5px 0; }
-        .indicador.on { background: #2ecc71; color: white; }
-        .indicador.off { background: #95a5a6; color: white; }
-        .observaciones { background: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin: 20px 0; border-radius: 5px; }
-        .metadata { background: #e9ecef; padding: 15px; border-radius: 5px; margin: 20px 0; font-size: 14px; }
-    </style>
-</head>
-<body>
-    <h1>Bitácora UPS: ' . htmlspecialchars($ups->codigo ?? $ups->nombre) . '</h1>
-
-    <div class="metadata">
-        <p><strong>Fecha de registro:</strong> ' . $bitacora->created_at->format('d/m/Y H:i:s') . '</p>
-        <p><strong>Registrado por:</strong> ' . htmlspecialchars($usuarioNombre) . '</p>
-        <p><strong>UPS:</strong> ' . htmlspecialchars($ups->codigo ?? $ups->nombre) . ' - ' . htmlspecialchars($ups->nombre ?? '') . '</p>
-    </div>
-
-    <h2>Indicadores</h2>
-    <div>
-        <span class="indicador ' . ($bitacora->indicador_normal ? 'on' : 'off') . '">NORMAL: ' . ($bitacora->indicador_normal ? 'ON' : 'OFF') . '</span>
-        <span class="indicador ' . ($bitacora->indicador_battery ? 'on' : 'off') . '">BATTERY: ' . ($bitacora->indicador_battery ? 'ON' : 'OFF') . '</span>
-        <span class="indicador ' . ($bitacora->indicador_bypass ? 'on' : 'off') . '">BYPASS: ' . ($bitacora->indicador_bypass ? 'ON' : 'OFF') . '</span>
-        <span class="indicador ' . ($bitacora->indicador_fault ? 'on' : 'off') . '">FAULT: ' . ($bitacora->indicador_fault ? 'ON' : 'OFF') . '</span>
-    </div>
-
-    <h2>Datos Técnicos</h2>
-    <div class="info-grid">
-        <div class="info-box">
-            <h3>Input</h3>
-            <div class="info-item"><span class="info-label">Voltaje:</span> ' . ($bitacora->input_voltage ? number_format($bitacora->input_voltage, 2) . ' V' : '-') . '</div>
-            <div class="info-item"><span class="info-label">Frecuencia:</span> ' . ($bitacora->input_frequency ? number_format($bitacora->input_frequency, 2) . ' Hz' : '-') . '</div>
-        </div>
-        <div class="info-box">
-            <h3>Output</h3>
-            <div class="info-item"><span class="info-label">Voltaje:</span> ' . ($bitacora->output_voltage ? number_format($bitacora->output_voltage, 2) . ' V' : '-') . '</div>
-            <div class="info-item"><span class="info-label">Frecuencia:</span> ' . ($bitacora->output_frequency ? number_format($bitacora->output_frequency, 2) . ' Hz' : '-') . '</div>
-            <div class="info-item"><span class="info-label">Potencia:</span> ' . ($bitacora->output_power ? number_format($bitacora->output_power, 2) . ' W' : '-') . '</div>
-        </div>
-        <div class="info-box">
-            <h3>Battery</h3>
-            <div class="info-item"><span class="info-label">Voltaje:</span> ' . ($bitacora->battery_voltage ? number_format($bitacora->battery_voltage, 2) . ' V' : '-') . '</div>
-            <div class="info-item"><span class="info-label">Porcentaje:</span> ' . ($bitacora->battery_percentage !== null ? $bitacora->battery_percentage . '%' : '-') . '</div>';
-
-        if ($bitacora->battery_tiempo_respaldo !== null) {
-            $html .= '<div class="info-item"><span class="info-label">Tiempo Respaldo:</span> ' . $bitacora->battery_tiempo_respaldo . ' min</div>';
-        }
-        if ($bitacora->battery_tiempo_descarga !== null) {
-            $html .= '<div class="info-item"><span class="info-label">Tiempo Descarga:</span> ' . $bitacora->battery_tiempo_descarga . ' min</div>';
-        }
-        if ($bitacora->battery_estado) {
-            $html .= '<div class="info-item"><span class="info-label">Estado:</span> ' . htmlspecialchars(ucfirst($bitacora->battery_estado)) . '</div>';
-        }
-
-        $html .= '</div>';
-
-        if ($bitacora->temperatura !== null) {
-            $html .= '<div class="info-box">
-                <h3>Temperatura</h3>
-                <div class="info-item"><span class="info-label">Temperatura:</span> ' . number_format($bitacora->temperatura, 2) . ' °C</div>
-            </div>';
-        }
-
-        $html .= '</div>';
-
-        if ($bitacora->observaciones) {
-            $html .= '<h2>Observaciones</h2>
-            <div class="observaciones">
-                ' . nl2br(htmlspecialchars($bitacora->observaciones)) . '
-            </div>';
-        }
-
-        if ($bitacora->imagenes && $bitacora->imagenes->count() > 0) {
-            $html .= '<h2>Imágenes (' . $bitacora->imagenes->count() . ')</h2>
-            <p>Las imágenes se encuentran en la carpeta <strong>fotos/</strong> de este directorio.</p>';
-        }
-
-        $html .= '</body>
-</html>';
-
-        return $html;
     }
 }

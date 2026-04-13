@@ -21,7 +21,7 @@ if os.environ.get("DISPLAY", "") == "":
 # Configura por dispositivo vía variables de entorno para no tocar el código.
 #
 # Ejemplo (Raspberry entrada):
-#   export API_BASE="http://127.0.0.1:8001"
+#   API_BASE = os.getenv("API_BASE", "http://172.22.66.217")
 #   export CODIGO_FISICO="P1-ENT"
 #   export TIPO_EVENTO="entrada"
 #   export DISPOSITIVO_ID="P1-ENT-RPI-ENTRADA"
@@ -29,19 +29,40 @@ if os.environ.get("DISPLAY", "") == "":
 # Ejemplo (Raspberry salida):
 #   export TIPO_EVENTO="salida"
 #   export DISPOSITIVO_ID="P1-ENT-RPI-SALIDA"
-API_BASE = os.getenv(
-    "API_BASE", "https://l4decybayq.sharedwithexpose.com/api/documentation"
-)
-CODIGO_FISICO = os.getenv("CODIGO_FISICO", "P2-ENT")
+API_BASE = os.getenv("API_BASE", "http://172.22.66.217")
+CODIGO_FISICO = os.getenv("CODIGO_FISICO", "GMET-MPF3-ENT")
 TIPO_EVENTO = os.getenv("TIPO_EVENTO", "entrada")  # "entrada" o "salida"
-DISPOSITIVO_ID = os.getenv("DISPOSITIVO_ID", "P1-ENT-RPI-ENTRADA")
-DEVICE_KEY = os.getenv(
-    "DEVICE_KEY", "1234abcd"
-)  # opcional si activaste ACCESS_DEVICE_KEY en el backend
+DISPOSITIVO_ID = os.getenv("DISPOSITIVO_ID", "GMET-MPF3-ENT")
+# Header X-DEVICE-KEY (backend: ACCESS_DEVICE_KEY)
+# IMPORTANTE: en producción debería venir por env para evitar desalineaciones entre backend y lector.
+DEVICE_KEY = (
+    os.getenv("ACCESS_DEVICE_KEY")
+    or os.getenv("DEVICE_KEY")
+    or "2E549F77FCF4349499C7FAE55AE255A7"
+)
+
+# Debounce para evitar doble lectura del mismo QR (lectores suelen enviar ENTER/CRLF o repetir lectura)
+try:
+    DEBOUNCE_SECONDS = float(os.getenv("DEBOUNCE_SECONDS", "0.7"))
+except Exception:
+    DEBOUNCE_SECONDS = 0.7
+
+# Reintentos/backoff ante 429 (throttle) o errores transitorios
+try:
+    API_MAX_RETRIES = int(os.getenv("API_MAX_RETRIES", "2"))
+except Exception:
+    API_MAX_RETRIES = 2
+
+# Session HTTP reutilizable (reduce overhead y problemas de conexiones)
+SESSION = requests.Session()
+
 
 # Relés / pines GPIO (BOARD)
 RELAY_PINS = [35, 37, 29, 31, 33]
-OPEN_SECONDS = float(os.getenv("OPEN_SECONDS", "5"))
+try:
+    OPEN_SECONDS = float(os.getenv("OPEN_SECONDS", "5"))
+except Exception:
+    OPEN_SECONDS = 5.0
 
 # Estado de apertura manual (persistente en disco)
 MANUAL_OPEN_STATE_PATH = os.getenv(
@@ -51,8 +72,9 @@ MANUAL_OPEN_STATE_PATH = os.getenv(
 # =========================
 # Emergencia (modo libre) - sin dependencias
 # =========================
-DOOR_API_KEY = os.getenv("DOOR_API_KEY", "cambia_esto")  # misma clave que usará Laravel
-EMERGENCY_PORT = int(os.getenv("EMERGENCY_PORT", "8000"))
+# Hardcodeado para este dispositivo (debe coincidir con Laravel)
+DOOR_API_KEY = "D8738A38CC8FC927C5EC594F47A22787"
+EMERGENCY_PORT = 8000
 STATE_PATH = os.getenv("DOOR_STATE_PATH", "/var/lib/door/emergency.json")
 
 
@@ -86,11 +108,33 @@ def emergency_active() -> bool:
 
 
 def set_emergency(seconds: int) -> int:
-    """Activa emergencia por N segundos. Retorna timestamp de vencimiento"""
+    """Activa emergencia por N segundos. Retorna timestamp de vencimiento
+
+    IMPORTANTE: Abre físicamente TODOS los relés inmediatamente.
+    """
     now = int(time.time())
     until = now + int(seconds)
     _save_state({"emergency_until": until})
+
+    # ✅ ABRIR TODOS LOS RELÉS INMEDIATAMENTE
+    print(f"🚨 EMERGENCIA ACTIVADA: Abriendo todas las puertas por {seconds} segundos")
+    for pin in RELAY_PINS:
+        GPIO.output(pin, True)
+
     return until
+
+
+def deactivate_emergency():
+    """Desactiva la emergencia y cierra todos los relés"""
+    _save_state({"emergency_until": 0})
+
+    # ✅ Solo cerrar relés si NO está en modo manual
+    if not is_manual_open():
+        print("🚨 EMERGENCIA FINALIZADA: Cerrando todas las puertas")
+        for pin in RELAY_PINS:
+            GPIO.output(pin, False)
+    else:
+        print("🚨 EMERGENCIA FINALIZADA: Puerta permanece abierta (modo manual activo)")
 
 
 class EmergencyHandler(BaseHTTPRequestHandler):
@@ -145,6 +189,7 @@ class EmergencyHandler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         """POST /api/emergency/activate - Activa emergencia por N segundos
+        POST /api/emergency/deactivate - Desactiva emergencia inmediatamente
         POST /reboot - Reinicia la Raspberry Pi
         POST /api/door/toggle - Abre/cierra la puerta manualmente"""
 
@@ -196,7 +241,17 @@ class EmergencyHandler(BaseHTTPRequestHandler):
                 self._json(500, {"ok": False, "error": str(e)})
             return
 
-        # Endpoint de emergencia
+        # Endpoint de desactivación de emergencia
+        if self.path == "/api/emergency/deactivate":
+            if not self._authorized():
+                self._json(401, {"ok": False, "error": "unauthorized"})
+                return
+
+            deactivate_emergency()
+            self._json(200, {"ok": True, "message": "Emergencia desactivada"})
+            return
+
+        # Endpoint de activación de emergencia
         if self.path != "/api/emergency/activate":
             self._json(404, {"ok": False, "error": "not_found"})
             return
@@ -229,6 +284,27 @@ class EmergencyHandler(BaseHTTPRequestHandler):
         pass
 
 
+def emergency_monitor():
+    """Monitorea el estado de emergencia y cierra puertas cuando expira
+
+    Se ejecuta en un thread separado y verifica cada segundo si la emergencia
+    ha expirado para cerrar los relés automáticamente.
+    """
+    while True:
+        try:
+            time.sleep(1)  # Verificar cada segundo
+
+            until = emergency_until()
+            now = int(time.time())
+
+            # Si había emergencia activa y acaba de expirar
+            if until > 0 and now >= until:
+                deactivate_emergency()
+
+        except Exception as e:
+            print(f"Error en monitor de emergencia: {e}")
+
+
 def start_emergency_server():
     """Inicia el servidor HTTP en un thread separado"""
     server = HTTPServer(("0.0.0.0", EMERGENCY_PORT), EmergencyHandler)
@@ -237,17 +313,37 @@ def start_emergency_server():
 
 
 def mantener_puerta_abierta(abierta: bool):
-    """Mantener la puerta abierta (activar relés) o cerrarla (desactivar relés)"""
+    """Mantener la puerta abierta (activar relés) o cerrarla (desactivar relés)
+
+    Si se intenta cerrar pero hay emergencia activa, los relés permanecen abiertos.
+    """
+    # Guardar estado primero
+    _save_manual_state({"manual_open": abierta})
+
+    # Si se intenta cerrar pero hay emergencia, mantener abierto
+    if not abierta and emergency_active():
+        print("⚠️ No se puede cerrar: EMERGENCIA activa")
+        return
+
+    # Aplicar el estado a los relés
     for pin in RELAY_PINS:
         GPIO.output(pin, abierta)
-
-    # Guardar estado
-    _save_manual_state({"manual_open": abierta})
 
 
 def _save_manual_state(state: dict):
     """Guarda el estado de apertura manual en disco"""
-    os.makedirs(os.path.dirname(MANUAL_OPEN_STATE_PATH), exist_ok=True)
+    global MANUAL_OPEN_STATE_PATH
+
+    try:
+        os.makedirs(os.path.dirname(MANUAL_OPEN_STATE_PATH), exist_ok=True)
+    except PermissionError:
+        # Si no hay permisos, usar directorio temporal alternativo
+        alt_path = os.path.join("/tmp", "door_manual_open.json")
+        MANUAL_OPEN_STATE_PATH = alt_path
+        print(
+            f"⚠️ Sin permisos en /var/lib/door, usando ruta alternativa: {MANUAL_OPEN_STATE_PATH}"
+        )
+
     tmp = MANUAL_OPEN_STATE_PATH + ".tmp"
     with open(tmp, "w", encoding="utf-8") as f:
         json.dump(state, f)
@@ -272,12 +368,35 @@ def is_manual_open() -> bool:
 def abrir_puerta(segundos: float = None):
     """Abre la puerta por el tiempo especificado. Si no se especifica, usa OPEN_SECONDS."""
     tiempo_apertura = segundos if segundos is not None else OPEN_SECONDS
-    # Activar relés por X segundos
+    try:
+        tiempo_apertura = float(tiempo_apertura)
+    except Exception:
+        tiempo_apertura = OPEN_SECONDS
+
+    # Evitar valores inválidos que podrían dejar la puerta abierta
+    if tiempo_apertura < 0:
+        tiempo_apertura = OPEN_SECONDS
+
+    # Activar relés por X segundos (autocierre garantizado)
     for pin in RELAY_PINS:
         GPIO.output(pin, True)
-    time.sleep(tiempo_apertura)
-    for pin in RELAY_PINS:
-        GPIO.output(pin, False)
+    try:
+        time.sleep(tiempo_apertura)
+    finally:
+        # Si durante la espera se activó manual/emergencia, NO cerrar relés
+        try:
+            if is_manual_open():
+                print("ℹ️ Autocierre omitido: modo manual activo")
+                return
+            if emergency_active():
+                print("ℹ️ Autocierre omitido: emergencia activa")
+                return
+        except Exception:
+            # Si falla la lectura de estados, por seguridad cerramos el pulso normal
+            pass
+
+        for pin in RELAY_PINS:
+            GPIO.output(pin, False)
 
 
 def denegar_puerta():
@@ -298,9 +417,44 @@ def verify_access(token: str) -> dict:
         "dispositivo_id": DISPOSITIVO_ID,
     }
 
-    r = requests.post(url, json=payload, headers=headers, timeout=2)
-    r.raise_for_status()
-    return r.json()
+    last_error = None
+    for attempt in range(0, API_MAX_RETRIES + 1):
+        try:
+            # timeout=(connect, read)
+            r = SESSION.post(url, json=payload, headers=headers, timeout=(2, 4))
+        except Exception as ex:
+            last_error = ex
+            time.sleep(0.25 * (attempt + 1))
+            continue
+
+        # Si el backend tiene throttle, 429 se ve como "se dañó" si no lo manejamos.
+        if r.status_code == 429:
+            retry_after = r.headers.get("Retry-After")
+            try:
+                wait_s = float(retry_after) if retry_after else 1.0
+            except Exception:
+                wait_s = 1.0
+            print(
+                f"⚠️ API 429 (throttle). Esperando {wait_s}s y reintentando... intento={attempt+1}/{API_MAX_RETRIES+1}"
+            )
+            time.sleep(min(max(wait_s, 0.5), 5.0))
+            last_error = RuntimeError(f"HTTP 429: {r.text[:300]}")
+            continue
+
+        if not r.ok:
+            # Log detallado para diagnóstico (incluye status y body)
+            raise RuntimeError(f"API HTTP {r.status_code}. Body: {r.text[:600]}")
+
+        try:
+            return r.json()
+        except Exception:
+            raise RuntimeError(
+                f"API respondió 200 pero JSON inválido. Body: {r.text[:600]}"
+            )
+
+    raise RuntimeError(
+        f"No se pudo validar acceso tras reintentos. Último error: {last_error}"
+    )
 
 
 GPIO.setmode(GPIO.BOARD)
@@ -316,36 +470,66 @@ try:
 except Exception as e:
     print(f"Error restaurando estado manual: {e}")
 
+# Restaurar estado de emergencia al iniciar (si estaba activa)
+try:
+    if emergency_active():
+        remaining = emergency_until() - int(time.time())
+        print(f"🚨 Restaurando EMERGENCIA: {remaining} segundos restantes")
+        # Abrir relés inmediatamente
+        for pin in RELAY_PINS:
+            GPIO.output(pin, True)
+except Exception as e:
+    print(f"Error restaurando estado de emergencia: {e}")
+
 
 master = Tk()
 e = Entry(master)
 e.pack()
 e.focus_set()
 
+_last_token = None
+_last_token_ts = 0.0
+
 
 def callback(event):
+    global _last_token, _last_token_ts
     try:
         token = e.get().strip()
         if not token:
             return
 
-        # ✅ Si está abierta manualmente: NO consultes API, abre directo
+        # Debounce anti-doble lectura (misma cadena muy seguida)
+        now_ts = time.time()
+        if (
+            DEBOUNCE_SECONDS > 0
+            and _last_token == token
+            and (now_ts - _last_token_ts) < DEBOUNCE_SECONDS
+        ):
+            print(
+                f"ℹ️ Debounce: token repetido en {now_ts - _last_token_ts:.2f}s. Ignorando."
+            )
+            return
+        _last_token = token
+        _last_token_ts = now_ts
+
+        # ✅ Si está abierta manualmente: los relés ya están activos, solo abrir físicamente (no registrar)
         if is_manual_open():
-            print("PUERTA ABIERTA MANUALMENTE: abriendo sin validar QR")
-            abrir_puerta()
+            print("✅ PUERTA ABIERTA MANUALMENTE: acceso permitido (relés ya activos)")
             return
 
-        # ✅ Si está en emergencia: NO consultes API, abre directo
+        # ✅ Si está en emergencia: los relés ya están activos, solo abrir físicamente (no registrar)
         if emergency_active():
-            print("EMERGENCIA ACTIVA: abriendo sin validar QR")
-            abrir_puerta()
+            print("🚨 EMERGENCIA ACTIVA: acceso permitido (relés ya activos)")
             return
 
         # Llamada al backend (Laravel) para validar permisos y registrar el evento.
         try:
             res = verify_access(token)
         except Exception as ex:
-            print("Error conectando a API:", ex)
+            print("❌ Error conectando/validando con API:", ex)
+            print(
+                f"   Config: API_BASE={API_BASE} CODIGO_FISICO={CODIGO_FISICO} TIPO_EVENTO={TIPO_EVENTO} DISPOSITIVO_ID={DISPOSITIVO_ID}"
+            )
             denegar_puerta()
             return
 
@@ -371,9 +555,13 @@ def callback(event):
         e.delete("0", "end")
 
 
-# ✅ Arranca el agente HTTP en paralelo (no bloquea Tk)
-t = threading.Thread(target=start_emergency_server, daemon=True)
-t.start()
+# ✅ Arranca el servidor HTTP en paralelo (no bloquea Tk)
+t_server = threading.Thread(target=start_emergency_server, daemon=True)
+t_server.start()
+
+# ✅ Arranca el monitor de emergencia en paralelo
+t_monitor = threading.Thread(target=emergency_monitor, daemon=True)
+t_monitor.start()
 
 master.bind("<Return>", callback)
 mainloop()

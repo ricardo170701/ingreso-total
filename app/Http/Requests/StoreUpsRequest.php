@@ -36,6 +36,26 @@ class StoreUpsRequest extends FormRequest
             'voltaje_baterias' => ['nullable', 'numeric', 'min:0'],
             'activo' => ['nullable', 'boolean'],
             'observaciones' => ['nullable', 'string', 'max:5000'],
+
+            'umbrales' => ['nullable', 'array'],
+            'umbrales.temperatura' => ['nullable', 'array'],
+            'umbrales.temperatura.min' => ['nullable', 'numeric'],
+            'umbrales.temperatura.max' => ['nullable', 'numeric'],
+            'umbrales.battery_percentage' => ['nullable', 'array'],
+            'umbrales.battery_percentage.min' => ['nullable', 'numeric'],
+            'umbrales.battery_percentage.max' => ['nullable', 'numeric'],
+            'umbrales.input_voltage' => ['nullable', 'array'],
+            'umbrales.input_voltage.min' => ['nullable', 'numeric'],
+            'umbrales.input_voltage.max' => ['nullable', 'numeric'],
+            'umbrales.output_voltage' => ['nullable', 'array'],
+            'umbrales.output_voltage.min' => ['nullable', 'numeric'],
+            'umbrales.output_voltage.max' => ['nullable', 'numeric'],
+            'umbrales.battery_voltage' => ['nullable', 'array'],
+            'umbrales.battery_voltage.min' => ['nullable', 'numeric'],
+            'umbrales.battery_voltage.max' => ['nullable', 'numeric'],
+            'umbrales.output_power' => ['nullable', 'array'],
+            'umbrales.output_power.min' => ['nullable', 'numeric'],
+            'umbrales.output_power.max' => ['nullable', 'numeric'],
         ];
     }
 }

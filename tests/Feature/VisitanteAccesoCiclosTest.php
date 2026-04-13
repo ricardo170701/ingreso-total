@@ -9,9 +9,12 @@ use App\Models\Permission;
 use App\Models\Piso;
 use App\Models\Puerta;
 use App\Models\Role;
+use App\Models\TipoPuerta;
+use App\Models\TarjetaNfc;
 use App\Models\User;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Routing\Middleware\ThrottleRequests;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
@@ -138,10 +141,16 @@ class VisitanteAccesoCiclosTest extends TestCase
             'activo' => true,
         ]);
 
-        $puertas = collect(range(1, 3))->map(function (int $i) use ($piso1) {
+        $tipoMolinete = TipoPuerta::query()->firstOrCreate(
+            ['codigo' => 'molinete'],
+            ['nombre' => 'Molinete', 'activo' => true]
+        );
+
+        $puertas = collect(range(1, 3))->map(function (int $i) use ($piso1, $tipoMolinete) {
             return Puerta::query()->create([
                 'nombre' => 'Puerta Piso 1 - ' . $i . ' (tests)',
                 'piso_id' => $piso1->id,
+                'tipo_puerta_id' => $tipoMolinete->id,
                 'activo' => true,
                 'solo_servidores_publicos' => false,
                 'requiere_permiso_datacenter' => false,
@@ -275,7 +284,7 @@ class VisitanteAccesoCiclosTest extends TestCase
             }
             $entrada2Res->assertOk();
             $entrada2Res->assertJsonPath('permitido', false);
-            $this->assertStringContainsString('Entrada ya registrada', (string) $entrada2Res->json('message'));
+            $this->assertStringContainsString('Usuario ya se encuentra dentro', (string) $entrada2Res->json('message'));
             $this->debugLog('verify_response', [
                 'ciclo' => $ciclo,
                 'fase' => 'entrada_repeat',
@@ -347,7 +356,7 @@ class VisitanteAccesoCiclosTest extends TestCase
             }
             $salida2Res->assertOk();
             $salida2Res->assertJsonPath('permitido', false);
-            $this->assertStringContainsString('No hay una entrada activa', (string) $salida2Res->json('message'));
+            $this->assertStringContainsString('Usuario no tiene una entrada activa', (string) $salida2Res->json('message'));
             $this->debugLog('verify_response', [
                 'ciclo' => $ciclo,
                 'fase' => 'salida_repeat',
@@ -401,5 +410,112 @@ class VisitanteAccesoCiclosTest extends TestCase
             'last_ok' => optional($lastOk)->toArray(),
             'log_file' => storage_path(self::LOG_PATH),
         ]);
+    }
+
+    public function test_estado_entrada_salida_se_une_por_usuario_aunque_use_qr_y_nfc(): void
+    {
+        $this->setAccessDeviceKey('1234abcd');
+
+        // Evitar rate limit para este test (la ruta api suele traer throttle:api).
+        $this->withoutMiddleware(ThrottleRequests::class);
+
+        $actor = $this->seedActorConPermisos(['create_ingreso', 'create_ingreso_otros']);
+        $visitante = $this->makeVisitanteConCorreo();
+
+        $piso1 = Piso::query()->create([
+            'nombre' => 'Piso 1 (tests unión estado)',
+            'orden' => 1,
+            'activo' => true,
+        ]);
+
+        $tipoMolinete = TipoPuerta::query()->firstOrCreate(
+            ['codigo' => 'molinete'],
+            ['nombre' => 'Molinete', 'activo' => true]
+        );
+
+        $puerta = Puerta::query()->create([
+            'nombre' => 'Puerta Piso 1 (tests unión estado)',
+            'piso_id' => $piso1->id,
+            'tipo_puerta_id' => $tipoMolinete->id,
+            'activo' => true,
+            'solo_servidores_publicos' => false,
+            'requiere_permiso_datacenter' => false,
+            'requiere_discapacidad' => false,
+            'codigo_fisico' => 'P1-UNION-ENT-' . uniqid(),
+            'codigo_fisico_salida' => 'P1-UNION-SAL-' . uniqid(),
+        ]);
+
+        Sanctum::actingAs($actor);
+        $qrRes = $this->postJson('/api/qrs', [
+            'user_id' => $visitante->id,
+            'pisos' => [$piso1->id],
+        ]);
+        $qrRes->assertStatus(201);
+        $plainToken = (string) $qrRes->json('data.token');
+        $this->assertNotEmpty($plainToken);
+
+        // Crear tarjeta NFC activa asignada al mismo usuario y con permiso explícito a la misma puerta.
+        $tarjeta = TarjetaNfc::query()->create([
+            'codigo' => 'NFC-' . uniqid(),
+            'nombre' => 'Tarjeta (tests unión estado)',
+            'user_id' => $visitante->id,
+            'gerencia_id' => null,
+            'fecha_asignacion' => now(),
+            'fecha_expiracion' => now()->addDays(15),
+            'activo' => true,
+            'asignado_por' => $actor->id,
+        ]);
+
+        DB::table('tarjeta_nfc_puerta_acceso')->updateOrInsert(
+            ['tarjeta_nfc_id' => $tarjeta->id, 'puerta_id' => $puerta->id],
+            [
+                'hora_inicio' => null,
+                'hora_fin' => null,
+                'dias_semana' => '1,2,3,4,5,6,7',
+                'fecha_inicio' => null,
+                'fecha_fin' => null,
+                'activo' => 1,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]
+        );
+
+        $headers = [
+            'X-DEVICE-KEY' => '1234abcd',
+            'accept' => '*/*',
+        ];
+
+        // 1) Entrada con QR: OK.
+        $entradaQrRes = $this->withHeaders($headers)->postJson('/api/access/verify', [
+            'token' => $plainToken,
+            'codigo_fisico' => $puerta->codigo_fisico,
+            'tipo_evento' => 'entrada',
+            'dispositivo_id' => 'P1-UNION-RPI-ENTRADA-QR',
+        ]);
+        $entradaQrRes->assertOk();
+        $entradaQrRes->assertJsonPath('permitido', true);
+        $entradaQrRes->assertJsonPath('data.tipo_evento', 'entrada');
+
+        // 2) Intentar otra ENTRADA con NFC del mismo usuario: debe ser DENEGADA por estado (no por permisos).
+        $entradaNfcRes = $this->withHeaders($headers)->postJson('/api/access/verify', [
+            'token' => $tarjeta->codigo,
+            'codigo_fisico' => $puerta->codigo_fisico,
+            'tipo_evento' => 'entrada',
+            'dispositivo_id' => 'P1-UNION-RPI-ENTRADA-NFC',
+        ]);
+        $entradaNfcRes->assertOk();
+        $entradaNfcRes->assertJsonPath('permitido', false);
+        $this->assertStringContainsString('Usuario ya se encuentra dentro', (string) $entradaNfcRes->json('message'));
+
+        // 3) Registrar SALIDA con NFC (otra credencial): debe permitirse porque el estado es por usuario.
+        $salidaNfcRes = $this->withHeaders($headers)->postJson('/api/access/verify', [
+            'token' => $tarjeta->codigo,
+            'codigo_fisico' => $puerta->codigo_fisico_salida,
+            'tipo_evento' => 'salida',
+            'dispositivo_id' => 'P1-UNION-RPI-SALIDA-NFC',
+        ]);
+        $salidaNfcRes->assertOk();
+        $salidaNfcRes->assertJsonPath('permitido', true);
+        $salidaNfcRes->assertJsonPath('data.tipo_evento', 'salida');
     }
 }

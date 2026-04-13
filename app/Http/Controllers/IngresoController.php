@@ -17,6 +17,7 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Schema;
 use Inertia\Inertia;
@@ -485,6 +486,29 @@ class IngresoController extends Controller
         // Asegurar que sea string (el método generate puede retornar un objeto)
         $qrSvg = strval($qrSvg);
 
+        $emailSent = false;
+        $emailSendError = null;
+        if (filled($targetUser->email)) {
+            try {
+                Mail::to($targetUser->email)->send(new QrCodeMail(
+                    userName: $targetUser->name ?: $targetUser->email,
+                    qrToken: $plainToken,
+                    qrSvg: $qrSvg,
+                    expiresAt: $expiresAt?->format('d/m/Y H:i'),
+                ));
+                $emailSent = true;
+            } catch (\Throwable $e) {
+                Log::warning('Ingreso: fallo al enviar QR por correo tras generar', [
+                    'qr_id' => $qr->id,
+                    'user_id' => $targetUser->id,
+                    'exception' => $e->getMessage(),
+                ]);
+                $emailSendError = config('app.debug')
+                    ? $e->getMessage()
+                    : 'Revisa la configuración de correo o intenta más tarde.';
+            }
+        }
+
         // Obtener usuarios y puertas para el formulario
         $puedeCrearParaOtros = $actor && $actor->hasPermission('create_ingreso_otros');
         $esVisitanteActor = ($actor?->role?->name ?? null) === 'visitante';
@@ -587,6 +611,8 @@ class IngresoController extends Controller
                         ? 'Hasta fin de contrato o inactivación'
                         : 'No definido'),
                 'svg' => (string) $qrSvg, // Asegurar que sea string
+                'email_sent' => $emailSent,
+                'email_send_error' => $emailSendError,
             ],
         ]);
     }

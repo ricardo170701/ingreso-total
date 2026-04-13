@@ -3,7 +3,7 @@
     "type": "module",
     "scripts": {
         "dev": "vite",
-        "build": "vite build"
+        "build": "vite build && node scripts/write-pwa-sw-htaccess.mjs"
     },
     "devDependencies": {
         "@inertiajs/vue3": "^2.3.4",
@@ -15,6 +15,7 @@
         "postcss": "^8.5.6",
         "tailwindcss": "^4.1.18",
         "vite": "^5.0.0",
+        "vite-plugin-pwa": "^0.21.2",
         "vue": "^3.5.26",
         "ziggy-js": "^2.6.0"
     },

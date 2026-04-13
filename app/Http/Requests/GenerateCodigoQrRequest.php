@@ -73,6 +73,8 @@ class GenerateCodigoQrRequest extends FormRequest
             'dias_semana' => ['nullable', 'string', 'max:20'], // "1,2,3,4,5"
             'fecha_inicio' => ['nullable', 'date'],
             'fecha_fin' => ['nullable', 'date'],
+
+            'send_qr_email' => ['sometimes', 'boolean'],
         ];
     }
 }

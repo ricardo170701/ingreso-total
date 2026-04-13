@@ -17,14 +17,13 @@
                     >
                         Volver a UPS
                     </Link>
-                    <button
-                        type="button"
-                        @click.prevent="exportarBitacoras"
-                        :disabled="exportando || !filtros.fecha_desde || !filtros.fecha_hasta"
-                        class="px-3 py-2 rounded-lg bg-green-600 dark:bg-green-700 text-white hover:bg-green-700 dark:hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed font-medium transition-colors duration-200"
+                    <Link
+                        v-if="puedeVerReportes"
+                        :href="route('reportes.index')"
+                        class="px-3 py-2 rounded-lg bg-green-600 dark:bg-green-700 text-white hover:bg-green-700 dark:hover:bg-green-600 font-medium transition-colors duration-200"
                     >
-                        {{ exportando ? 'Exportando...' : 'Exportar ZIP' }}
-                    </button>
+                        Exportar CSV (Reportes)
+                    </Link>
                     <Link
                         :href="route('ups.bitacora.create', { ups: ups.id })"
                         class="px-3 py-2 rounded-lg bg-slate-900 dark:bg-slate-700 text-white hover:bg-slate-800 dark:hover:bg-slate-600 font-medium transition-colors duration-200"
@@ -43,6 +42,13 @@
 
             <!-- Filtros -->
             <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-4 transition-colors duration-200">
+                <p
+                    v-if="puedeVerReportes"
+                    class="text-xs text-slate-600 dark:text-slate-400 mb-3"
+                >
+                    Para descargar todas las lecturas en CSV (con filtro de fechas y equipo), usa
+                    <strong>Reportes</strong> → «Monitoreo UPS».
+                </p>
                 <form @submit.prevent="aplicarFiltros" class="flex flex-wrap gap-4 items-end">
                     <div class="flex-1 min-w-[200px]">
                         <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
@@ -100,6 +106,13 @@
                                 </span>
                                 <span v-if="registro.creado_por" class="text-sm text-slate-500 dark:text-slate-400">
                                     · Registrado por: {{ getUsuarioNombre(registro.creado_por) }}
+                                </span>
+                                <span
+                                    v-if="registro.umbrales_alerta?.activa"
+                                    class="inline-flex items-center rounded-full bg-amber-100 dark:bg-amber-900/40 text-amber-900 dark:text-amber-200 text-xs font-medium px-2 py-0.5 ml-2"
+                                    :title="(registro.umbrales_alerta.mensajes || []).join(' ')"
+                                >
+                                    Fuera de umbral
                                 </span>
                             </div>
 
@@ -375,10 +388,15 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
-import { Link, router, useForm } from '@inertiajs/vue3';
+import { Link, router, useForm, usePage } from '@inertiajs/vue3';
 import BitacoraCharts from '@/Components/Charts/BitacoraCharts.vue';
+
+const page = usePage();
+const puedeVerReportes = computed(() =>
+    (page.props.auth?.user?.permissions || []).includes('view_reportes')
+);
 
 const props = defineProps({
     ups: Object,
@@ -394,7 +412,6 @@ const props = defineProps({
 
 const modalImages = ref([]);
 const currentImageIndex = ref(0);
-const exportando = ref(false);
 
 const filtros = useForm({
     fecha_desde: props.filtros?.fecha_desde || null,
@@ -463,46 +480,6 @@ const getUsuarioNombre = (usuario) => {
     }
 
     return 'Usuario';
-};
-
-const exportarBitacoras = (event) => {
-    if (event) {
-        event.preventDefault();
-        event.stopPropagation();
-    }
-
-    const fechaDesde = filtros.fecha_desde;
-    const fechaHasta = filtros.fecha_hasta;
-
-    if (!fechaDesde || !fechaHasta) {
-        alert('Por favor, selecciona un rango de fechas para exportar.');
-        return;
-    }
-
-    exportando.value = true;
-
-    try {
-        // Construir URL con filtros
-        const baseUrl = route('ups.bitacora.export', { ups: props.ups.id });
-        const url = `${baseUrl}?fecha_desde=${encodeURIComponent(fechaDesde)}&fecha_hasta=${encodeURIComponent(fechaHasta)}`;
-
-        // Crear un elemento <a> temporal para forzar la descarga
-        const link = document.createElement('a');
-        link.href = url;
-        link.style.display = 'none';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-
-        // Esperar un poco antes de deshabilitar el botón
-        setTimeout(() => {
-            exportando.value = false;
-        }, 3000);
-    } catch (error) {
-        console.error('Error al exportar:', error);
-        alert('Error al generar la exportación. Por favor, intenta nuevamente.');
-        exportando.value = false;
-    }
 };
 
 // Navegación con teclado

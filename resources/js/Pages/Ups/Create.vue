@@ -253,6 +253,44 @@
                         />
                     </FormField>
 
+                    <div class="border-t border-slate-200 dark:border-slate-700 pt-4 space-y-3">
+                        <div>
+                            <h3 class="text-sm font-semibold text-slate-800 dark:text-slate-200">
+                                Umbrales de alerta (opcional)
+                            </h3>
+                            <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                                Define rangos aceptables por métrica. En la bitácora se avisará cuando una lectura quede fuera de estos límites.
+                            </p>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div
+                                v-for="campo in umbralesCampos"
+                                :key="campo.key"
+                                class="rounded-lg border border-slate-200 dark:border-slate-600 p-3 space-y-2"
+                            >
+                                <p class="text-sm font-medium text-slate-700 dark:text-slate-300">
+                                    {{ campo.label }}
+                                </p>
+                                <div class="grid grid-cols-2 gap-2">
+                                    <input
+                                        v-model="form.umbrales[campo.key].min"
+                                        type="number"
+                                        step="any"
+                                        :placeholder="campo.unit ? `Mín (${campo.unit})` : 'Mín'"
+                                        class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 text-sm"
+                                    />
+                                    <input
+                                        v-model="form.umbrales[campo.key].max"
+                                        type="number"
+                                        step="any"
+                                        :placeholder="campo.unit ? `Máx (${campo.unit})` : 'Máx'"
+                                        class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 text-sm"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="flex items-center justify-end gap-2 pt-2">
                         <button
                             type="submit"
@@ -278,6 +316,24 @@ const props = defineProps({
     pisos: Array,
 });
 
+const umbralesVacios = () => ({
+    temperatura: { min: null, max: null },
+    battery_percentage: { min: null, max: null },
+    input_voltage: { min: null, max: null },
+    output_voltage: { min: null, max: null },
+    battery_voltage: { min: null, max: null },
+    output_power: { min: null, max: null },
+});
+
+const umbralesCampos = [
+    { key: "temperatura", label: "Temperatura", unit: "°C" },
+    { key: "battery_percentage", label: "% Batería", unit: "%" },
+    { key: "input_voltage", label: "Voltaje entrada", unit: "V" },
+    { key: "output_voltage", label: "Voltaje salida", unit: "V" },
+    { key: "battery_voltage", label: "Voltaje batería", unit: "V" },
+    { key: "output_power", label: "Potencia salida", unit: "W" },
+];
+
 const form = useForm({
     codigo: "",
     comp: "",
@@ -301,6 +357,7 @@ const form = useForm({
     voltaje_baterias: null,
     activo: true,
     observaciones: "",
+    umbrales: umbralesVacios(),
 });
 
 const onFotoChange = (e) => {

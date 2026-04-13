@@ -4,96 +4,109 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Código QR de Acceso</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            line-height: 1.6;
-            color: #333;
-            max-width: 600px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-
-        .header {
-            background-color: #1e293b;
-            color: white;
-            padding: 20px;
-            text-align: center;
-            border-radius: 8px 8px 0 0;
-        }
-
-        .content {
-            background-color: #f8fafc;
-            padding: 30px;
-            border-radius: 0 0 8px 8px;
-        }
-
-        .qr-container {
-            text-align: center;
-            margin: 30px 0;
-            padding: 20px;
-            background-color: white;
-            border-radius: 8px;
-        }
-
-        .info-box {
-            background-color: #e0f2fe;
-            border-left: 4px solid #0ea5e9;
-            padding: 15px;
-            margin: 20px 0;
-            border-radius: 4px;
-        }
-
-        .footer {
-            text-align: center;
-            margin-top: 30px;
-            padding-top: 20px;
-            border-top: 1px solid #e2e8f0;
-            color: #64748b;
-            font-size: 12px;
-        }
-    </style>
+    <title>Código QR de acceso</title>
 </head>
 
-<body>
-    <div class="header">
-        <h1>Escaner Total</h1>
-        <p>Código QR de Acceso</p>
-    </div>
+<body style="margin:0;padding:0;background-color:#f1f5f9;font-family:Arial,Helvetica,sans-serif;">
+    <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background-color:#f1f5f9;padding:24px 12px;">
+        <tr>
+            <td align="center">
+                <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="max-width:560px;background-color:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
+                    {{-- Cabecera verde institucional --}}
+                    <tr>
+                        <td style="background:linear-gradient(135deg,#008c3a 0%,#006a2d 100%);padding:28px 24px;text-align:center;">
+                            @if(!empty($logoAbsolutePath))
+                                <img
+                                    src="{{ $message->embed($logoAbsolutePath) }}"
+                                    alt="Gobernación del Meta"
+                                    width="200"
+                                    style="display:block;margin:0 auto 16px auto;max-width:200px;height:auto;border:0;"
+                                />
+                            @else
+                                <p style="margin:0 0 8px 0;color:#ffffff;font-size:20px;font-weight:bold;letter-spacing:0.02em;">
+                                    Gobernación del Meta
+                                </p>
+                            @endif
+                            <p style="margin:0;color:rgba(255,255,255,0.95);font-size:15px;font-weight:600;">
+                                Código QR de acceso
+                            </p>
+                        </td>
+                    </tr>
 
-    <div class="content">
-        <p>Hola <strong>{{ $userName }}</strong>,</p>
+                    {{-- Cuerpo --}}
+                    <tr>
+                        <td style="padding:28px 24px 8px 24px;">
+                            <p style="margin:0 0 16px 0;color:#0f172a;font-size:16px;line-height:1.5;">
+                                Hola <strong>{{ $userName }}</strong>,
+                            </p>
+                            <p style="margin:0 0 24px 0;color:#334155;font-size:16px;line-height:1.6;">
+                                Meta te da la bienvenida a nuestras oficinas. Usa este código QR para accesar.
+                            </p>
 
-        <p>Se ha generado un código QR para tu acceso al edificio. Para funcionarios, el QR estará activo hasta tu fecha de expiración (si aplica) o hasta que se marque como inactivo. Para visitantes, el QR es válido 24 h por defecto; si se indicó Fecha inicio/fin, rige ese rango.</p>
+                            {{-- QR incrustado (PNG por CID; visible en la mayoría de clientes) --}}
+                            <table role="presentation" cellpadding="0" cellspacing="0" width="100%">
+                                <tr>
+                                    <td align="center" style="padding:20px 16px;background-color:#f8fafc;border-radius:10px;border:1px solid #e2e8f0;">
+                                        @if(!empty($qrPngBinary))
+                                            <img
+                                                src="{{ $message->embedData($qrPngBinary, 'codigo-qr-acceso.png', 'image/png') }}"
+                                                alt="Código QR de acceso"
+                                                width="240"
+                                                height="240"
+                                                style="display:block;margin:0 auto;border:0;outline:none;text-decoration:none;"
+                                            />
+                                        @elseif(!empty(trim($qrSvg ?? '')))
+                                            <div style="max-width:280px;margin:0 auto;">
+                                                {!! $qrSvg !!}
+                                            </div>
+                                        @endif
+                                        <p style="margin:16px 0 0 0;font-size:14px;color:#64748b;">
+                                            Código: <strong style="color:#0f172a;letter-spacing:0.04em;">{{ $qrToken }}</strong>
+                                        </p>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
 
-        <div class="qr-container">
-            {!! $qrSvg !!}
-            <p style="margin-top: 15px; font-size: 14px; color: #64748b;">
-                Código: <strong>{{ $qrToken }}</strong>
-            </p>
-        </div>
+                    {{-- Aviso vigencia --}}
+                    <tr>
+                        <td style="padding:8px 24px 28px 24px;">
+                            <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background-color:#e0f2fe;border-left:4px solid #0ea5e9;border-radius:6px;">
+                                <tr>
+                                    <td style="padding:16px 18px;">
+                                        <p style="margin:0 0 8px 0;font-size:14px;font-weight:bold;color:#0c4a6e;">
+                                            Importante
+                                        </p>
+                                        <ul style="margin:0;padding-left:20px;color:#0f172a;font-size:14px;line-height:1.55;">
+                                            @if($expiresAt)
+                                                <li style="margin-bottom:6px;">Este código QR expira el: <strong>{{ $expiresAt }}</strong></li>
+                                            @else
+                                                <li style="margin-bottom:6px;">Este código QR <strong>no tiene fecha de expiración en el mensaje</strong>; la vigencia la define la política del sistema.</li>
+                                            @endif
+                                            <li style="margin-bottom:6px;">Úsalo para acceder a las puertas autorizadas.</li>
+                                            <li>Muéstralo al lector en la entrada.</li>
+                                        </ul>
+                                    </td>
+                                </tr>
+                            </table>
+                            <p style="margin:20px 0 0 0;font-size:13px;color:#64748b;line-height:1.5;">
+                                Si tienes alguna pregunta, contacta al administrador del sistema.
+                            </p>
+                        </td>
+                    </tr>
 
-        <div class="info-box">
-            <p style="margin: 0;"><strong>⚠️ Importante:</strong></p>
-            <ul style="margin: 10px 0 0 20px; padding: 0;">
-                @if($expiresAt)
-                <li>Este código QR expira el: <strong>{{ $expiresAt }}</strong></li>
-                @else
-                <li>Este código QR <strong>no expira</strong> (contrato indefinido). El acceso se mantendrá activo hasta que se marque como inactivo.</li>
-                @endif
-                <li>Usa este código para acceder a las puertas autorizadas</li>
-                <li>Muestra el código QR al lector en la entrada</li>
-            </ul>
-        </div>
-
-        <p>Si tienes alguna pregunta, contacta con el administrador del sistema.</p>
-    </div>
-
-    <div class="footer">
-        <p>Este es un correo automático, por favor no respondas.</p>
-        <p>&copy; {{ date('Y') }} Escaner Total - Sistema de Control de Accesos</p>
-    </div>
+                    <tr>
+                        <td style="padding:16px 24px 24px 24px;border-top:1px solid #e2e8f0;text-align:center;">
+                            <p style="margin:0;font-size:12px;color:#94a3b8;">
+                                Correo automático — Escaner Total · Gobernación del Meta
+                            </p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
 </body>
 
 </html>

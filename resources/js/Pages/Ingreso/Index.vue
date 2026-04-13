@@ -687,20 +687,26 @@
                                     Muestra este QR en portería para permitir el
                                     ingreso.
                                 </li>
+                                <li v-if="qrGeneradoLocal.user_email">
+                                    Si el usuario tiene correo en el sistema, se envía automáticamente una copia del QR a esa dirección.
+                                </li>
                             </ul>
                         </div>
+                        <div
+                            v-if="qrGeneradoLocal.user_email && qrGeneradoLocal.email_sent"
+                            class="rounded-lg border border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/25 px-3 py-2 text-sm text-green-800 dark:text-green-200"
+                        >
+                            Se envió una copia del QR al correo
+                            <strong class="font-mono">{{ qrGeneradoLocal.user_email }}</strong>.
+                        </div>
+                        <div
+                            v-else-if="qrGeneradoLocal.user_email && qrGeneradoLocal.email_send_error"
+                            class="rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/25 px-3 py-2 text-sm text-amber-900 dark:text-amber-100"
+                        >
+                            No se pudo enviar el correo automáticamente:
+                            {{ qrGeneradoLocal.email_send_error }}
+                        </div>
                         <div class="flex flex-col gap-2">
-                            <button
-                                @click="enviarCorreo"
-                                :disabled="enviandoCorreo"
-                                class="px-4 py-2 rounded-lg bg-blue-600 dark:bg-blue-700 text-white hover:bg-blue-700 dark:hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
-                            >
-                                {{
-                                    enviandoCorreo
-                                        ? "Enviando..."
-                                        : "Enviar por Correo"
-                                }}
-                            </button>
                             <button
                                 v-if="!esVisitante"
                                 @click="generarNuevo"
@@ -1198,6 +1204,7 @@
 <script setup>
 import AppLayout from "@/Layouts/AppLayout.vue";
 import FormField from "@/Components/FormField.vue";
+import { saveOfflineQr, clearOfflineQr } from "@/Support/offlineQrStorage.js";
 import { computed, ref, onMounted, watch, onUnmounted, nextTick } from "vue";
 import { useForm, router, usePage } from "@inertiajs/vue3";
 
@@ -1226,6 +1233,38 @@ watch(
 );
 
 const currentUser = computed(() => page.props.auth?.user || page.props.user);
+
+function tryPersistOfflineQr(qr) {
+    if (!qr?.token || !qr?.svg || typeof qr.user_id !== "number") return;
+    const uid = currentUser.value?.id;
+    if (!uid || qr.user_id !== uid) return;
+    saveOfflineQr({
+        userId: qr.user_id,
+        token: qr.token,
+        svg: qr.svg,
+        userName: qr.user_name || currentUser.value?.name || "",
+        expiresAtFormatted: qr.expires_at_formatted || "",
+        fechaGeneracion: qr.fecha_generacion || "",
+        savedAt: new Date().toISOString(),
+    });
+}
+
+watch(
+    () => props.qrPersonal,
+    (qr) => {
+        if (qr) tryPersistOfflineQr(qr);
+    },
+    { deep: true, immediate: true },
+);
+
+watch(
+    qrGeneradoLocal,
+    (qr) => {
+        if (qr) tryPersistOfflineQr(qr);
+    },
+    { deep: true, immediate: true },
+);
+
 const esVisitante = computed(() => currentUser.value?.role?.name === "visitante");
 const userPermissions = computed(() => page.props.auth?.user?.permissions || []);
 const puedeCrearVisitantes = computed(() => {
@@ -1510,7 +1549,6 @@ onMounted(() => {
     );
 });
 
-const enviandoCorreo = ref(false);
 const mostrarFormulario = ref(false);
 
 const usuarioSeleccionado = computed(() => {
@@ -1814,42 +1852,12 @@ const irAMiQr = async () => {
     }
 };
 
-const enviarCorreo = () => {
-    if (!qrGeneradoLocal.value) return;
-
-    const email = prompt(
-        "Ingresa el correo electrónico donde enviar el QR:",
-        qrGeneradoLocal.value.user_email || ""
-    );
-
-    if (!email) return;
-
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-        showNotification("Por favor ingresa un correo electrónico válido.", "error");
-        return;
-    }
-
-    enviandoCorreo.value = true;
-
-    router.post(
-        route("ingreso.send-email", { qr: qrGeneradoLocal.value.id }),
-        {
-            email,
-            token: qrGeneradoLocal.value.token,
-        },
-        {
-            preserveScroll: true,
-            onFinish: () => {
-                enviandoCorreo.value = false;
-            },
-        }
-    );
-};
-
 const limpiarDatos = () => {
     // Cerrar pickers abiertos
     closeUserPicker();
     closeResponsablePicker();
+
+    clearOfflineQr();
 
     // Ocultar QR generado (dejar la pantalla como recién abierta)
     qrGeneradoLocal.value = null;

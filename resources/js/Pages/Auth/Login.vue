@@ -105,7 +105,7 @@
                     </div>
 
                     <!-- Ver Contraseña -->
-                    <div class="mb-4 flex items-center">
+                    <div class="mb-3 flex items-center">
                         <input
                             id="showPassword"
                             v-model="showPassword"
@@ -117,6 +117,22 @@
                             class="ml-2 text-sm text-gray-700"
                         >
                             Ver contraseña
+                        </label>
+                    </div>
+
+                    <!-- Mantener sesión (cookie recordarme; recomendado en móvil/PWA) -->
+                    <div class="mb-4 flex items-center">
+                        <input
+                            id="remember"
+                            v-model="form.remember"
+                            type="checkbox"
+                            class="w-4 h-4 rounded border-gray-300 bg-white text-[#008c3a] focus:ring-[#008c3a] focus:ring-2"
+                        />
+                        <label
+                            for="remember"
+                            class="ml-2 text-sm text-gray-700"
+                        >
+                            Mantener la sesión iniciada al cerrar la aplicación
                         </label>
                     </div>
 
@@ -182,7 +198,7 @@ const showPassword = ref(false);
 const form = useForm({
     email: "",
     password: "",
-    remember: false,
+    remember: true,
 });
 
 const submit = () => {

@@ -7,9 +7,16 @@
                         Nueva Bitácora - {{ ups.codigo }} - {{ ups.nombre }}
                     </h1>
                     <p class="text-sm text-slate-600 dark:text-slate-400">
-                        Sube una imagen del panel frontal del UPS para analizar
-                        su estado automáticamente.
+                        Opcional: sube fotos del panel para analizarlas con IA, o registra la lectura solo con datos.
+                        Las imágenes no se guardan en el servidor: solo sirven para la lectura asistida.
                     </p>
+                    <button
+                        type="button"
+                        class="mt-2 px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors duration-200"
+                        @click="iniciarLecturaManual"
+                    >
+                        Registrar lectura manual (sin fotos)
+                    </button>
                 </div>
                 <Link
                     :href="route('ups.bitacora.index', { ups: ups.id })"
@@ -244,6 +251,10 @@
                     </div>
 
                     <!-- Input -->
+                    <p class="text-xs text-slate-500 dark:text-slate-400 mb-2">
+                        <strong>Entrada:</strong> en tablas 120/208 V, la fila «Línea volt» (~208) es la que suele corresponder aquí. Los ~120 V por fase suelen ser
+                        <strong>salida</strong> (se reflejan abajo y en la tabla A/B/C).
+                    </p>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <label
@@ -309,6 +320,58 @@
                                 class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 transition-colors duration-200"
                             />
                         </div>
+                    </div>
+
+                    <!-- Detalle por fase y datos_adicionales (la IA a menudo llena esto aunque arriba falte algo) -->
+                    <div
+                        v-if="fasesRows.length > 0"
+                        class="rounded-lg border border-slate-200 dark:border-slate-600 p-4 space-y-2"
+                    >
+                        <h3 class="text-sm font-semibold text-slate-800 dark:text-slate-200">
+                            Tabla por fase (detectada en fotos)
+                        </h3>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-sm text-slate-700 dark:text-slate-300 border-collapse">
+                                <thead>
+                                    <tr class="border-b border-slate-200 dark:border-slate-600">
+                                        <th class="text-left py-2 pr-3 font-medium">Fase</th>
+                                        <th class="text-right py-2 px-2 font-medium">V fase</th>
+                                        <th class="text-right py-2 px-2 font-medium">A</th>
+                                        <th class="text-right py-2 pl-2 font-medium">Hz</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr
+                                        v-for="row in fasesRows"
+                                        :key="row.key"
+                                        class="border-b border-slate-100 dark:border-slate-700/80"
+                                    >
+                                        <td class="py-1.5 pr-3 font-mono uppercase">{{ row.key }}</td>
+                                        <td class="py-1.5 px-2 text-right font-mono">{{ row.voltage ?? "—" }}</td>
+                                        <td class="py-1.5 px-2 text-right font-mono">{{ row.corriente ?? "—" }}</td>
+                                        <td class="py-1.5 pl-2 text-right font-mono">{{ row.frecuencia ?? "—" }}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div
+                        v-if="datosAdicionalesList.length > 0"
+                        class="rounded-lg border border-dashed border-slate-300 dark:border-slate-600 p-3"
+                    >
+                        <h3 class="text-xs font-semibold text-slate-600 dark:text-slate-400 mb-2">
+                            Otros valores leídos (IA)
+                        </h3>
+                        <ul class="text-xs text-slate-600 dark:text-slate-400 flex flex-wrap gap-2">
+                            <li
+                                v-for="item in datosAdicionalesList"
+                                :key="item.k"
+                                class="px-2 py-1 rounded bg-slate-100 dark:bg-slate-700/80 font-mono"
+                            >
+                                {{ item.k }}: {{ item.v }}
+                            </li>
+                        </ul>
                     </div>
 
                     <!-- Battery -->
@@ -432,7 +495,7 @@
 </template>
 
 <script setup>
-import { ref, nextTick, onMounted, onUnmounted } from "vue";
+import { ref, computed, nextTick, onMounted, onUnmounted } from "vue";
 import AppLayout from "@/Layouts/AppLayout.vue";
 import { Link, router, useForm } from "@inertiajs/vue3";
 import axios from "axios";
@@ -455,6 +518,92 @@ const videoRef = ref(null);
 const canvasRef = ref(null);
 const previewData = ref(null);
 const analyzing = ref(false);
+
+const crearPreviewVacio = () => ({
+    imagenes: [],
+    indicador_normal: false,
+    indicador_battery: false,
+    indicador_bypass: false,
+    indicador_fault: false,
+    input_voltage: null,
+    input_frequency: null,
+    output_voltage: null,
+    output_frequency: null,
+    output_power: null,
+    battery_voltage: null,
+    battery_percentage: null,
+    battery_tiempo_respaldo: null,
+    battery_tiempo_descarga: null,
+    battery_estado: null,
+    temperatura: null,
+    observaciones: "",
+    datos_extraidos: null,
+    fases: {},
+});
+
+/** Fuente de fases: nivel preview o anidada en datos_extraidos (IA). */
+const fasesSource = computed(() => {
+    const p = previewData.value;
+    if (!p) return {};
+    if (p.fases && typeof p.fases === "object" && Object.keys(p.fases).length) {
+        return p.fases;
+    }
+    const nested = p.datos_extraidos?.fases;
+    if (nested && typeof nested === "object") {
+        return nested;
+    }
+    return {};
+});
+
+/** Filas A/B/C con al menos un valor (para que no se vea vacío el bloque). */
+const fasesRows = computed(() => {
+    const f = fasesSource.value;
+    if (!f || typeof f !== "object") return [];
+    return ["a", "b", "c"]
+        .map((key) => {
+            const row = f[key];
+            if (!row || typeof row !== "object") return null;
+            const { voltage, corriente, frecuencia } = row;
+            if (voltage == null && corriente == null && frecuencia == null) return null;
+            return { key, voltage, corriente, frecuencia };
+        })
+        .filter(Boolean);
+});
+
+/** Muestra datos_adicionales (prioriza línea volt, carga, entrada; si no hay, hasta 20 claves). */
+const datosAdicionalesList = computed(() => {
+    const extra = previewData.value?.datos_extraidos?.datos_adicionales;
+    if (!extra || typeof extra !== "object") return [];
+    const prefer = (k) => {
+        const l = String(k).toLowerCase();
+        return (
+            l.startsWith("linea_volt") ||
+            l.startsWith("carga_pct") ||
+            l.includes("entrada") ||
+            l.includes("input")
+        );
+    };
+    let entries = Object.entries(extra).filter(([k]) => prefer(k));
+    if (entries.length === 0) {
+        entries = Object.entries(extra)
+            .sort(([a], [b]) => String(a).localeCompare(String(b)))
+            .slice(0, 20);
+    }
+    return entries.map(([k, v]) => ({
+        k,
+        v: typeof v === "object" ? JSON.stringify(v) : String(v),
+    }));
+});
+
+const iniciarLecturaManual = () => {
+    error.value = null;
+    selectedFiles.value = [];
+    previewImages.value = [];
+    previewData.value = crearPreviewVacio();
+    if (fileInput.value) {
+        fileInput.value.value = "";
+    }
+};
 const analyzingProgress = ref(0);
 const saving = ref(false);
 const error = ref(null);
@@ -634,6 +783,61 @@ const formatFileSize = (bytes) => {
     return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
 };
 
+const numOrNull = (v) => {
+    if (v === null || v === undefined || v === "") return null;
+    const n = Number(v);
+    return Number.isFinite(n) ? n : null;
+};
+
+/**
+ * Objeto que se persiste en ups_vitacora.datos_extraidos: fases, datos_adicionales,
+ * alarmas, lecturas sincronizadas con el formulario (para CSV / auditoría).
+ */
+const buildDatosExtraidosForSave = () => {
+    const p = previewData.value;
+    if (!p) return null;
+    const base =
+        p.datos_extraidos && typeof p.datos_extraidos === "object"
+            ? JSON.parse(JSON.stringify(p.datos_extraidos))
+            : {};
+    base.fases =
+        fasesSource.value && typeof fasesSource.value === "object"
+            ? JSON.parse(JSON.stringify(fasesSource.value))
+            : {};
+    if (!base.datos_adicionales || typeof base.datos_adicionales !== "object") {
+        base.datos_adicionales = {};
+    }
+    if (!Array.isArray(base.alarmas)) {
+        base.alarmas = [];
+    }
+    base.indicadores = {
+        normal: !!p.indicador_normal,
+        battery: !!p.indicador_battery,
+        bypass: !!p.indicador_bypass,
+        fault: !!p.indicador_fault,
+    };
+    base.input = {
+        voltage: numOrNull(p.input_voltage),
+        frequency: numOrNull(p.input_frequency),
+    };
+    base.output = {
+        voltage: numOrNull(p.output_voltage),
+        frequency: numOrNull(p.output_frequency),
+        power: numOrNull(p.output_power),
+    };
+    const prevBat = typeof base.battery === "object" && base.battery !== null ? base.battery : {};
+    base.battery = {
+        ...prevBat,
+        voltage: numOrNull(p.battery_voltage),
+        percentage: numOrNull(p.battery_percentage),
+        tiempo_respaldo_min: numOrNull(p.battery_tiempo_respaldo),
+        tiempo_descarga_min: numOrNull(p.battery_tiempo_descarga),
+        estado: p.battery_estado || null,
+    };
+    base.temperatura = numOrNull(p.temperatura);
+    return base;
+};
+
 const analyzeImage = async () => {
     if (selectedFiles.value.length === 0) return;
 
@@ -658,7 +862,17 @@ const analyzeImage = async () => {
         );
 
         if (response.data.success) {
-            previewData.value = response.data.preview;
+            const prev = response.data.preview;
+            if (
+                (!prev.fases ||
+                    typeof prev.fases !== "object" ||
+                    !Object.keys(prev.fases).length) &&
+                prev.datos_extraidos?.fases &&
+                typeof prev.datos_extraidos.fases === "object"
+            ) {
+                prev.fases = { ...prev.datos_extraidos.fases };
+            }
+            previewData.value = prev;
             // Actualizar preview images con las rutas del servidor si vienen del análisis
             if (response.data.preview.imagenes && Array.isArray(response.data.preview.imagenes)) {
                 // Mantener las previews locales si las rutas del servidor están disponibles
@@ -671,26 +885,8 @@ const analyzeImage = async () => {
             error.value =
                 response.data.message || "Error al analizar las imágenes";
             // Si el error permite entrada manual, inicializar datos vacíos
-            if (response.data.allow_manual && selectedFiles.value.length > 0) {
-                previewData.value = {
-                    imagenes: previewImages.value,
-                    indicador_normal: false,
-                    indicador_battery: false,
-                    indicador_bypass: false,
-                    indicador_fault: false,
-                    input_voltage: null,
-                    input_frequency: null,
-                    output_voltage: null,
-                    output_frequency: null,
-                    output_power: null,
-                    battery_voltage: null,
-                    battery_percentage: null,
-                    battery_tiempo_respaldo: null,
-                    battery_tiempo_descarga: null,
-                    battery_estado: null,
-                    temperatura: null,
-                    observaciones: '',
-                };
+            if (response.data.allow_manual) {
+                previewData.value = crearPreviewVacio();
             }
         }
     } catch (err) {
@@ -699,26 +895,8 @@ const analyzeImage = async () => {
             err.message ||
             "Error al analizar las imágenes";
         // Si el error permite entrada manual, inicializar datos vacíos
-        if (err.response?.data?.allow_manual && selectedFiles.value.length > 0) {
-            previewData.value = {
-                imagenes: previewImages.value,
-                indicador_normal: false,
-                indicador_battery: false,
-                indicador_bypass: false,
-                indicador_fault: false,
-                input_voltage: null,
-                input_frequency: null,
-                output_voltage: null,
-                output_frequency: null,
-                output_power: null,
-                battery_voltage: null,
-                battery_percentage: null,
-                battery_tiempo_respaldo: null,
-                battery_tiempo_descarga: null,
-                battery_estado: null,
-                temperatura: null,
-                observaciones: '',
-            };
+        if (err.response?.data?.allow_manual) {
+            previewData.value = crearPreviewVacio();
         }
     } finally {
         analyzing.value = false;
@@ -745,13 +923,6 @@ const guardarRegistro = async () => {
             });
         }
 
-        // Si hay archivos seleccionados y no se analizaron (entrada manual)
-        if (selectedFiles.value.length > 0) {
-            selectedFiles.value.forEach((file) => {
-                formData.append('imagenes_files[]', file);
-            });
-        }
-
         // Agregar todos los demás datos
         formData.append('indicador_normal', previewData.value.indicador_normal ? '1' : '0');
         formData.append('indicador_battery', previewData.value.indicador_battery ? '1' : '0');
@@ -770,7 +941,10 @@ const guardarRegistro = async () => {
         if (previewData.value.battery_estado) formData.append('battery_estado', previewData.value.battery_estado);
         if (hasVal(previewData.value.temperatura)) formData.append('temperatura', previewData.value.temperatura);
         if (previewData.value.observaciones) formData.append('observaciones', previewData.value.observaciones);
-        if (previewData.value.datos_extraidos) formData.append('datos_extraidos', JSON.stringify(previewData.value.datos_extraidos));
+        const payloadIa = buildDatosExtraidosForSave();
+        if (payloadIa) {
+            formData.append("datos_extraidos", JSON.stringify(payloadIa));
+        }
 
         await axios.post(
             route("ups.bitacora.store", { ups: props.ups.id }),
@@ -786,10 +960,15 @@ const guardarRegistro = async () => {
             method: "get",
         });
     } catch (err) {
-        error.value =
-            err.response?.data?.message ||
-            err.message ||
-            "Error al guardar el registro";
+        const errs = err.response?.data?.errors;
+        if (errs && typeof errs === "object") {
+            error.value = Object.values(errs).flat().join(" ");
+        } else {
+            error.value =
+                err.response?.data?.message ||
+                err.message ||
+                "Error al guardar el registro";
+        }
         saving.value = false;
     }
 };

@@ -41,6 +41,7 @@ COPY --from=vendor_build /app/vendor/tightenco/ziggy ./vendor/tightenco/ziggy
 COPY vite.config.js postcss.config.js ./
 COPY resources ./resources
 COPY public ./public
+COPY scripts ./scripts
 
 RUN npm run build
 

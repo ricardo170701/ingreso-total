@@ -17,13 +17,14 @@
                     >
                         Volver a UPS
                     </Link>
-                    <Link
-                        v-if="puedeVerReportes"
-                        :href="route('reportes.index')"
-                        class="px-3 py-2 rounded-lg bg-green-600 dark:bg-green-700 text-white hover:bg-green-700 dark:hover:bg-green-600 font-medium transition-colors duration-200"
+                    <button
+                        type="button"
+                        @click="exportarCsv"
+                        :disabled="exportandoCsv"
+                        class="px-3 py-2 rounded-lg bg-green-600 dark:bg-green-700 text-white hover:bg-green-700 dark:hover:bg-green-600 disabled:opacity-60 font-medium transition-colors duration-200"
                     >
-                        Exportar CSV (Reportes)
-                    </Link>
+                        {{ exportandoCsv ? "Generando CSV…" : "Exportar CSV" }}
+                    </button>
                     <Link
                         :href="route('ups.bitacora.create', { ups: ups.id })"
                         class="px-3 py-2 rounded-lg bg-slate-900 dark:bg-slate-700 text-white hover:bg-slate-800 dark:hover:bg-slate-600 font-medium transition-colors duration-200"
@@ -42,12 +43,8 @@
 
             <!-- Filtros -->
             <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-4 transition-colors duration-200">
-                <p
-                    v-if="puedeVerReportes"
-                    class="text-xs text-slate-600 dark:text-slate-400 mb-3"
-                >
-                    Para descargar todas las lecturas en CSV (con filtro de fechas y equipo), usa
-                    <strong>Reportes</strong> → «Monitoreo UPS».
+                <p class="text-xs text-slate-600 dark:text-slate-400 mb-3">
+                    El CSV incluye las lecturas de <strong>este equipo</strong>, aplicando el rango de fechas que elijas abajo (si lo dejas vacío, exporta todo el historial).
                 </p>
                 <form @submit.prevent="aplicarFiltros" class="flex flex-wrap gap-4 items-end">
                     <div class="flex-1 min-w-[200px]">
@@ -186,7 +183,11 @@
                                         <div>
                                             <span class="text-slate-600 dark:text-slate-400">Voltaje:</span>
                                             <span class="font-medium ml-2 text-slate-900 dark:text-slate-100">
-                                                {{ registro.input_voltage ? `${registro.input_voltage} V` : '-' }}
+                                                {{
+                                                    registro.input_voltage != null && registro.input_voltage !== ''
+                                                        ? `${Number(registro.input_voltage).toFixed(2)} V`
+                                                        : '-'
+                                                }}
                                             </span>
                                         </div>
                                         <div>
@@ -205,7 +206,11 @@
                                         <div>
                                             <span class="text-slate-600 dark:text-slate-400">Voltaje:</span>
                                             <span class="font-medium ml-2 text-slate-900 dark:text-slate-100">
-                                                {{ registro.output_voltage ? `${registro.output_voltage} V` : '-' }}
+                                                {{
+                                                    registro.output_voltage != null && registro.output_voltage !== ''
+                                                        ? `${Number(registro.output_voltage).toFixed(2)} V`
+                                                        : '-'
+                                                }}
                                             </span>
                                         </div>
                                         <div>
@@ -230,7 +235,11 @@
                                         <div>
                                             <span class="text-slate-600 dark:text-slate-400">Voltaje:</span>
                                             <span class="font-medium ml-2 text-slate-900 dark:text-slate-100">
-                                                {{ registro.battery_voltage ? `${registro.battery_voltage} V` : '-' }}
+                                                {{
+                                                    registro.battery_voltage != null && registro.battery_voltage !== ''
+                                                        ? `${Number(registro.battery_voltage).toFixed(2)} V`
+                                                        : '-'
+                                                }}
                                             </span>
                                         </div>
                                         <div>
@@ -388,15 +397,10 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted } from 'vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
-import { Link, router, useForm, usePage } from '@inertiajs/vue3';
+import { Link, router, useForm } from '@inertiajs/vue3';
 import BitacoraCharts from '@/Components/Charts/BitacoraCharts.vue';
-
-const page = usePage();
-const puedeVerReportes = computed(() =>
-    (page.props.auth?.user?.permissions || []).includes('view_reportes')
-);
 
 const props = defineProps({
     ups: Object,
@@ -412,6 +416,7 @@ const props = defineProps({
 
 const modalImages = ref([]);
 const currentImageIndex = ref(0);
+const exportandoCsv = ref(false);
 
 const filtros = useForm({
     fecha_desde: props.filtros?.fecha_desde || null,
@@ -453,6 +458,20 @@ const limpiarFiltros = () => {
         preserveState: true,
         preserveScroll: true,
     });
+};
+
+const exportarCsv = () => {
+    exportandoCsv.value = true;
+    const params = new URLSearchParams();
+    if (filtros.fecha_desde) params.append('fecha_desde', filtros.fecha_desde);
+    if (filtros.fecha_hasta) params.append('fecha_hasta', filtros.fecha_hasta);
+    const base = route('ups.bitacora.export', { ups: props.ups.id });
+    const url = params.toString() ? `${base}?${params.toString()}` : base;
+    const w = window.open(url, '_blank');
+    setTimeout(() => {
+        if (w) w.close();
+        exportandoCsv.value = false;
+    }, 2000);
 };
 
 const eliminarRegistro = (id) => {

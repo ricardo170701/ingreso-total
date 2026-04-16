@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Ups;
 use App\Models\UpsBitacora;
+use App\Support\UpsBitacoraMonitoreoCsvExport;
 use App\Support\UpsBitacoraVisionEnricher;
 use App\Support\UpsBitacoraVisionPrompt;
 use App\Support\UpsUmbralesEvaluator;
@@ -14,6 +15,7 @@ use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 use OpenAI\Laravel\Facades\OpenAI;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class UpsBitacoraController extends Controller
 {
@@ -345,12 +347,18 @@ class UpsBitacoraController extends Controller
                 ? json_decode($request->input('datos_extraidos'), true)
                 : $request->input('datos_extraidos');
         }
+        if (is_array($datosExtraidos)) {
+            UpsBitacoraVisionEnricher::normalizeVoltageFields($datosExtraidos);
+        }
 
         try {
             $this->validarLecturasContraDatosIa($request, $datosExtraidos);
 
             $num = fn ($key) => $request->has($key) && $request->input($key) !== '' && $request->input($key) !== null
                 ? $request->input($key)
+                : null;
+            $volt2 = fn ($key) => $num($key) !== null
+                ? round((float) $num($key), 2)
                 : null;
             $str = fn ($key) => $request->filled($key) ? $request->input($key) : null;
 
@@ -360,12 +368,12 @@ class UpsBitacoraController extends Controller
                 'indicador_battery' => (bool) $request->input('indicador_battery', false),
                 'indicador_bypass' => (bool) $request->input('indicador_bypass', false),
                 'indicador_fault' => (bool) $request->input('indicador_fault', false),
-                'input_voltage' => $num('input_voltage'),
+                'input_voltage' => $volt2('input_voltage'),
                 'input_frequency' => $num('input_frequency'),
-                'output_voltage' => $num('output_voltage'),
+                'output_voltage' => $volt2('output_voltage'),
                 'output_frequency' => $num('output_frequency'),
                 'output_power' => $num('output_power'),
-                'battery_voltage' => $num('battery_voltage'),
+                'battery_voltage' => $volt2('battery_voltage'),
                 'battery_percentage' => $num('battery_percentage'),
                 'battery_tiempo_respaldo' => $num('battery_tiempo_respaldo'),
                 'battery_tiempo_descarga' => $num('battery_tiempo_descarga'),
@@ -448,6 +456,36 @@ class UpsBitacoraController extends Controller
         $rel = abs($actual - $expected) / abs($expected);
 
         return ($rel * 100) <= $tolerancePct;
+    }
+
+    /**
+     * Descarga CSV de bitácora del equipo actual (mismo formato que Reportes → monitoreo UPS).
+     * Respeta filtros opcionales fecha_desde / fecha_hasta (query string).
+     */
+    public function exportCsv(Request $request, Ups $ups): StreamedResponse
+    {
+        $this->authorize('view', $ups);
+
+        $validated = $request->validate([
+            'fecha_desde' => ['nullable', 'date'],
+            'fecha_hasta' => ['nullable', 'date'],
+        ]);
+
+        $query = UpsBitacora::query()
+            ->where('ups_id', $ups->id)
+            ->with(['ups', 'creadoPor']);
+
+        if (! empty($validated['fecha_desde'])) {
+            $query->whereDate('created_at', '>=', $validated['fecha_desde']);
+        }
+        if (! empty($validated['fecha_hasta'])) {
+            $query->whereDate('created_at', '<=', $validated['fecha_hasta']);
+        }
+
+        $safe = preg_replace('/[^a-zA-Z0-9_-]/', '_', (string) ($ups->codigo ?: 'ups'));
+        $filename = 'bitacora_'.$safe.'_'.date('Y-m-d_His').'.csv';
+
+        return UpsBitacoraMonitoreoCsvExport::streamDownload($query, $filename);
     }
 
     private function eliminarImagenesTemporalesBitacora(Request $request): void

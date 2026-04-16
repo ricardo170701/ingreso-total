@@ -132,6 +132,7 @@ Route::middleware(['auth', 'force.password.change', 'visitante.restrict', 'permi
 
     // Bitácora de UPS
     Route::get('/ups/{ups}/bitacora', [UpsBitacoraController::class, 'index'])->name('ups.bitacora.index');
+    Route::get('/ups/{ups}/bitacora/exportar', [UpsBitacoraController::class, 'exportCsv'])->name('ups.bitacora.export');
     Route::get('/ups/{ups}/bitacora/crear', [UpsBitacoraController::class, 'create'])->name('ups.bitacora.create');
     Route::post('/ups/{ups}/bitacora/analizar', [UpsBitacoraController::class, 'analyzeImage'])->name('ups.bitacora.analyze');
     Route::post('/ups/{ups}/bitacora', [UpsBitacoraController::class, 'store'])->name('ups.bitacora.store');

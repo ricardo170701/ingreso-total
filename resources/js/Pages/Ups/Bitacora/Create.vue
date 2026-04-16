@@ -347,7 +347,7 @@
                                         class="border-b border-slate-100 dark:border-slate-700/80"
                                     >
                                         <td class="py-1.5 pr-3 font-mono uppercase">{{ row.key }}</td>
-                                        <td class="py-1.5 px-2 text-right font-mono">{{ row.voltage ?? "—" }}</td>
+                                        <td class="py-1.5 px-2 text-right font-mono">{{ formatVoltajeDisplay(row.voltage) }}</td>
                                         <td class="py-1.5 px-2 text-right font-mono">{{ row.corriente ?? "—" }}</td>
                                         <td class="py-1.5 pl-2 text-right font-mono">{{ row.frecuencia ?? "—" }}</td>
                                     </tr>
@@ -591,7 +591,7 @@ const datosAdicionalesList = computed(() => {
     }
     return entries.map(([k, v]) => ({
         k,
-        v: typeof v === "object" ? JSON.stringify(v) : String(v),
+        v: formatExtraAdicionalValue(k, v),
     }));
 });
 
@@ -789,6 +789,65 @@ const numOrNull = (v) => {
     return Number.isFinite(n) ? n : null;
 };
 
+/** Alineado con backend: voltajes con 2 decimales en pantalla. */
+const isVoltageKey = (k) =>
+    /voltaje|linea_volt|line_volt|_volt($|_)/i.test(String(k).toLowerCase());
+
+const formatVoltajeDisplay = (v) => {
+    if (v === null || v === undefined || v === "") return "—";
+    const n = Number(v);
+    return Number.isFinite(n) ? n.toFixed(2) : "—";
+};
+
+const formatExtraAdicionalValue = (k, v) => {
+    if (typeof v === "object" && v !== null) return JSON.stringify(v);
+    if (isVoltageKey(k) && v !== "" && v != null) {
+        const n = Number(v);
+        if (Number.isFinite(n)) return n.toFixed(2);
+    }
+    return String(v);
+};
+
+const roundVolt2 = (x) => {
+    if (x === null || x === undefined || x === "") return null;
+    const n = Number(x);
+    return Number.isFinite(n) ? Math.round(n * 100) / 100 : null;
+};
+
+/** Coherente con el backend tras analizar la imagen (evita floats largos en inputs). */
+const normalizePreviewVoltajes = (p) => {
+    if (!p) return;
+    p.input_voltage = roundVolt2(p.input_voltage);
+    p.output_voltage = roundVolt2(p.output_voltage);
+    p.battery_voltage = roundVolt2(p.battery_voltage);
+    const touchFases = (f) => {
+        if (!f || typeof f !== "object") return;
+        for (const ph of ["a", "b", "c"]) {
+            if (f[ph]?.voltage != null) f[ph].voltage = roundVolt2(f[ph].voltage);
+        }
+    };
+    touchFases(p.fases);
+    const de = p.datos_extraidos;
+    if (de && typeof de === "object") {
+        touchFases(de.fases);
+        if (de.input?.voltage != null) de.input.voltage = roundVolt2(de.input.voltage);
+        if (de.output?.voltage != null) de.output.voltage = roundVolt2(de.output.voltage);
+        if (de.battery?.voltage != null) de.battery.voltage = roundVolt2(de.battery.voltage);
+        if (de.datos_adicionales && typeof de.datos_adicionales === "object") {
+            for (const [k, v] of Object.entries(de.datos_adicionales)) {
+                if (
+                    isVoltageKey(k) &&
+                    v !== "" &&
+                    v != null &&
+                    Number.isFinite(Number(v))
+                ) {
+                    de.datos_adicionales[k] = roundVolt2(v);
+                }
+            }
+        }
+    }
+};
+
 /**
  * Objeto que se persiste en ups_vitacora.datos_extraidos: fases, datos_adicionales,
  * alarmas, lecturas sincronizadas con el formulario (para CSV / auditoría).
@@ -872,6 +931,7 @@ const analyzeImage = async () => {
             ) {
                 prev.fases = { ...prev.datos_extraidos.fases };
             }
+            normalizePreviewVoltajes(prev);
             previewData.value = prev;
             // Actualizar preview images con las rutas del servidor si vienen del análisis
             if (response.data.preview.imagenes && Array.isArray(response.data.preview.imagenes)) {

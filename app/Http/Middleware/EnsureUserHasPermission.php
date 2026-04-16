@@ -81,6 +81,7 @@ class EnsureUserHasPermission
         'ups.edit' => 'edit_ups',
         'ups.update' => 'edit_ups',
         'ups.destroy' => 'delete_ups',
+        'ups.bitacora.export' => 'view_ups',
 
         // Departamentos
         'departamentos.index' => 'view_departamentos',

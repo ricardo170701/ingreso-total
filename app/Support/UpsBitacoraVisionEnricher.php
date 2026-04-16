@@ -101,6 +101,59 @@ final class UpsBitacoraVisionEnricher
         if (($datos['input']['frequency'] ?? null) === null && ($datos['output']['frequency'] ?? null) !== null) {
             $datos['input']['frequency'] = $datos['output']['frequency'];
         }
+
+        self::normalizeVoltageFields($datos);
+    }
+
+    /**
+     * Redondea todos los voltajes a 2 decimales (entrada/salida/batería, fases A/B/C, datos_adicionales).
+     *
+     * @param  array<string, mixed>  $datos  Misma forma que devuelve la visión (o datos_extraidos guardados).
+     */
+    public static function normalizeVoltageFields(array &$datos): void
+    {
+        foreach (['input', 'output'] as $sec) {
+            if (! isset($datos[$sec]) || ! is_array($datos[$sec])) {
+                continue;
+            }
+            if (isset($datos[$sec]['voltage']) && is_numeric($datos[$sec]['voltage'])) {
+                $datos[$sec]['voltage'] = self::round2((float) $datos[$sec]['voltage']);
+            }
+        }
+
+        if (isset($datos['battery']) && is_array($datos['battery']) && isset($datos['battery']['voltage']) && is_numeric($datos['battery']['voltage'])) {
+            $datos['battery']['voltage'] = self::round2((float) $datos['battery']['voltage']);
+        }
+
+        if (isset($datos['fases']) && is_array($datos['fases'])) {
+            foreach (['a', 'b', 'c'] as $p) {
+                if (! isset($datos['fases'][$p]) || ! is_array($datos['fases'][$p])) {
+                    continue;
+                }
+                if (isset($datos['fases'][$p]['voltage']) && is_numeric($datos['fases'][$p]['voltage'])) {
+                    $datos['fases'][$p]['voltage'] = self::round2((float) $datos['fases'][$p]['voltage']);
+                }
+            }
+        }
+
+        if (! isset($datos['datos_adicionales']) || ! is_array($datos['datos_adicionales'])) {
+            return;
+        }
+
+        foreach ($datos['datos_adicionales'] as $k => $v) {
+            if (! is_numeric($v)) {
+                continue;
+            }
+            $key = strtolower((string) $k);
+            if (self::isVoltageAdditionalKey($key)) {
+                $datos['datos_adicionales'][$k] = self::round2((float) $v);
+            }
+        }
+    }
+
+    private static function isVoltageAdditionalKey(string $key): bool
+    {
+        return (bool) preg_match('/voltaje|linea_volt|line_volt|_volt($|_)/i', $key);
     }
 
     private static function round2(float $n): float
